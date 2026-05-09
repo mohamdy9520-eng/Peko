@@ -149,7 +149,7 @@ Peko uses AI to:
 
 **Mohamed Hamdy**
 
-* GitHub: [https://github.com/your-username](https://github.com/mohamdy9520-eng/Peko)
+* GitHub: https://github.com/mohamdy9520-eng
 * LinkedIn: www.linkedin.com/in/mohamed-hamdy-430a41399
 
 
