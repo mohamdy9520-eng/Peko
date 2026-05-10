@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 
 class MainNavigationScreen extends StatelessWidget {
-  final StatefulNavigationShell navigationShell; // ✅ صح
+  final StatefulNavigationShell navigationShell;
 
   const MainNavigationScreen({
     super.key,
-    required this.navigationShell, // ✅ صح
+    required this.navigationShell,
   });
 
   @override
@@ -16,7 +16,12 @@ class MainNavigationScreen extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(index),
+        onDestinationSelected: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
         backgroundColor: Colors.white,
         indicatorColor: AppColors.primary.withOpacity(0.1),
         destinations: const [

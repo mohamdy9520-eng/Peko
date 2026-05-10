@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 
 class CustomNumpad extends StatelessWidget {
@@ -43,8 +44,8 @@ class CustomNumpad extends StatelessWidget {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            fontSize: 28,
+          style:TextStyle(
+            fontSize: 28.sp,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
           ),
@@ -57,11 +58,11 @@ class CustomNumpad extends StatelessWidget {
     return InkWell(
       onTap: onDeletePressed,
       borderRadius: BorderRadius.circular(16),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.backspace_outlined,
           color: AppColors.textPrimary,
-          size: 28,
+          size: 28.sp,
         ),
       ),
     );

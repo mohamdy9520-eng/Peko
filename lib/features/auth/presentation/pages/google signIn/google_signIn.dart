@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 Future<UserCredential?> signInWithGoogle() async {
-  final GoogleSignIn googleSignIn = GoogleSignIn(); // 👈 ضيف ده
+  final GoogleSignIn googleSignIn = GoogleSignIn();
 
   final GoogleSignInAccount? googleUser =
   await googleSignIn.signIn();

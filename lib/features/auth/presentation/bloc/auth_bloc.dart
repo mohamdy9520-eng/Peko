@@ -22,7 +22,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        await repository.signUp(event.name, event.email, event.password);
+        await repository.signUpWithUsername(
+          name: event.name,
+          email: event.email,
+          password: event.password,
+          username: event.username.toLowerCase().trim(),
+        );
+
         emit(AuthEmailVerificationRequired());
       } catch (e) {
         emit(AuthFailure(e.toString()));
@@ -50,8 +56,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LogoutRequested>((event, emit) async {
-      await repository.logout();
-      emit(AuthInitial());
+      try {
+        await repository.logout();
+        emit(AuthInitial());
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+      }
     });
   }
 }

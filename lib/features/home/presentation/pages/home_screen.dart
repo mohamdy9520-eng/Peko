@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../widgets/transaction_item.dart';
@@ -8,20 +9,18 @@ import '../../../../widgets/transaction_item.dart';
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
 
-  // ✅ جلب بيانات المستخدم
   Stream<DocumentSnapshot> getUserData() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.empty();
+    if (user == null) return const Stream.empty();
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .snapshots();
   }
 
-  // ✅ جلب Transactions
   Stream<QuerySnapshot> getTransactions() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.empty();
+    if (user == null) return const Stream.empty();
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -35,7 +34,6 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      // ✅ FAB جديد يفتح Bottom Sheet
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddOptionsBottomSheet(context),
         backgroundColor: AppColors.primary,
@@ -52,16 +50,27 @@ class HomeScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('Transactions History', 'See all'),
-                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Transactions History',
+                          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/transactions'),
+                          child: const Text('See all'),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
                     _buildTransactionList(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     _buildSectionTitle('Send Again', 'See all'),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     _buildSendAgainList(context),
-                    const SizedBox(height: 100),
+                    SizedBox(height: 100.h),
                   ],
                 ),
               ),
@@ -72,15 +81,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ BOTTOM SHEET - اختيار نوع الإضافة
   void _showAddOptionsBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
         padding: const EdgeInsets.all(24),
         child: SingleChildScrollView(
@@ -88,23 +96,23 @@ class HomeScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 4,
+                width: 40.w,
+                height: 4.h,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
+              SizedBox(height: 24.h),
+              Text(
                 'What would you like to add?',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               _buildOptionTile(
                 context: context,
                 icon: Icons.arrow_upward,
@@ -116,7 +124,7 @@ class HomeScreen extends StatelessWidget {
                   context.push('/add-expense');
                 },
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               _buildOptionTile(
                 context: context,
                 icon: Icons.arrow_downward,
@@ -128,7 +136,7 @@ class HomeScreen extends StatelessWidget {
                   context.push('/add-income');
                 },
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               _buildOptionTile(
                 context: context,
                 icon: Icons.send,
@@ -140,7 +148,7 @@ class HomeScreen extends StatelessWidget {
                   _showTransferBottomSheet(context);
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
             ],
           ),
         ),
@@ -159,37 +167,36 @@ class HomeScreen extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         side: BorderSide(color: Colors.grey[200]!),
       ),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: Icon(icon, color: iconColor),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: 16.sp,
           color: AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          fontSize: 13,
+        style: TextStyle(
+          fontSize: 13.sp,
           color: AppColors.textSecondary,
         ),
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: Colors.grey),
     );
   }
 
-  // ✅ TRANSFER BOTTOM SHEET — مع Contacts حقيقية من Firestore
   void _showTransferBottomSheet(BuildContext context) {
     final amountController = TextEditingController();
     String? selectedContactId;
@@ -208,9 +215,9 @@ class HomeScreen extends StatelessWidget {
               bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
               ),
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -219,26 +226,25 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Center(
                     child: Container(
-                      width: 40,
-                      height: 4,
+                      width: 40.w,
+                      height: 4.h,
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(2.r),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: 24.h),
+                  Text(
                     'Transfer Money',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
-                  // ✅ جلب Contacts من Firestore
                   StreamBuilder<QuerySnapshot>(
                     stream: user != null
                         ? FirebaseFirestore.instance
@@ -258,14 +264,14 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                             color: Colors.grey[50],
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.grey),
-                              SizedBox(width: 12),
-                              Expanded(
+                              const Icon(Icons.info_outline, color: Colors.grey),
+                              SizedBox(width: 12.w),
+                              const Expanded(
                                 child: Text(
                                   'No contacts yet. Add contacts from "Send Again" section.',
                                   style: TextStyle(color: Colors.grey),
@@ -283,7 +289,7 @@ class HomeScreen extends StatelessWidget {
                         decoration: InputDecoration(
                           labelText: 'Select Contact',
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
@@ -299,18 +305,18 @@ class HomeScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  radius: 14,
+                                  radius: 14.r,
                                   backgroundColor: AppColors.primary.withOpacity(0.1),
                                   child: Text(
                                     name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.primary,
-                                      fontSize: 12,
+                                      fontSize: 12.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: 12.w),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +332,7 @@ class HomeScreen extends StatelessWidget {
                                         Text(
                                           email,
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 12.sp,
                                             color: Colors.grey[600],
                                           ),
                                         ),
@@ -351,7 +357,7 @@ class HomeScreen extends StatelessWidget {
                     },
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
@@ -359,13 +365,13 @@ class HomeScreen extends StatelessWidget {
                       labelText: 'Amount',
                       prefixText: '\$ ',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -377,7 +383,7 @@ class HomeScreen extends StatelessWidget {
                         if (amount <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('❌ Please enter valid amount!'),
+                              content: Text('Please enter valid amount!'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -393,21 +399,21 @@ class HomeScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         disabledBackgroundColor: Colors.grey[300],
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Send',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                 ],
               ),
             ),
@@ -417,7 +423,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ HEADER — الجزء الأخضر
   Widget _buildHeader(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
       stream: getUserData(),
@@ -439,12 +444,12 @@ class HomeScreen extends StatelessWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 30),
-          decoration: const BoxDecoration(
+          padding: EdgeInsets.only(top: 20.h, left: 20.w, right: 20.w, bottom: 30.h),
+          decoration: BoxDecoration(
             color: AppColors.primary,
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+              bottomLeft: Radius.circular(30.r),
+              bottomRight: Radius.circular(30.r),
             ),
           ),
           child: Column(
@@ -457,16 +462,16 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Good afternoon,',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(color: Colors.white70, fontSize: 14.sp),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           userName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.w600,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -478,7 +483,7 @@ class HomeScreen extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.notifications_none, color: Colors.white),
@@ -487,24 +492,24 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              const Text(
+              SizedBox(height: 24.h),
+              Text(
                 'Total Balance',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                style: TextStyle(color: Colors.white70, fontSize: 16.sp),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   '\$ ${totalBalance.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 36,
+                    fontSize: 36.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.h),
               Row(
                 children: [
                   Expanded(
@@ -515,7 +520,7 @@ class HomeScreen extends StatelessWidget {
                       color: AppColors.income,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: _buildIncomeExpenseCard(
                       title: 'Expense',
@@ -533,7 +538,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ INCOME/EXPENSE CARD
   Widget _buildIncomeExpenseCard({
     required String title,
     required String amount,
@@ -544,7 +548,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Row(
         children: [
@@ -554,24 +558,24 @@ class HomeScreen extends StatelessWidget {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 14),
+            child: Icon(icon, color: Colors.white, size: 14.sp),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white70, fontSize: 10),
+                  style: TextStyle(color: Colors.white70, fontSize: 10.sp),
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 Text(
                   amount,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -584,15 +588,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ SECTION TITLE
   Widget _buildSectionTitle(String title, String action) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -601,8 +604,8 @@ class HomeScreen extends StatelessWidget {
           onPressed: () {},
           child: Text(
             action,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               color: AppColors.textSecondary,
             ),
           ),
@@ -611,7 +614,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ TRANSACTIONS LIST
   Widget _buildTransactionList() {
     return StreamBuilder<QuerySnapshot>(
       stream: getTransactions(),
@@ -626,13 +628,13 @@ class HomeScreen extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
               padding: EdgeInsets.all(20.0),
               child: Text(
                 'No transactions yet\nTap + to add one!',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+                style: TextStyle(color: Colors.grey, fontSize: 16.sp),
               ),
             ),
           );
@@ -642,18 +644,37 @@ class HomeScreen extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: snapshot.data!.docs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => SizedBox(height: 12.h),
           itemBuilder: (context, index) {
             final doc = snapshot.data!.docs[index];
             final data = doc.data() as Map<String, dynamic>;
 
+            final raw = data['category'];
+
+            List<String> categories;
+
+            if (raw is List) {
+              categories = List<String>.from(raw);
+            } else if (raw is String) {
+              categories = [raw];
+            } else {
+              categories = [];
+            }
+
+            final categoriesText = categories.isEmpty
+                ? 'other'
+                : categories.join(', ');
+
+            final displayCategory =
+            categories.length > 1 ? 'multiple' : categories.firstOrNull ?? 'other';
+
             return GestureDetector(
               onTap: () => _showTransactionDetails(context, doc.id, data),
               child: TransactionItem(
-                icon: _getIconForCategory(data['category'] ?? 'other'),
-                iconBackgroundColor: _getColorForCategory(data['category'] ?? 'other'),
+                icon: _getIconForCategory(displayCategory),
+                iconBackgroundColor: _getColorForCategory(displayCategory),
                 title: data['title'] ?? 'Unknown',
-                subtitle: _formatDate(data['date']),
+                subtitle: categoriesText,
                 amount: (data['amount'] ?? 0).toDouble(),
                 isIncome: data['type'] == 'income',
               ),
@@ -664,7 +685,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ TRANSACTION DETAILS BOTTOM SHEET
   void _showTransactionDetails(BuildContext context, String docId, Map<String, dynamic> data) {
     final bool isIncome = data['type'] == 'income';
     final String title = data['title'] ?? 'Unknown';
@@ -676,16 +696,16 @@ class HomeScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, // ✅ مهم عشان الـ keyboard
+      isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         minChildSize: 0.4,
         maxChildSize: 0.85,
         expand: false,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
           ),
           child: SingleChildScrollView(
             controller: scrollController,
@@ -696,40 +716,39 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 24),
+                    width: 40.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 24.h),
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(2.r),
                     ),
                   ),
                 ),
 
-                // ✅ الأيقونة والعنوان
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _getColorForCategory(category).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Icon(
                         _getIconForCategory(category),
                         color: _getColorForCategory(category),
-                        size: 28,
+                        size: 28.sp,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: TextStyle(
+                              fontSize: 18.sp,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
@@ -738,7 +757,7 @@ class HomeScreen extends StatelessWidget {
                             Text(
                               '$itemCount items',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -748,34 +767,31 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
 
-                // ✅ المبلغ
                 Center(
                   child: Text(
                     '${isIncome ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 36,
+                      fontSize: 36.sp,
                       fontWeight: FontWeight.bold,
                       color: isIncome ? AppColors.income : AppColors.expense,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
 
-                // ✅ التفاصيل
                 _buildDetailRow('Type', isIncome ? 'Income' : 'Expense'),
-                const Divider(height: 16),
+                Divider(height: 16.h),
                 _buildDetailRow('Category', category.toUpperCase()),
-                const Divider(height: 16),
+                Divider(height: 16.h),
                 _buildDetailRow('Date', date != null ? _formatDate(date) : 'Unknown'),
-                const Divider(height: 16),
+                Divider(height: 16.h),
                 _buildDetailRow('Transaction ID', docId.substring(0, 8) + '...'),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
 
-                // ✅ زر Delete
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -787,12 +803,12 @@ class HomeScreen extends StatelessWidget {
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
               ],
             ),
           ),
@@ -808,14 +824,14 @@ class HomeScreen extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             color: Colors.grey[600],
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -824,7 +840,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ حذف Transaction مع تحديث الرصيد
   Future<void> _deleteTransaction(BuildContext context, String docId, double amount, bool isIncome) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -840,7 +855,7 @@ class HomeScreen extends StatelessWidget {
       double currentIncome = (data['totalIncome'] ?? 0).toDouble();
       double currentExpense = (data['totalExpense'] ?? 0).toDouble();
 
-      // ✅ حذف الـ Transaction
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -848,7 +863,6 @@ class HomeScreen extends StatelessWidget {
           .doc(docId)
           .delete();
 
-      // ✅ تحديث الرصيد
       if (isIncome) {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'totalBalance': currentBalance - amount,
@@ -864,26 +878,25 @@ class HomeScreen extends StatelessWidget {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Transaction deleted successfully')),
+        const SnackBar(content: Text('Transaction deleted successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: $e'),
+          content: Text('Error: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  // ✅ SEND AGAIN LIST
   Widget _buildSendAgainList(BuildContext context) {
     return SizedBox(
-      height: 80,
+      height: 80.h,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: 6,
-        padding: const EdgeInsets.only(right: 16),
+        padding: EdgeInsets.only(right: 16.w),
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
@@ -894,32 +907,32 @@ class HomeScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 56.w,
+                      height: 56.h,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.divider,
-                        border: Border.all(color: AppColors.primary, width: 2),
+                        border: Border.all(color: AppColors.primary, width: 2.w),
                       ),
-                      child: const Icon(Icons.person_add, color: AppColors.primary, size: 24),
+                      child: Icon(Icons.person_add, color: AppColors.primary, size: 24.sp),
                     ),
-                    const SizedBox(height: 4),
-                    const Text('Add', style: TextStyle(fontSize: 11, color: AppColors.primary)),
+                    SizedBox(height: 4.h),
+                    Text('Add', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
                   ],
                 ),
               ),
             );
           }
           return Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: EdgeInsets.only(right: 12.w),
             child: GestureDetector(
               onTap: () => _showTransferDialog(context, 'User $index'),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 56.w,
+                    height: 56.h,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.primary.withOpacity(0.1),
@@ -927,12 +940,12 @@ class HomeScreen extends StatelessWidget {
                     child: Center(
                       child: Text(
                         'A$index',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text('User $index', style: const TextStyle(fontSize: 11)),
+                  SizedBox(height: 4.h),
+                  Text('User $index', style: TextStyle(fontSize: 11.sp)),
                 ],
               ),
             ),
@@ -942,7 +955,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ ADD CONTACT DIALOG
   void _showAddContactDialog(BuildContext context) {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
@@ -992,7 +1004,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ TRANSFER DIALOG (للـ Send Again list)
   void _showTransferDialog(BuildContext context, String contactName) {
     final amountController = TextEditingController();
 
@@ -1028,7 +1039,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ✅ SUBMIT TRANSFER مع Validation
   Future<void> _submitTransfer({
     required BuildContext context,
     required String toUser,
@@ -1046,7 +1056,7 @@ class HomeScreen extends StatelessWidget {
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ User data not found!'),
+            content: Text('User data not found!'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1059,7 +1069,7 @@ class HomeScreen extends StatelessWidget {
       if (amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Please enter valid amount!'),
+            content: Text('Please enter valid amount!'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1070,7 +1080,7 @@ class HomeScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Insufficient balance! You have only \$${balance.toStringAsFixed(2)}',
+              'Insufficient balance! You have only \$${balance.toStringAsFixed(2)}',
             ),
             backgroundColor: Colors.red,
           ),
@@ -1097,20 +1107,19 @@ class HomeScreen extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Transferred \$${amount.toStringAsFixed(2)} to $toUser'),
+          content: Text('Transferred \$${amount.toStringAsFixed(2)} to $toUser'),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: $e'),
+          content: Text('Error: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  // ✅ HELPERS — تم التحديث بإضافة 'multiple'
   IconData _getIconForCategory(String category) {
     switch (category) {
       case 'work': return Icons.work_outline;

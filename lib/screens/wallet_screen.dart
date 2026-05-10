@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 import '../widgets/transaction_item.dart';
 
@@ -25,26 +26,26 @@ class WalletScreen extends StatelessWidget {
               alignment: Alignment.topCenter,
               children: [
                 Container(
-                  height: 120,
-                  decoration: const BoxDecoration(
+                  height: 120.h,
+                  decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
+                      bottomLeft: Radius.circular(30.r),
+                      bottomRight: Radius.circular(30.r),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+                  padding: EdgeInsets.only(top: 20.h, left: 20.w, right: 20.w),
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
+                          blurRadius: 10.r,
                           offset: const Offset(0, 5),
                         ),
                       ],
@@ -52,23 +53,23 @@ class WalletScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
+                         Text(
                           'Total Balance',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontSize: 14.sp,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8.h),
+                        Text(
                           '\$ 2,548.00',
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 32,
+                            fontSize: 32.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24.h),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
@@ -83,19 +84,19 @@ class WalletScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.divider.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(24.r),
                 ),
                 child: TabBar(
                   indicator: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(24.r),
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
                   labelColor: Colors.white,
@@ -107,7 +108,7 @@ class WalletScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Expanded(
               child: TabBarView(
                 children: [
@@ -133,11 +134,11 @@ class WalletScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: AppColors.textPrimary),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             color: AppColors.textPrimary,
           ),
         ),
@@ -147,7 +148,7 @@ class WalletScreen extends StatelessWidget {
 
   Widget _buildTransactionsTab() {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical:10.h),
       children: [
         const TransactionItem(
           icon: Icons.work_outline,
@@ -157,7 +158,7 @@ class WalletScreen extends StatelessWidget {
           amount: 850.00,
           isIncome: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         const TransactionItem(
           icon: Icons.person_outline,
           iconBackgroundColor: AppColors.expense,
@@ -166,7 +167,7 @@ class WalletScreen extends StatelessWidget {
           amount: 85.00,
           isIncome: false,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         TransactionItem(
           icon: Icons.payment,
           iconBackgroundColor: Colors.blue.shade600,
@@ -181,7 +182,7 @@ class WalletScreen extends StatelessWidget {
 
   Widget _buildUpcomingBillsTab() {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
       children: [
         _buildBillItem(
           icon: Icons.play_arrow,
@@ -190,7 +191,7 @@ class WalletScreen extends StatelessWidget {
           subtitle: 'Feb 28, 2022',
           amount: 11.99,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         _buildBillItem(
           icon: Icons.electrical_services,
           color: Colors.orange,
@@ -198,7 +199,7 @@ class WalletScreen extends StatelessWidget {
           subtitle: 'Mar 28, 2022',
           amount: 140.50,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         _buildBillItem(
           icon: Icons.home,
           color: Colors.green,
@@ -223,23 +224,23 @@ class WalletScreen extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: Icon(icon, color: color),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: 16.sp,
           color: AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 13,
+          fontSize: 13.sp,
         ),
       ),
       trailing: ElevatedButton(
@@ -248,10 +249,10 @@ class WalletScreen extends StatelessWidget {
           backgroundColor: AppColors.primary.withOpacity(0.1),
           foregroundColor: AppColors.primary,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           minimumSize: const Size(0, 36),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20.r),
           ),
         ),
         child: const Text('Pay'),

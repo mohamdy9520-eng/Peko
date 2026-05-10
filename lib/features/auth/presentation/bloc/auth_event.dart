@@ -16,11 +16,14 @@ class SignUpRequested extends AuthEvent {
   final String email;
   final String password;
   final String name;
+  final String username;
+
 
   SignUpRequested({
     required this.email,
     required this.password,
     required this.name,
+    required this.username,
   });
 }
 

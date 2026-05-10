@@ -38,7 +38,7 @@ class MainNavigationScreen extends StatelessWidget {
           children: [
             _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
             _buildNavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Stats', 1),
-            const SizedBox(width: 48), // Space for FAB
+            const SizedBox(width: 48),
             _buildNavItem(Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'Budget', 2),
             _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
           ],

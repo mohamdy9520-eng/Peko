@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,19 +30,19 @@ class _SplashScreenState extends State<SplashScreen> {
     final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
     final user = FirebaseAuth.instance.currentUser;
 
-    debugPrint('🔥 SPLASH: hasSeenOnboarding=$hasSeenOnboarding, user=${user?.email}, emailVerified=${user?.emailVerified}');
+    debugPrint('SPLASH: hasSeenOnboarding=$hasSeenOnboarding, user=${user?.email}, emailVerified=${user?.emailVerified}');
 
     if (!hasSeenOnboarding) {
-      debugPrint('🔥 GOING TO ONBOARDING');
+      debugPrint('GOING TO ONBOARDING');
       context.go('/onboarding');
     } else if (user == null) {
-      debugPrint('🔥 GOING TO LOGIN');
+      debugPrint('GOING TO LOGIN');
       context.go('/login');
     } else if (!user.emailVerified) {
-      debugPrint('🔥 GOING TO VERIFY EMAIL');
+      debugPrint('GOING TO VERIFY EMAIL');
       context.go('/verify-email');
     } else {
-      debugPrint('🔥 GOING TO MAIN');
+      debugPrint('GOING TO MAIN');
       context.go('/main');
     }
   }
@@ -62,15 +63,11 @@ class _SplashScreenState extends State<SplashScreen> {
             ],
           ),
         ),
-        child: const Center(
-          child: Text(
-            'pēco',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 48,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -1,
-            ),
+        child: Center(
+          child: Image.asset(
+            'assets/icon/pēco.png',
+            width: 300.w,
+            fit: BoxFit.contain,
           ),
         ),
       ),

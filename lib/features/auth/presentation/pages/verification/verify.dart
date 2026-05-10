@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   bool isEmailSent = false;
   bool isVerified = false;
   String? errorMessage;
-  int _countdown = 60; // ✅ عداد تنازلي
+  int _countdown = 60; //
   Timer? _countdownTimer;
   Timer? _checkTimer;
 
@@ -38,7 +39,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown > 0) {
-        setState(() => _countdown--); // ✅ يحدث كل ثانية
+        setState(() => _countdown--);
       } else {
         timer.cancel();
       }
@@ -103,33 +104,33 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 120,
-                height: 120,
+                width: 120.w,
+                height: 120.h,
                 decoration: BoxDecoration(
                   color: const Color(0xFF5FA89E).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.mark_email_unread_outlined, size: 60, color: Color(0xFF5FA89E)),
+                child: Icon(Icons.mark_email_unread_outlined, size: 60.sp, color: Color(0xFF5FA89E)),
               ),
-              const SizedBox(height: 32),
-              const Text('Verify Your Email', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF3E8E86))),
-              const SizedBox(height: 16),
+              SizedBox(height: 32.h),
+              Text('Verify Your Email', style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Color(0xFF3E8E86))),
+              SizedBox(height: 16.h),
               Text(
                 'We sent a verification link to:\n${FirebaseAuth.instance.currentUser?.email ?? 'your email'}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.grey, height: 1.5),
+                style: TextStyle(fontSize: 16.sp, color: Colors.grey, height: 1.5.h),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40.h),
 
               if (isVerified)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                  child: const Row(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12.r)),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.check_circle, color: Colors.green),
-                      SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       Text('Email Verified!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -138,7 +139,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 Column(
                   children: [
                     const CircularProgressIndicator(color: Color(0xFF5FA89E)),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Text(
                       'Checking email verification...',
                       style: TextStyle(color: Colors.grey.shade600),
@@ -146,11 +147,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   ],
                 ),
 
-              const SizedBox(height: 40),
+              SizedBox(height: 40.h),
 
               SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 55.h,
                 child: ElevatedButton(
                   onPressed: _countdown > 0
                       ? null
@@ -160,21 +161,21 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5FA89E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.r)),
                     elevation: 6,
                     disabledBackgroundColor: Colors.grey.shade300,
                   ),
                   child: Text(
                     _countdown > 0 ? 'Wait $_countdown seconds...' : 'Resend Email',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       color: _countdown > 0 ? Colors.grey.shade600 : Colors.white,
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               TextButton(
                 onPressed: () async {

@@ -1,130 +1,462 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:ai_expense_tracker/profile/screens_profile/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../features/budget/budget_screen.dart';
-import '../main_navigation_screen/main_navScreen.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/auth/presentation/pages/register_screen.dart';
 import '../features/auth/presentation/pages/verification/verify.dart';
-import '../features/home/presentation/pages/home_screen.dart';
-import '../features/onboarding/onboarding_screen.dart';
-import '../features/splash/splash_screen.dart';
-import '../income/add_income_screen.dart';
+
+import '../features/budget/AiResult_Screen/AiResult_screen.dart';
+import '../features/budget/budget_screen.dart';
+
 import '../features/expenses/add_expense_screen.dart';
-import '../screens/transaction_details_screen.dart';
+
+import '../features/home/allTransactions/AllTransactionsScreen.dart';
+import '../features/home/presentation/pages/home_screen.dart';
+
+import '../features/onboarding/onboarding_screen.dart';
+
+import '../features/splash/splash_screen.dart';
+
+import '../income/add_income_screen.dart';
+
+import '../main_navigation_screen/main_navScreen.dart';
+
+import '../profile/screens_profile/personal_profile_screen.dart';
 import '../screens/bill_payment_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/transaction_details_screen.dart';
+
 import '../stats_screen/statistic_screen.dart';
 
+class AppRoutes {
+
+  static const splash = '/';
+
+  static const onboarding = '/onboarding';
+
+  static const login = '/login';
+  static const signup = '/signup';
+  static const verifyEmail = '/verify-email';
+
+  static const home = '/home';
+
+  static const statistic = '/statistic';
+
+  static const budget = '/budget';
+
+  static const profile = '/profile';
+
+  static const addExpense = '/add-expense';
+
+  static const addIncome = '/add-income';
+
+  static const transactionDetails =
+      '/transaction-details';
+
+  static const billPayment = '/bill-payment';
+
+  static const transactions = '/transactions';
+
+  static const aiResult = '/ai-result';
+
+  static const main = '/main';
+}
+
 class AppRouter {
-  // ✅ Global Keys للـ Navigation
-  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
-  static final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
+
+  static final GlobalKey<NavigatorState>
+  rootNavigatorKey =
+  GlobalKey<NavigatorState>();
+
+  static final GlobalKey<NavigatorState>
+  shellNavigatorKey =
+  GlobalKey<NavigatorState>();
 
   static final GoRouter router = GoRouter(
+
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/',
+
+    initialLocation: AppRoutes.splash,
+
     debugLogDiagnostics: true,
 
+    errorBuilder: (context, state) {
+
+      return Scaffold(
+        backgroundColor: Colors.red[50],
+
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+
+              children: [
+
+                Icon(
+                  Icons.error_outline,
+                  size: 60.sp,
+                  color: Colors.red[300],
+                ),
+
+                SizedBox(height: 16.h),
+
+                Text(
+                  'Navigation Error',
+
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[800],
+                  ),
+                ),
+
+                SizedBox(height: 8.h),
+
+                Text(
+                  '${state.error}',
+
+                  textAlign: TextAlign.center,
+
+                  style: TextStyle(
+                    color: Colors.red[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+
     redirect: (context, state) {
-      final user = FirebaseAuth.instance.currentUser;
-      final location = state.matchedLocation;
 
-      final publicRoutes = ['/', '/onboarding', '/login', '/signup', '/verify-email'];
-      if (publicRoutes.contains(location)) return null;
+      final user =
+          FirebaseAuth.instance.currentUser;
 
-      if (user == null) return '/login';
-      if (!user.emailVerified) return '/verify-email';
+      final location =
+          state.matchedLocation;
 
-      final authRoutes = ['/login', '/signup', '/onboarding'];
-      if (authRoutes.contains(location)) return '/home';
+      final publicRoutes = [
+
+        AppRoutes.splash,
+
+        AppRoutes.onboarding,
+
+        AppRoutes.login,
+
+        AppRoutes.signup,
+
+        AppRoutes.verifyEmail,
+      ];
+
+      if (publicRoutes.contains(location)) {
+        return null;
+      }
+
+      // المستخدم غير مسجل
+      if (user == null) {
+        return AppRoutes.login;
+      }
+
+      // الإيميل غير متحقق
+      if (!user.emailVerified) {
+        return AppRoutes.verifyEmail;
+      }
+
+      // منع الرجوع لشاشات الـ auth
+      final authRoutes = [
+
+        AppRoutes.login,
+
+        AppRoutes.signup,
+
+        AppRoutes.onboarding,
+      ];
+
+      if (authRoutes.contains(location)) {
+        return AppRoutes.home;
+      }
 
       return null;
     },
 
     routes: [
-      // ✅ Public Routes (بدون Bottom Nav)
-      GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
-      GoRoute(path: '/verify-email', builder: (_, __) => const VerifyEmailScreen()),
 
-      // ✅ StatefulShellRoute.indexedStack — كل الـ Tabs مع Bottom Nav
+      /// Splash
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (_, __) =>
+        const SplashScreen(),
+      ),
+
+      /// Onboarding
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (_, __) =>
+        const OnboardingScreen(),
+      ),
+
+      /// Login
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (_, __) =>
+        const LoginScreen(),
+      ),
+
+      /// Register
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (_, __) =>
+        const SignUpScreen(),
+      ),
+
+      /// Verify Email
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (_, __) =>
+        const VerifyEmailScreen(),
+      ),
+
+      /// Bottom Navigation Shell
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
+
+        builder: (
+            context,
+            state,
+            navigationShell,
+            ) {
+
           return MainNavigationScreen(
-            navigationShell: navigationShell,
+            navigationShell:
+            navigationShell,
           );
         },
+
         branches: [
-          // 🔹 Home Tab
+
+          /// Home Branch
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'homeBranch'),
+
+            navigatorKey:
+            GlobalKey<NavigatorState>(
+              debugLabel: 'homeBranch',
+            ),
+
             routes: [
+
               GoRoute(
-                path: '/home',
-                builder: (_, __) => HomeScreen(),
+                path: AppRoutes.home,
+
+                builder: (_, __) =>
+                    HomeScreen(),
               ),
             ],
           ),
-          // 🔹 Stats Tab
+
+          /// Statistics Branch
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'statsBranch'),
+
+            navigatorKey:
+            GlobalKey<NavigatorState>(
+              debugLabel: 'statsBranch',
+            ),
+
             routes: [
+
               GoRoute(
-                path: '/statistic',
-                builder: (_, __) => const StatisticScreen(),
+                path: AppRoutes.statistic,
+
+                builder: (_, __) =>
+                const StatisticScreen(),
               ),
             ],
           ),
-          // 🔹 Budget Tab
+
+          /// Budget Branch
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'budgetBranch'),
+
+            navigatorKey:
+            GlobalKey<NavigatorState>(
+              debugLabel: 'budgetBranch',
+            ),
+
             routes: [
+
               GoRoute(
-                path: '/budget',
-                builder: (_, __) => const BudgetScreen(),
+                path: AppRoutes.budget,
+
+                builder: (_, __) =>
+                const BudgetScreen(),
               ),
             ],
           ),
-          // 🔹 Profile Tab
+
+          /// Profile Branch
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(debugLabel: 'profileBranch'),
+
+            navigatorKey:
+            GlobalKey<NavigatorState>(
+              debugLabel:
+              'profileBranch',
+            ),
+
             routes: [
+
               GoRoute(
-                path: '/profile',
-                builder: (_, __) => const ProfileScreen(),
+                path: AppRoutes.profile,
+
+                builder: (_, __) =>
+                const ProfileScreen(),
               ),
             ],
           ),
         ],
       ),
 
-      // ✅ صفحات خارج الـ BottomNav (تظهر فوق كل حاجة)
+      /// Add Expense
       GoRoute(
-        path: '/add-expense',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, __) => const AddExpenseScreen(),
-      ),
-      GoRoute(
-        path: '/add-income',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, __) => const AddIncomeScreen(),
-      ),
-      GoRoute(
-        path: '/transaction-details',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, __) => const TransactionDetailsScreen(),
-      ),
-      GoRoute(
-        path: '/bill-payment',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, __) => const BillPaymentScreen(),
+
+        path: AppRoutes.addExpense,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (_, __) =>
+        const AddExpenseScreen(),
       ),
 
-      // ✅ Redirects
-      GoRoute(path: '/main', redirect: (_, __) => '/home'),
+      /// Add Income
+      GoRoute(
+
+        path: AppRoutes.addIncome,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (_, __) =>
+        const AddIncomeScreen(),
+      ),
+
+      /// Transaction Details
+      GoRoute(
+
+        path:
+        AppRoutes.transactionDetails,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (_, __) =>
+        const TransactionDetailsScreen(),
+      ),
+
+      /// Bill Payment
+      GoRoute(
+
+        path: AppRoutes.billPayment,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (_, __) =>
+        const BillPaymentScreen(),
+      ),
+
+      /// All Transactions
+      GoRoute(
+
+        path: AppRoutes.transactions,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (_, __) =>
+        const AllTransactionsScreen(),
+      ),
+
+      /// AI Result
+      GoRoute(
+
+        path: AppRoutes.aiResult,
+
+        parentNavigatorKey:
+        rootNavigatorKey,
+
+        builder: (context, state) {
+
+          final extra = state.extra;
+
+          if (extra == null) {
+
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  'No data received',
+                ),
+              ),
+            );
+          }
+
+          if (extra
+          is! Map<String, dynamic>) {
+
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  'Invalid data format',
+                ),
+              ),
+            );
+          }
+
+          final plan = extra['plan'];
+
+          final planType =
+          extra['planType'];
+
+          if (plan == null ||
+              planType == null) {
+
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  'Missing plan or planType',
+                ),
+              ),
+            );
+          }
+
+          if (plan is! String ||
+              planType is! String) {
+
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  'Invalid data types',
+                ),
+              ),
+            );
+          }
+
+          return AIResultScreen(
+            plan: plan,
+            planType: planType,
+          );
+        },
+      ),
+
+      /// Main Redirect
+      GoRoute(
+        path: AppRoutes.main,
+
+        redirect: (_, __) =>
+        AppRoutes.home,
+      ),
     ],
   );
 }

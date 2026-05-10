@@ -1,4 +1,3 @@
-// lib/features/home/domain/repositories/transaction_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 abstract class TransactionRepository {

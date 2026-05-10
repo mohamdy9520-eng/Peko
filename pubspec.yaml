@@ -27,7 +27,7 @@ dependencies:
   # Database & Storage
   sqflite: ^2.3.2
   path: ^1.9.0
-  path_provider: ^2.1.2
+  path_provider: ^2.1.5
   shared_preferences: ^2.5.5
 
   # Authentication
@@ -42,7 +42,8 @@ dependencies:
   # Image & ML
   camera: ^0.10.5+9
   image_picker: ^1.1.1
-  google_mlkit_text_recognition: ^0.11.0
+  google_mlkit_text_recognition: ^0.15.1
+  http: ^1.2.1
 
   # Notifications
   flutter_local_notifications: ^17.1.2
@@ -51,6 +52,13 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_bloc: ^9.1.1
   get_it: ^9.2.1
+  share_plus: ^10.0.0
+  archive: ^4.0.9
+  pdf: ^3.12.0
+  flutter_markdown_plus: ^1.0.7
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+
 
 dev_dependencies:
   flutter_test:
@@ -64,3 +72,21 @@ flutter:
     - assets/images/
     - assets/fonts/
     - assets/lottie/
+    - assets/icon/pēco.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  image_path: "assets/icon/pēco.png"
+
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/pēco.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/icon/pēco.png
+
+  android_12:
+    image: assets/icon/pēco.png
+    color: "#FFFFFF"

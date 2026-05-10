@@ -6,13 +6,11 @@ class GoogleAuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      /// مهم عشان يفتح اختيار الحساب كل مرة
       await _googleSignIn.signOut();
 
       final GoogleSignInAccount? googleUser =
       await _googleSignIn.signIn();
 
-      /// لو المستخدم عمل Cancel
       if (googleUser == null) {
         print("User cancelled");
         return null;

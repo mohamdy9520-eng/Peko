@@ -16,13 +16,22 @@ class StatisticScreen extends StatefulWidget {
 }
 
 class _StatisticScreenState extends State<StatisticScreen> {
-  int _selectedFilterIndex = 2; // Default: Month
+  int _selectedFilterIndex = 2;
   final List<String> _filters = ['Day', 'Week', 'Month', 'Year'];
-  String _selectedType = 'expense'; // expense or income
+  String _selectedType = 'expense';
 
-  // ═══════════════════════════════════════════════════════
-  // FIRESTORE STREAM
-  // ═══════════════════════════════════════════════════════
+
+
+  String _safeCategory(dynamic categoryData) {
+    if (categoryData == null) return 'other';
+    if (categoryData is String) return categoryData;
+    if (categoryData is List && categoryData.isNotEmpty) {
+      return categoryData.first.toString();
+    }
+    return 'other';
+  }
+
+
 
   Stream<QuerySnapshot> getTransactions() {
     final user = FirebaseAuth.instance.currentUser;
@@ -36,7 +45,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
         startDate = DateTime(now.year, now.month, now.day);
         break;
       case 'Week':
-        startDate = now.subtract(Duration(days: now.weekday - 1)); // Start of week
+        startDate = now.subtract(Duration(days: now.weekday - 1));
         break;
       case 'Year':
         startDate = DateTime(now.year, 1, 1);
@@ -55,14 +64,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
         .snapshots();
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════
+
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _selectedFilterIndex == 2, // 👈 يسمح بالخروج بس لو Month
+      canPop: _selectedFilterIndex == 2,
       onPopInvoked: (didPop) {
         if (!didPop && _selectedFilterIndex != 2) {
           setState(() {
@@ -73,24 +80,14 @@ class _StatisticScreenState extends State<StatisticScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text(
-            'Statistics',
-            style: TextStyle(color: AppColors.textPrimary),
+          title: Center(
+            child: Text(
+              'Statistics',
+              style: TextStyle(color: AppColors.textPrimary,fontSize: 25.sp,fontWeight: FontWeight.bold),
+            ),
           ),
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: AppColors.textPrimary),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
-            onPressed: () {
-              if (_selectedFilterIndex != 2) {
-                setState(() {
-                  _selectedFilterIndex = 2;
-                });
-              } else {
-                context.pop();
-              }
-            },
-          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.download_outlined),
@@ -123,19 +120,19 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildPeriodFilters(),
-                  const SizedBox(height: 24),
+                   SizedBox(height: 24.h),
                   _buildStatisticsCards(transactions),
-                  const SizedBox(height: 24),
+                   SizedBox(height: 24.h),
                   _buildTypeToggle(),
-                  const SizedBox(height: 24),
+                   SizedBox(height: 24.h),
                   _buildLineChart(filteredTransactions),
-                  const SizedBox(height: 32),
+                   SizedBox(height: 32.h),
                   _buildPieChart(filteredTransactions),
-                  const SizedBox(height: 32),
+                   SizedBox(height: 32.h),
                   _buildBarChart(filteredTransactions),
-                  const SizedBox(height: 32),
+                   SizedBox(height: 32.h),
                   _buildTopTransactions(filteredTransactions),
-                  const SizedBox(height: 32),
+                   SizedBox(height: 32.h),
                   _buildInsights(transactions),
                 ],
               ),
@@ -146,9 +143,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // UI COMPONENTS
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildPeriodFilters() {
     return Row(
@@ -158,10 +153,10 @@ class _StatisticScreenState extends State<StatisticScreen> {
         return GestureDetector(
           onTap: () => setState(() => _selectedFilterIndex = index),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding:  EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isSelected ? AppColors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
             child: Text(
               _filters[index],
@@ -183,7 +178,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
         GestureDetector(
           onTap: () => setState(() => _selectedType = 'expense'),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding:  EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: _selectedType == 'expense' ? AppColors.expense.withOpacity(0.1) : null,
               border: Border.all(
@@ -200,17 +195,17 @@ class _StatisticScreenState extends State<StatisticScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+         SizedBox(width: 8.w),
         GestureDetector(
           onTap: () => setState(() => _selectedType = 'income'),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: _selectedType == 'income' ? AppColors.income.withOpacity(0.1) : null,
               border: Border.all(
                 color: _selectedType == 'income' ? AppColors.income : AppColors.border,
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
               'Income',
@@ -225,9 +220,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // STATISTICS CARDS (KPIs)
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildStatisticsCards(List<Map<String, dynamic>> transactions) {
     double totalIncome = 0;
@@ -248,15 +241,15 @@ class _StatisticScreenState extends State<StatisticScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+         Text(
           'Summary',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -267,21 +260,21 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 AppColors.expense,
                 Icons.arrow_upward,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               _buildStatCard(
                 'Total Income',
                 '\$${totalIncome.toStringAsFixed(0)}',
                 AppColors.income,
                 Icons.arrow_downward,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               _buildStatCard(
                 'Net',
                 '\$${net.toStringAsFixed(0)}',
                 net >= 0 ? AppColors.income : AppColors.expense,
                 net >= 0 ? Icons.trending_up : Icons.trending_down,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               _buildStatCard(
                 'Count',
                 '$count',
@@ -297,30 +290,30 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
   Widget _buildStatCard(String title, String value, Color color, IconData icon) {
     return Container(
-      width: 140,
+      width: 140.w,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
+          Icon(icon, color: color, size: 24.sp),
+          SizedBox(height: 12.h),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.h),
           Text(
             title,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               color: Colors.grey[600],
             ),
           ),
@@ -329,9 +322,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // CHARTS
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildLineChart(List<Map<String, dynamic>> transactions) {
     if (transactions.isEmpty) return const SizedBox.shrink();
@@ -351,15 +342,15 @@ class _StatisticScreenState extends State<StatisticScreen> {
       children: [
         Text(
           '${_selectedType.toUpperCase()} Trend',
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         SizedBox(
-          height: 200,
+          height: 200.h,
           child: LineChart(
             LineChartData(
               gridData: const FlGridData(show: false),
@@ -367,14 +358,14 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 30,
+                    reservedSize: 30.w,
                     getTitlesWidget: (value, meta) {
                       if (value.toInt() >= 0 && value.toInt() < sortedKeys.length) {
                         return Text(
                           sortedKeys[value.toInt()],
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 10,
+                            fontSize: 10.sp,
                           ),
                         );
                       }
@@ -385,13 +376,13 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 40,
+                    reservedSize: 40.w,
                     getTitlesWidget: (value, meta) {
                       return Text(
                         '\$${value.toInt()}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 10,
+                          fontSize: 10.sp,
                         ),
                       );
                     },
@@ -415,15 +406,15 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   }),
                   isCurved: true,
                   color: _selectedType == 'expense' ? AppColors.expense : AppColors.income,
-                  barWidth: 3,
+                  barWidth: 3.w,
                   isStrokeCapRound: true,
                   dotData: FlDotData(
                     show: true,
                     getDotPainter: (spot, percent, barData, index) {
                       return FlDotCirclePainter(
-                        radius: 4,
+                        radius: 4.r,
                         color: _selectedType == 'expense' ? AppColors.expense : AppColors.income,
-                        strokeWidth: 2,
+                        strokeWidth: 2.w,
                         strokeColor: Colors.white,
                       );
                     },
@@ -442,36 +433,34 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ✅ الدالة الوحيدة والمصلحة
   Widget _buildPieChart(List<Map<String, dynamic>> transactions) {
     if (transactions.isEmpty) return const SizedBox.shrink();
 
     Map<String, double> categoryData = {};
     for (var t in transactions) {
-      String cat = t['category'] ?? 'other';
+      String cat = _safeCategory(t['category']);
       categoryData[cat] = (categoryData[cat] ?? 0) + (t['amount'] ?? 0).toDouble();
     }
 
     if (categoryData.isEmpty)
       return const SizedBox.shrink();
 
-
     final total = categoryData.values.reduce((a, b) => a + b);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+         Text(
           'Distribution',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         SizedBox(
-          height: 200,
+          height: 200.h,
           child: PieChart(
             PieChartData(
               sections: categoryData.entries.map((entry) {
@@ -480,36 +469,36 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   value: entry.value,
                   color: _getCategoryColor(entry.key),
                   title: '${percentage.toStringAsFixed(0)}%',
-                  radius: 80,
-                  titleStyle: const TextStyle(
+                  radius: 80.r,
+                  titleStyle: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 12.sp,
                   ),
                 );
               }).toList(),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
+              sectionsSpace: 2.r,
+              centerSpaceRadius: 40.r,
             ),
           ),
         ),
-        const SizedBox(height: 24), // ✅ المسافة بين PieChart والـ Legend
+        SizedBox(height: 24.h),
         Wrap(
-          spacing: 16,
-          runSpacing: 12,
+          spacing: 16.w,
+          runSpacing: 12.h,
           alignment: WrapAlignment.center,
           children: categoryData.entries.map((entry) {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircleAvatar(
-                  radius: 6,
+                  radius: 6.r,
                   backgroundColor: _getCategoryColor(entry.key),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Text(
                   entry.key.toUpperCase(),
-                  style: const TextStyle(fontSize: 11),
+                  style: TextStyle(fontSize: 11.sp),
                 ),
               ],
             );
@@ -524,7 +513,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
     Map<String, double> categoryData = {};
     for (var t in transactions) {
-      String cat = t['category'] ?? 'other';
+      String cat = _safeCategory(t['category']);
       categoryData[cat] = (categoryData[cat] ?? 0) + (t['amount'] ?? 0).toDouble();
     }
 
@@ -535,17 +524,17 @@ class _StatisticScreenState extends State<StatisticScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+         Text(
           'By Category',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 18.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         SizedBox(
-          height: 200,
+          height: 200.h,
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
@@ -558,10 +547,10 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     getTitlesWidget: (value, meta) {
                       if (value.toInt() < sorted.length) {
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: EdgeInsets.only(top: 8.h),
                           child: Text(
                             sorted[value.toInt()].key.substring(0, 3).toUpperCase(),
-                            style: const TextStyle(fontSize: 10),
+                            style: TextStyle(fontSize: 10.sp),
                           ),
                         );
                       }
@@ -572,11 +561,11 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 40,
+                    reservedSize: 40.r,
                     getTitlesWidget: (value, meta) {
                       return Text(
                         '\$${value.toInt()}',
-                        style: const TextStyle(fontSize: 10),
+                        style: TextStyle(fontSize: 10.sp),
                       );
                     },
                   ),
@@ -592,8 +581,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     BarChartRodData(
                       toY: sorted[index].value,
                       color: _getCategoryColor(sorted[index].key),
-                      width: 20,
-                      borderRadius: BorderRadius.circular(4),
+                      width: 20.w,
+                      borderRadius: BorderRadius.circular(4.r),
                     ),
                   ],
                 );
@@ -605,9 +594,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // TOP TRANSACTIONS
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildTopTransactions(List<Map<String, dynamic>> transactions) {
     if (transactions.isEmpty) return const SizedBox.shrink();
@@ -622,10 +609,10 @@ class _StatisticScreenState extends State<StatisticScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Top Transactions',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -636,13 +623,14 @@ class _StatisticScreenState extends State<StatisticScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         ...top3.map((t) {
+          final category = _safeCategory(t['category']);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(bottom: 12.h),
             child: TransactionItem(
-              icon: _getIconForCategory(t['category'] ?? 'other'),
-              iconBackgroundColor: _getCategoryColor(t['category'] ?? 'other'),
+              icon: _getIconForCategory(category),
+              iconBackgroundColor: _getCategoryColor(category),
               title: t['title'] ?? 'Unknown',
               subtitle: _formatDate(t['date']),
               amount: (t['amount'] ?? 0).toDouble(),
@@ -654,15 +642,13 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // INSIGHTS (AI)
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildInsights(List<Map<String, dynamic>> transactions) {
     Map<String, double> categoryTotals = {};
     for (var t in transactions) {
       if (t['type'] == 'expense') {
-        String cat = t['category'] ?? 'other';
+        String cat = _safeCategory(t['category']);
         categoryTotals[cat] = (categoryTotals[cat] ?? 0) + (t['amount'] ?? 0).toDouble();
       }
     }
@@ -693,7 +679,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
             ),
             child: const Icon(Icons.lightbulb, color: Colors.amber),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -705,12 +691,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     color: Colors.amber,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   'You spent most on ${topCategory.key.toUpperCase()} (\$${topCategory.value.toStringAsFixed(0)})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: 13.sp,
                   ),
                 ),
               ],
@@ -721,9 +707,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // EMPTY STATE
-  // ═══════════════════════════════════════════════════════
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -731,19 +715,19 @@ class _StatisticScreenState extends State<StatisticScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.bar_chart, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             'No data for ${_filters[_selectedFilterIndex]}',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               color: Colors.grey[500],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             'Add some transactions first!',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               color: Colors.grey[400],
             ),
           ),
@@ -752,19 +736,15 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // EXPORT
-  // ═══════════════════════════════════════════════════════
+
 
   void _exportData() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('📊 Export feature coming soon!')),
+      const SnackBar(content: Text('Export feature coming soon!')),
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════
+
 
   Color _getCategoryColor(String category) {
     switch (category) {

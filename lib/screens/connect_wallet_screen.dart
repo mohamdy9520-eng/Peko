@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 import '../widgets/custom_button.dart';
 
@@ -15,7 +16,7 @@ class ConnectWalletScreen extends StatelessWidget {
           title: const Text('Connect Wallet'),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            icon: Icon(Icons.arrow_back_ios, size: 20.sp),
             onPressed: () {},
           ),
           actions: [
@@ -30,17 +31,17 @@ class ConnectWalletScreen extends StatelessWidget {
             Container(
               color: AppColors.primary,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                 child: Container(
-                  height: 48,
+                  height: 48.h,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(24.r),
                   ),
                   child: TabBar(
                     indicator: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(24.r),
                     ),
                     indicatorSize: TabBarIndicatorSize.tab,
                     labelColor: AppColors.primary,
@@ -73,9 +74,8 @@ class ConnectWalletScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dummy Card Graphic
           Container(
-            height: 180,
+            height: 180.h,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -83,7 +83,7 @@ class ConnectWalletScreen extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -93,46 +93,46 @@ class ConnectWalletScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Debit Card', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Text('Debit Card', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
                     Row(
                       children: [
-                        Container(width: 16, height: 16, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                        Container(width: 16.w, height: 16.h, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
                         Transform.translate(
-                          offset: const Offset(-8, 0),
-                          child: Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.orange.withOpacity(0.8), shape: BoxShape.circle)),
+                          offset: Offset(-8.w, 0),
+                          child: Container(width: 16.w, height: 16.h, decoration: BoxDecoration(color: Colors.orange.withOpacity(0.8), shape: BoxShape.circle)),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const Text('**** **** **** 3478', style: TextStyle(color: Colors.white, fontSize: 22, letterSpacing: 2)),
+                Text('**** **** **** 3478', style: TextStyle(color: Colors.white, fontSize: 22.sp, letterSpacing: 2.sp)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('11/24', style: TextStyle(color: Colors.white, fontSize: 16)),
-                    const Text('11/25', style: TextStyle(color: Colors.white, fontSize: 16)),
+                     Text('11/24', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+                     Text('11/25', style: TextStyle(color: Colors.white, fontSize: 16.sp)),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+           SizedBox(height: 32.h),
           const Text('Add your debit card', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
+           SizedBox(height: 8.h),
           const Text('This card must be linked to a bank account.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          const SizedBox(height: 24),
+           SizedBox(height: 24.h),
           _buildTextField('NAME ON CARD', 'ENJELIN MORGEANA'),
-          const SizedBox(height: 16),
+           SizedBox(height: 16.h),
           _buildTextField('DEBIT CARD NUMBER', '**** **** **** 3478'),
-          const SizedBox(height: 16),
+           SizedBox(height: 16.h),
           Row(
             children: [
               Expanded(child: _buildTextField('EXPIRATION DATE', '11/25')),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(child: _buildTextField('CVV', '***')),
             ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32.h),
           CustomButton(text: 'Next', onPressed: () {}),
         ],
       ),
@@ -149,14 +149,14 @@ class ConnectWalletScreen extends StatelessWidget {
           subtitle: 'Connect your bank account to deposit & fund',
           isSelected: true,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         _buildAccountOption(
           icon: Icons.attach_money,
           title: 'Microdeposits',
           subtitle: 'Connect bank in 5-7 days',
           isSelected: false,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.h),
         _buildAccountOption(
           icon: Icons.payment,
           title: 'Paypal',
@@ -172,19 +172,19 @@ class ConnectWalletScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
+          Text(label, style: TextStyle(fontSize: 10.sp, color: AppColors.textTertiary)),
           TextField(
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
               isDense: true,
-              contentPadding: const EdgeInsets.only(top: 4),
+              contentPadding: EdgeInsets.only(top: 4.h),
             ),
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
@@ -203,27 +203,27 @@ class ConnectWalletScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.scaffoldBackground,
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.textSecondary),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16.sp)),
+                SizedBox(height: 4.h),
+                Text(subtitle, style: TextStyle(color: AppColors.textSecondary, fontSize: 12.sp)),
               ],
             ),
           ),

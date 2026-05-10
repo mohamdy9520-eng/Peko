@@ -4,15 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-// ═══════════════════════════════════════════════════════
-// EVENTS
-// ═══════════════════════════════════════════════════════
+
 
 abstract class StatisticsEvent {}
 
 class LoadStatistics extends StatisticsEvent {
-  final int filterIndex; // 0=Day, 1=Week, 2=Month, 3=Year
-  final String type;     // 'expense' or 'income'
+  final int filterIndex;
+  final String type;
 
   LoadStatistics({this.filterIndex = 2, this.type = 'expense'});
 }
@@ -32,9 +30,7 @@ class ChangeType extends StatisticsEvent {
   ChangeType(this.type);
 }
 
-// ═══════════════════════════════════════════════════════
-// STATES
-// ═══════════════════════════════════════════════════════
+
 
 abstract class StatisticsState {}
 
@@ -73,9 +69,7 @@ class StatisticsError extends StatisticsState {
   StatisticsError(this.message);
 }
 
-// ═══════════════════════════════════════════════════════
-// BLOC
-// ═══════════════════════════════════════════════════════
+
 
 class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   final FirebaseFirestore _firestore;
@@ -98,9 +92,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     on<ChangeType>(_onChangeType);
   }
 
-  // ═══════════════════════════════════════════════════════
-  // EVENT HANDLERS
-  // ═══════════════════════════════════════════════════════
+
 
   Future<void> _onLoad(LoadStatistics event, Emitter<StatisticsState> emit) async {
     emit(StatisticsLoading());
@@ -156,19 +148,15 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
 
   void _onChangeFilter(ChangeFilter event, Emitter<StatisticsState> emit) {
     _currentFilterIndex = event.filterIndex;
-    // Re-trigger load with new filter
     add(LoadStatistics(filterIndex: _currentFilterIndex, type: _currentType));
   }
 
   void _onChangeType(ChangeType event, Emitter<StatisticsState> emit) {
     _currentType = event.type;
-    // Re-trigger load with new type
     add(LoadStatistics(filterIndex: _currentFilterIndex, type: _currentType));
   }
 
-  // ═══════════════════════════════════════════════════════
-  // HELPERS (Date & Filter)
-  // ═══════════════════════════════════════════════════════
+
 
   DateTime _getStartDate(int filterIndex) {
     final now = DateTime.now();
@@ -185,9 +173,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════
-  // CALCULATIONS (Pie, Bar, Line, Summary, Insights)
-  // ═══════════════════════════════════════════════════════
+
 
   Map<String, double> _calculatePieData(List<Map<String, dynamic>> transactions) {
     final Map<String, double> categoryData = {};
@@ -206,7 +192,6 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
       final amount = (t['amount'] ?? 0).toDouble();
       categoryData[cat] = (categoryData[cat] ?? 0) + amount;
     }
-    // Sort by value descending
     final sorted = Map.fromEntries(
       categoryData.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
     );
@@ -221,7 +206,6 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
       final key = DateFormat('MM/dd').format(date);
       dailyData[key] = (dailyData[key] ?? 0) + (t['amount'] ?? 0).toDouble();
     }
-    // Sort by date
     final sortedKeys = dailyData.keys.toList()..sort();
     return {for (final k in sortedKeys) k: dailyData[k]!};
   }
@@ -266,9 +250,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     return 'You spent most on ${topCategory.key.toUpperCase()} (\$${topCategory.value.toStringAsFixed(0)})';
   }
 
-  // ═══════════════════════════════════════════════════════
-  // DISPOSE
-  // ═══════════════════════════════════════════════════════
+
 
   @override
   Future<void> close() {

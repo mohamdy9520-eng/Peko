@@ -17,35 +17,56 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> signUp(String name, String email, String password) async {
+  Future<void> signUpWithUsername({
+    required String name,
+    required String email,
+    required String password,
+    required String username,
+  }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
 
-    // ✅ أنشئ الـ User Document فوراً مع القيم الابتدائية
-    await _firestore.collection('users').doc(userCredential.user!.uid).set({
-      'name': name,
-      'email': email,
-      'totalBalance': 0.0,
-      'totalIncome': 0.0,
-      'totalExpense': 0.0,
-      'createdAt': Timestamp.now(),
-      'imageUrl': '',
+    final user = userCredential.user!;
+    final usernameRef =
+    _firestore.collection('usernames').doc(username);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(usernameRef);
+
+      if (snapshot.exists) {
+        throw Exception('Username already taken');
+      }
+
+      transaction.set(usernameRef, {
+        'uid': user.uid,
+      });
+
+      transaction.set(
+        _firestore.collection('users').doc(user.uid),
+        {
+          'name': name,
+          'email': email,
+          'username': username,
+          'totalBalance': 0.0,
+          'totalIncome': 0.0,
+          'totalExpense': 0.0,
+          'createdAt': Timestamp.now(),
+          'imageUrl': '',
+        },
+      );
     });
 
-    // ✅ ابعت إيميل التحقق
-    await userCredential.user?.sendEmailVerification();
+    await user.sendEmailVerification();
   }
 
   @override
   Future<void> signInWithGoogle() async {
-    // placeholder - نربطه لاحقًا مع Google SignIn
   }
 
   @override
   Future<void> signInWithFacebook() async {
-    // placeholder
   }
 
   @override

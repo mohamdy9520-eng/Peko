@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -19,8 +20,8 @@ class OnboardingScreen extends StatelessWidget {
               child: Center(
                 child: Lottie.asset(
                   'assets/lottie/Revenue.json',
-                  width: 350,
-                  height: 350,
+                  width: 350.w,
+                  height: 350.h,
                   fit: BoxFit.contain,
                   repeat: true,
                 ),
@@ -29,52 +30,51 @@ class OnboardingScreen extends StatelessWidget {
             Expanded(
               flex: 4,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
+                    top: Radius.circular(30.r),
                   ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "Spend Smarter\nSave More",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF3E8E86),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     SizedBox(
                       width: double.infinity,
-                      height: 55,
+                      height: 55.h,
                       child: ElevatedButton(
                         onPressed: () async {
-                          // ✅ احفظ إنه شاف Onboarding
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('has_seen_onboarding', true);
 
                           debugPrint('🔥 Going to SIGNUP from Onboarding');
-                          context.go('/signup'); // ✅ لازم تروح SignUp
+                          context.go('/signup');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5FA89E),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(30.r),
                           ),
                           elevation: 6,
                         ),
-                        child: const Text(
+                        child: Text(
                           "Get Started",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: TextStyle(fontSize: 16.sp, color: Colors.white),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    SizedBox(height: 15.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

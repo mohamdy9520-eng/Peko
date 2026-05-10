@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../theme/app_colors.dart';
 
 class TransactionItem extends StatelessWidget {
@@ -24,10 +25,10 @@ class TransactionItem extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
-        padding: const EdgeInsets.all(12),
+        padding:EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: iconBackgroundColor.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.r),
         ),
         child: Icon(
           icon,
@@ -36,24 +37,24 @@ class TransactionItem extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: 16.sp,
           color: AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
+        style:TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 13,
+          fontSize: 13.sp,
         ),
       ),
       trailing: Text(
         '${isIncome ? '+' : '-'} \$${amount.toStringAsFixed(2)}',
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: 16.sp,
           color: isIncome ? AppColors.income : AppColors.expense,
         ),
       ),

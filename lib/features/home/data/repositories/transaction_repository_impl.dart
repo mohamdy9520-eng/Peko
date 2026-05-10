@@ -1,4 +1,3 @@
-// lib/features/home/data/repositories/transaction_repository_impl.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/repostories/transaction_repository.dart';
@@ -18,7 +17,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Stream<QuerySnapshot> getTransactions() {
     final userId = _currentUserId;
-    if (userId == null) return Stream.empty();
+    if (userId == null) return const Stream.empty();
 
     return _firestore
         .collection('users')
@@ -32,7 +31,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Stream<QuerySnapshot> getTransactionsByDate(DateTime startDate) {
     final userId = _currentUserId;
-    if (userId == null) return Stream.empty();
+    if (userId == null) return const Stream.empty();
 
     return _firestore
         .collection('users')
@@ -46,7 +45,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Stream<DocumentSnapshot> getUserData() {
     final userId = _currentUserId;
-    if (userId == null) return Stream.empty();
+    if (userId == null) return const Stream.empty();
 
     return _firestore.collection('users').doc(userId).snapshots();
   }

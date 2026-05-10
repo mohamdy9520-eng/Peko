@@ -24,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool isLoading = false;
 
-  /// 🔐 Email/Password Login
   Future<void> login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -37,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (!mounted) return;
-      context.go('/main'); // ✅ بدل /home
+      context.go('/main');
     } on FirebaseAuthException catch (e) {
       String msg = "Login failed";
 
@@ -56,7 +55,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// 🔵 Google Sign-In
   Future<void> signInWithGoogle() async {
     try {
       setState(() => isLoading = true);
@@ -75,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       if (!mounted) return;
-      context.go('/main'); // ✅ بدل /home
+      context.go('/main');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Google sign-in failed")),
@@ -103,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (state is AuthFailure) {
-          Navigator.pop(context); // close loading
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message)),
           );
@@ -129,19 +127,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
 
-                      /// Email
                       TextFormField(
                         controller: emailController,
                         decoration: InputDecoration(
                           labelText: "Email",
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(12.r),
+                            borderSide: BorderSide(
                               color: Colors.green,
-                              width: 2,
+                              width: 2.w,
                             ),
                           ),
                         ),
@@ -158,20 +155,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 10.h),
 
-                      /// Password
                       TextFormField(
                         controller: passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
+                            borderRadius: BorderRadius.circular(12.r),
+                            borderSide: BorderSide(
                               color: Colors.green,
-                              width: 2,
+                              width: 2.w,
                             ),
                           ),
                         ),
@@ -188,7 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 20.h),
 
-                      /// Login Button
                       ElevatedButton(
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
@@ -200,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             }
                           },
-                        child: const Text("Login"), // ✅ مهم
+                        child: const Text("Login"),
                       ),
 
                       SizedBox(height: 10.h),
@@ -217,20 +212,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 10.h),
 
-                      /// Google Button
                       ElevatedButton.icon(
                         onPressed: signInWithGoogle,
                         icon: SvgPicture.asset(
                           'assets/images/google.svg',
-                          width: 20,
-                          height: 20,
+                          width: 20.w,
+                          height: 20.h,
                         ),
                         label: const Text("Login with Google"),
                       ),
 
                       SizedBox(height: 30.h),
 
-                      /// Go to SignUp
                       Center(
                         child: RichText(
                           text: TextSpan(
