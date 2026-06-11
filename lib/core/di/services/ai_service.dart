@@ -1,76 +1,96 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIService {
+  static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
+
+  static const String _openRouterUrl = 'https://openrouter.ai/api/v1/chat/completions';
+
   static Future<String> generatePlan({
     required double income,
     required double expense,
     required Map<String, double> categories,
-    required String planType, // monthly or yearly
+    required String planType,
     required double savings,
   }) async {
-    final url = Uri.parse(
-      "https://aiexpensetrackerfixed.vercel.app/api/finance",
-    );
+    if (_openRouterKey.isEmpty) {
+      throw Exception(
+        'OpenRouter API Key is missing. Add OPENROUTER_API_KEY to .env file',
+      );
+    }
 
-    final planPrompt = planType == 'monthly'
-        ? """
-Create a STRICT monthly saving plan based on:
-- Monthly Income: \$${income.toStringAsFixed(2)}
-- Monthly Expenses: \$${expense.toStringAsFixed(2)}
-- Current Savings: \$${savings.toStringAsFixed(2)}
-- Spending Categories: ${categories.entries.map((e) => "${e.key}: \$${e.value.toStringAsFixed(2)}").join(", ")}
+    final categoriesText = categories.entries
+        .map((e) => '${e.key}: ${e.value}')
+        .join('\n');
 
-Provide:
-1. DAILY spending limit
-2. WEEKLY checkpoints
-3. MONTHLY saving target
-4. 5 specific saving tips
-5. Red flags/warnings if overspending
+    final planPrompt = """
+Financial Summary
 
-Format as a structured table.
-"""
-        : """
-Create a YEARLY wealth building plan based on:
-- Monthly Income: \$${income.toStringAsFixed(2)}
-- Monthly Expenses: \$${expense.toStringAsFixed(2)}
-- Current Savings: \$${savings.toStringAsFixed(2)}
-- Spending Categories: ${categories.entries.map((e) => "${e.key}: \$${e.value.toStringAsFixed(2)}").join(", ")}
+Income: $income
+Expenses: $expense
+Savings: $savings
 
-Provide:
-1. MONTHLY saving targets for 12 months
-2. QUARTERLY milestones
-3. YEARLY goal projection
-4. Investment suggestions
-5. Progress tracking table
+Expense Categories:
+$categoriesText
 
-Format as a structured table.
+Create a detailed $planType financial plan.
+
+Requirements:
+- Analyze spending habits
+- Suggest savings targets
+- Give actionable recommendations
+- Include budgeting strategy
+- Use clear sections and bullet points
 """;
 
     final response = await http.post(
-      url,
+      Uri.parse(_openRouterUrl),
       headers: {
-        'Authorization': 'Bearer YOUR_API_KEY',
+        'Authorization': 'Bearer $_openRouterKey',
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://virello.app',
+        'X-Title': 'Virello Budget AI',
       },
       body: jsonEncode({
-        "income": income,
-        "expense": expense,
-        "categories": categories,
-        "planType": planType,
-        "savings": savings,
-        "prompt": planPrompt,
+        "model": "google/gemini-2.5-flash",
+        "messages": [
+          {
+            "role": "system",
+            "content":
+            "You are a professional financial advisor. Give practical and detailed financial advice."
+          },
+          {
+            "role": "user",
+            "content": planPrompt
+          }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 2048,
       }),
     );
 
+    debugPrint('========== OPENROUTER ==========');
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
     if (response.statusCode != 200) {
       throw Exception(
-        'AI Error: ${response.statusCode} - ${response.body}',
+        'AI Error: ${response.statusCode}\n${response.body}',
       );
     }
 
     final data = jsonDecode(response.body);
 
-    return data['choices'][0]['message']['content'];
+    if (data['choices'] != null &&
+        data['choices'].isNotEmpty &&
+        data['choices'][0]['message'] != null) {
+      return data['choices'][0]['message']['content'] ?? '';
+    }
+
+    throw Exception(
+      'Invalid AI response format\n${response.body}',
+    );
   }
 }

@@ -203,61 +203,58 @@ Widget _buildExportButton({
   );
 }
 
-Future<void> _exportPDF(BuildContext context, String plan, String planType) async {
+Future<void> _exportPDF(
+    BuildContext context,
+    String plan,
+    String planType,
+    ) async {
   try {
+    if (plan.trim().isEmpty) {
+      throw Exception("Plan is empty");
+    }
+
     final pdf = pw.Document();
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        build: (pw.Context pdfContext) {
-          return pw.Padding(
-            padding: const pw.EdgeInsets.all(40),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  planType == 'monthly' ? 'AI Monthly Saving Plan' : 'AI Yearly Wealth Plan',
-                  style: pw.TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 20.h),
-                pw.Text(
-                  'Generated on: ${DateTime.now().toString().split('.')[0]}',
-                  style: pw.TextStyle(fontSize: 12.sp, color: PdfColors.grey),
-                ),
-                pw.SizedBox(height: 30),
-                pw.Text(plan, style: pw.TextStyle(fontSize: 14.sp, lineSpacing: 1.5.w)),
-              ],
+        build: (_) => [
+          pw.Text(
+            planType == 'monthly'
+                ? 'AI Monthly Saving Plan'
+                : 'AI Yearly Wealth Plan',
+            style: pw.TextStyle(
+              fontSize: 24,
+              fontWeight: pw.FontWeight.bold,
             ),
-          );
-        },
+          ),
+
+          pw.SizedBox(height: 20),
+
+          pw.Text(plan),
+        ],
       ),
     );
 
-    final output = await getTemporaryDirectory();
-    final file = File('${output.path}/ai_plan_${planType}_${DateTime.now().millisecondsSinceEpoch}.pdf');
-    await file.writeAsBytes(await pdf.save());
+    final dir = await getApplicationDocumentsDirectory();
 
-    await Share.shareXFiles([XFile(file.path)], text: 'My AI Financial Plan');
+    final file = File(
+      '${dir.path}/plan.pdf',
+    );
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF exported successfully')),
-      );
-    }
+    final bytes = await pdf.save();
+
+    await file.writeAsBytes(bytes);
+
+    debugPrint("PDF SAVED => ${file.path}");
+    debugPrint("PDF SIZE => ${await file.length()}");
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'AI Financial Plan',
+    );
   } catch (e) {
-    debugPrint('PDF Error: $e');
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    debugPrint(e.toString());
   }
 }
 

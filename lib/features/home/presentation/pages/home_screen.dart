@@ -1,8 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/codegen_loader.g.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../widgets/transaction_item.dart';
 
@@ -38,7 +40,7 @@ class HomeScreen extends StatelessWidget {
         onPressed: () => _showAddOptionsBottomSheet(context),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add', style: TextStyle(color: Colors.white)),
+        label: Text(LocaleKeys.expense_actions_add.tr(), style: const TextStyle(color: Colors.white)),
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -55,19 +57,19 @@ class HomeScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Transactions History',
+                          LocaleKeys.transactions_history.tr(),
                           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                         ),
                         TextButton(
                           onPressed: () => context.push('/transactions'),
-                          child: const Text('See all'),
+                          child: Text(LocaleKeys.expense_actions_see_all.tr()),
                         ),
                       ],
                     ),
                     SizedBox(height: 16.h),
                     _buildTransactionList(),
                     SizedBox(height: 24.h),
-                    _buildSectionTitle('Send Again', 'See all'),
+                    _buildSectionTitle('Send Again', LocaleKeys.expense_actions_see_all.tr()),
                     SizedBox(height: 16.h),
                     _buildSendAgainList(context),
                     SizedBox(height: 100.h),
@@ -105,7 +107,7 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 24.h),
               Text(
-                'What would you like to add?',
+                LocaleKeys.expense_actions_what_would_you_like_to_add.tr(),
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w600,
@@ -117,8 +119,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.arrow_upward,
                 iconColor: AppColors.expense,
-                title: 'Add Expenses',
-                subtitle: 'Add multiple expenses at once',
+                title: LocaleKeys.expense_actions_add_expenses.tr(),
+                subtitle: LocaleKeys.expense_actions_add_multiple_expenses.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/add-expense');
@@ -129,8 +131,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.arrow_downward,
                 iconColor: AppColors.income,
-                title: 'Add Income',
-                subtitle: 'Add multiple income sources',
+                title: LocaleKeys.expense_actions_add_income.tr(),
+                subtitle: LocaleKeys.expense_actions_add_multiple_income_sources.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/add-income');
@@ -141,8 +143,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.send,
                 iconColor: AppColors.primary,
-                title: 'Transfer',
-                subtitle: 'Send money to a contact',
+                title: LocaleKeys.transfer_transfer.tr(),
+                subtitle: LocaleKeys.transfer_send_money.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   _showTransferBottomSheet(context);
@@ -236,7 +238,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 24.h),
                   Text(
-                    'Transfer Money',
+                    LocaleKeys.transfer_title.tr(),
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.bold,
@@ -271,9 +273,9 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               const Icon(Icons.info_outline, color: Colors.grey),
                               SizedBox(width: 12.w),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
-                                  'No contacts yet. Add contacts from "Send Again" section.',
+                                  LocaleKeys.transfer_no_contacts.tr(),
                                   style: TextStyle(color: Colors.grey),
                                 ),
                               ),
@@ -287,14 +289,14 @@ class HomeScreen extends StatelessWidget {
                       return DropdownButtonFormField<String>(
                         value: selectedContactId,
                         decoration: InputDecoration(
-                          labelText: 'Select Contact',
+                          labelText: LocaleKeys.transfer_select_contact.tr(),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                         ),
-                        hint: const Text('Choose a contact'),
+                        hint: Text(LocaleKeys.transfer_choose_contact.tr()),
                         items: contacts.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           final name = data['name'] ?? 'Unknown';
@@ -362,7 +364,7 @@ class HomeScreen extends StatelessWidget {
                     controller: amountController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Amount',
+                      labelText: LocaleKeys.transfer_amount.tr(),
                       prefixText: '\$ ',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
@@ -382,8 +384,8 @@ class HomeScreen extends StatelessWidget {
                         final amount = double.tryParse(amountController.text) ?? 0;
                         if (amount <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter valid amount!'),
+                            SnackBar(
+                              content: Text(LocaleKeys.transfer_invalid_amount.tr()),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -405,7 +407,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Send',
+                        LocaleKeys.transfer_send.tr(),
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
@@ -463,7 +465,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Good afternoon,',
+                          LocaleKeys.common_loading.tr(), // أو ضيف مفتاح "good_afternoon"
                           style: TextStyle(color: Colors.white70, fontSize: 14.sp),
                         ),
                         SizedBox(height: 4.h),
@@ -494,7 +496,7 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 24.h),
               Text(
-                'Total Balance',
+                LocaleKeys.expense_total_expense.tr(), // أو ضيف "total_balance"
                 style: TextStyle(color: Colors.white70, fontSize: 16.sp),
               ),
               SizedBox(height: 8.h),
@@ -514,7 +516,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildIncomeExpenseCard(
-                      title: 'Income',
+                      title: LocaleKeys.common_income.tr(),
                       amount: '\$ ${totalIncome.toStringAsFixed(2)}',
                       icon: Icons.arrow_downward,
                       color: AppColors.income,
@@ -523,7 +525,7 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(width: 12.w),
                   Expanded(
                     child: _buildIncomeExpenseCard(
-                      title: 'Expense',
+                      title: LocaleKeys.expense_title.tr(),
                       amount: '\$ ${totalExpense.toStringAsFixed(2)}',
                       icon: Icons.arrow_upward,
                       color: AppColors.expense,
@@ -630,9 +632,9 @@ class HomeScreen extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Padding(
-              padding: EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(20.0),
               child: Text(
-                'No transactions yet\nTap + to add one!',
+                LocaleKeys.transactions_no_transactions_yet.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey, fontSize: 16.sp),
               ),
@@ -797,9 +799,9 @@ class HomeScreen extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _deleteTransaction(context, docId, amount, isIncome),
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: const Text(
-                      'Delete Transaction',
-                      style: TextStyle(color: Colors.red),
+                    label: Text(
+                      LocaleKeys.transactions_delete_transaction.tr(),
+                      style: const TextStyle(color: Colors.red),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
@@ -878,12 +880,16 @@ class HomeScreen extends StatelessWidget {
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction deleted successfully')),
+        SnackBar(content: Text(LocaleKeys.transactions_transaction_deleted.tr())),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text(
+            LocaleKeys.errors_generic.tr(
+              args: [e.toString()],
+            ),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -917,8 +923,12 @@ class HomeScreen extends StatelessWidget {
                       child: Icon(Icons.person_add, color: AppColors.primary, size: 24.sp),
                     ),
                     SizedBox(height: 4.h),
-                    Text('Add', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
-                  ],
+                    Text(LocaleKeys.transfer_add_contact.tr(),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: AppColors.primary,
+                      ),
+                    )                  ],
                 ),
               ),
             );
@@ -945,7 +955,13 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 4.h),
-                  Text('User $index', style: TextStyle(fontSize: 11.sp)),
+                  Text(LocaleKeys.transfer_user.tr(
+                    args: [index.toString()],
+                  ),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -962,24 +978,24 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Contact'),
+        title: Text(LocaleKeys.contacts_add_contact.tr()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: LocaleKeys.auth_full_name.tr()),
             ),
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email or Phone'),
+              decoration: InputDecoration(labelText: LocaleKeys.transfer_email_or_phone.tr()),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(LocaleKeys.common_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -997,7 +1013,7 @@ class HomeScreen extends StatelessWidget {
               }
               Navigator.pop(context);
             },
-            child: const Text('Save'),
+            child: Text(LocaleKeys.common_save.tr()),
           ),
         ],
       ),
@@ -1010,11 +1026,15 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Transfer to $contactName'),
+        title: Text(
+          LocaleKeys.transfer_transfer_to.tr(
+            args: [contactName],
+          ),
+        ),
         content: TextField(
           controller: amountController,
-          decoration: const InputDecoration(
-            labelText: 'Amount',
+          decoration: InputDecoration(
+            labelText: LocaleKeys.transfer_amount.tr(),
             prefixText: '\$ ',
           ),
           keyboardType: TextInputType.number,
@@ -1022,7 +1042,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(LocaleKeys.common_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1032,7 +1052,7 @@ class HomeScreen extends StatelessWidget {
                 amount: double.tryParse(amountController.text) ?? 0,
               );
             },
-            child: const Text('Send'),
+            child: Text(LocaleKeys.transfer_send.tr()),
           ),
         ],
       ),
@@ -1055,8 +1075,8 @@ class HomeScreen extends StatelessWidget {
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User data not found!'),
+          SnackBar(
+            content: Text(LocaleKeys.transfer_user_not_found.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -1068,8 +1088,8 @@ class HomeScreen extends StatelessWidget {
 
       if (amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter valid amount!'),
+          SnackBar(
+            content: Text(LocaleKeys.transfer_invalid_amount.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -1080,7 +1100,11 @@ class HomeScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Insufficient balance! You have only \$${balance.toStringAsFixed(2)}',
+              LocaleKeys.transfer_insufficient_balance.tr(
+                args: [
+                  balance.toStringAsFixed(2),
+                ],
+              ),
             ),
             backgroundColor: Colors.red,
           ),
@@ -1106,9 +1130,12 @@ class HomeScreen extends StatelessWidget {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Transferred \$${amount.toStringAsFixed(2)} to $toUser'),
-        ),
+          SnackBar(
+            content: Text(LocaleKeys.transfer_transferred.tr(args:[amount.toStringAsFixed(2),
+              toUser,
+            ])
+            ),
+          )
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

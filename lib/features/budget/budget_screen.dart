@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/di/services/ai_service.dart';
 import '../../theme/app_colors.dart';
+import 'dart:async';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -84,13 +85,16 @@ class _BudgetScreenState extends State<BudgetScreen>
           income += amount;
         } else {
           expense += amount;
+
           final catData = data['category'];
           List<String> cats = [];
+
           if (catData is List) {
             cats = List<String>.from(catData);
           } else if (catData is String) {
             cats = [catData];
           }
+
           for (final c in cats) {
             categories[c] = (categories[c] ?? 0) + amount;
           }
@@ -98,12 +102,15 @@ class _BudgetScreenState extends State<BudgetScreen>
       }
 
       double savings = income - expense;
+
       String topCategory = "none";
       if (categories.isNotEmpty) {
         topCategory = categories.entries
             .reduce((a, b) => a.value > b.value ? a : b)
             .key;
       }
+
+      if (!mounted) return;
 
       setState(() {
         _aiResult = {
@@ -116,10 +123,14 @@ class _BudgetScreenState extends State<BudgetScreen>
         _loadingAi = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() => _loadingAi = false);
+
       debugPrint('Error generating AI data: $e');
     }
   }
+
 
   void _showAskAIDialog() {
     if (_aiResult == null) {
@@ -225,6 +236,7 @@ class _BudgetScreenState extends State<BudgetScreen>
 
   Future<void> _generateAndShowPlan(String planType) async {
     try {
+      // Close BottomSheet
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -233,26 +245,32 @@ class _BudgetScreenState extends State<BudgetScreen>
 
       if (!mounted) return;
 
+      // Loading Dialog
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) =>Center(
-          child: Column(
+        useRootNavigator: true,
+        builder: (_) => const AlertDialog(
+          content: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircularProgressIndicator(),
-              SizedBox(height: 16.h),
-              Text(
-                'AI is analyzing...',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.sp,
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'AI is analyzing your finances...',
                 ),
               ),
             ],
           ),
         ),
       );
+
+      debugPrint('========== AI REQUEST START ==========');
+      debugPrint('Income: ${_aiResult!['income']}');
+      debugPrint('Expense: ${_aiResult!['expense']}');
+      debugPrint('Savings: ${_aiResult!['savings']}');
+      debugPrint('Plan Type: $planType');
 
       final plan = await AIService.generatePlan(
         income: _aiResult!['income'],
@@ -262,15 +280,26 @@ class _BudgetScreenState extends State<BudgetScreen>
         savings: _aiResult!['savings'],
       );
 
+      debugPrint('========== AI RESPONSE ==========');
+      debugPrint(plan);
+
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      // Close Loading Dialog
+      final navigator = Navigator.of(
+        context,
+        rootNavigator: true,
+      );
+
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
 
       await Future.delayed(const Duration(milliseconds: 200));
 
       if (!mounted) return;
 
-      if (plan.isEmpty) {
+      if (plan.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('AI returned empty plan'),
@@ -286,18 +315,27 @@ class _BudgetScreenState extends State<BudgetScreen>
           'planType': planType,
         },
       );
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
+    } catch (e, stack) {
+      debugPrint('========== AI ERROR ==========');
+      debugPrint(e.toString());
+      debugPrint(stack.toString());
+
+      if (!mounted) return;
+
+      final navigator = Navigator.of(
+        context,
+        rootNavigator: true,
+      );
+
+      if (navigator.canPop()) {
+        navigator.pop();
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+        ),
+      );
     }
   }
 

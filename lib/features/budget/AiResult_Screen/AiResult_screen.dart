@@ -20,7 +20,6 @@ class AIResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ حماية قصوى من أي null أو empty
     final safePlan = plan.isEmpty ? 'No plan data available.' : plan;
     final safePlanType = planType.isEmpty ? 'monthly' : planType;
     final isMonthly = safePlanType == 'monthly';
@@ -30,18 +29,16 @@ class AIResultScreen extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       body: CustomScrollView(
         slivers: [
-          // ✅ AppBar Collapsible
           SliverAppBar(
             expandedHeight: 120,
             pinned: true,
             backgroundColor: primaryColor,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-              // ✅ استخدم GoRouter.pop() بدل context.pop() عشان يرجع صح
               onPressed: () => GoRouter.of(context).pop(),
             ),
             title: Text(
-              isMonthly ? '🤖 AI Monthly Plan' : '🤖 AI Yearly Plan',
+              isMonthly ? 'AI Monthly Plan' : 'AI Yearly Plan',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -70,24 +67,20 @@ class AIResultScreen extends StatelessWidget {
             ),
           ),
 
-          // ✅ Content
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Plan Card
                   _buildPlanCard(primaryColor, safePlan),
 
                   const SizedBox(height: 24),
 
-                  // Export Section
                   _buildExportSection(context, primaryColor, safePlan, safePlanType),
 
                   const SizedBox(height: 24),
 
-                  // Quick Actions
                   _buildQuickActions(context, safePlan),
 
                   const SizedBox(height: 32),
@@ -151,7 +144,6 @@ class AIResultScreen extends StatelessWidget {
               ],
             ),
             const Divider(height: 32),
-            // ✅ استخدم Markdown بدل SelectableText لو الـ plan فيه تنسيق
             _buildPlanContent(safePlan),
           ],
         ),
@@ -160,7 +152,6 @@ class AIResultScreen extends StatelessWidget {
   }
 
   Widget _buildPlanContent(String safePlan) {
-    // ✅ لو الـ plan فيه Markdown (##, **, إلخ)، استخدم MarkdownBody
     if (safePlan.contains('#') ||
         safePlan.contains('**') ||
         safePlan.contains('*') ||
@@ -191,7 +182,6 @@ class AIResultScreen extends StatelessWidget {
       );
     }
 
-    // ✅ لو مفيش Markdown، استخدم SelectableText العادي
     return SelectableText(
       safePlan,
       style: const TextStyle(
@@ -319,7 +309,7 @@ class AIResultScreen extends StatelessWidget {
             Clipboard.setData(ClipboardData(text: safePlan));
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Plan copied to clipboard'),
+                content: Text('Plan copied to clipboard'),
                 duration: Duration(seconds: 2),
               ),
             );
@@ -330,7 +320,6 @@ class AIResultScreen extends StatelessWidget {
           icon: Icons.refresh,
           title: 'Generate New Plan',
           subtitle: 'Create a different plan based on your data',
-          // ✅ استخدم GoRouter.pop() بدل context.pop()
           onTap: () => GoRouter.of(context).pop(),
         ),
       ],
@@ -375,79 +364,93 @@ class AIResultScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // EXPORT FUNCTIONS
-  // ═══════════════════════════════════════════════════════
-  Future<void> _exportPDF(BuildContext context, String safePlan, String safePlanType) async {
+
+
+  Future<void> _exportPDF(
+      BuildContext context,
+      String safePlan,
+      String safePlanType,
+      ) async {
     try {
       final pdf = pw.Document();
 
+      final cleaned = cleanText(safePlan);
+      final lines = cleaned.split('\n');
+
+      final children = <pw.Widget>[];
+
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty) continue;
+
+        children.add(
+          pw.Text(
+            trimmed,
+            style: const pw.TextStyle(fontSize: 12),
+          ),
+        );
+
+        children.add(pw.SizedBox(height: 6));
+      }
+
       pdf.addPage(
-        pw.Page(
+        pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
-          build: (pw.Context pdfContext) {
-            return pw.Padding(
-              padding: const pw.EdgeInsets.all(40),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    safePlanType == 'monthly' ? 'AI Monthly Saving Plan' : 'AI Yearly Wealth Plan',
-                    style: pw.TextStyle(
-                      fontSize: 28,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.SizedBox(height: 20),
-                  pw.Container(
-                    color: PdfColors.grey300,
-                    height: 2,
-                  ),
-                  pw.SizedBox(height: 20),
-                  pw.Text(
-                    'Generated on: ${DateTime.now().toString().split('.')[0]}',
-                    style: const pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey,
-                    ),
-                  ),
-                  pw.SizedBox(height: 30),
-                  pw.Text(
-                    safePlan,
-                    style: const pw.TextStyle(
-                      fontSize: 14,
-                      lineSpacing: 1.8,
-                    ),
-                  ),
-                ],
+          build: (pw.Context context) {
+            return [
+              pw.Text(
+                safePlanType == 'monthly'
+                    ? 'AI Monthly Saving Plan'
+                    : 'AI Yearly Wealth Plan',
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
-            );
+              pw.SizedBox(height: 20),
+              pw.Divider(),
+              pw.SizedBox(height: 20),
+              ...children,
+            ];
           },
         ),
       );
 
       final output = await getTemporaryDirectory();
-      final file = File('${output.path}/ai_plan_${safePlanType}_${DateTime.now().millisecondsSinceEpoch}.pdf');
+
+      final file = File(
+        '${output.path}/ai_plan_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+
       await file.writeAsBytes(await pdf.save());
 
-      await Share.shareXFiles([XFile(file.path)], text: 'My AI Financial Plan');
+      await Share.shareXFiles([XFile(file.path)]);
+    } catch (e, s) {
+      debugPrint("PDF ERROR = $e");
+      debugPrint("STACK = $s");
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ PDF exported successfully')),
-        );
-      }
-    } catch (e) {
-      debugPrint('PDF Error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ PDF Error: $e'),
+            content: Text('PDF Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  String cleanText(String text) {
+    return text
+        .replaceAll(RegExp(r'\*\*'), '')
+        .replaceAll(RegExp(r'##'), '')
+        .replaceAll(RegExp(r'\*'), '')
+        .replaceAll(RegExp(r'- '), '')
+        .replaceAll(RegExp(r'•'), '')
+        .replaceAll(RegExp(r'`'), '')
+        .replaceAll(RegExp(r'\\'), '')
+        .replaceAll(RegExp(r'\r'), '')
+        .trim();
   }
 
   Future<void> _exportCSV(BuildContext context, String safePlan, String safePlanType) async {
@@ -477,7 +480,7 @@ class AIResultScreen extends StatelessWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ CSV exported successfully')),
+          const SnackBar(content: Text('CSV exported successfully')),
         );
       }
     } catch (e) {
@@ -485,7 +488,7 @@ class AIResultScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ CSV Error: $e'),
+            content: Text('CSV Error: $e'),
             backgroundColor: Colors.red,
           ),
         );

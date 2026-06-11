@@ -27,10 +27,27 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigated = true;
 
     final prefs = await SharedPreferences.getInstance();
-    final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+
+    final languageSelected =
+        prefs.getBool('language_selected') ?? false;
+
+    if (!languageSelected) {
+      debugPrint('GOING TO LANGUAGE SELECTION');
+      context.go('/language');
+      return;
+    }
+
+    final hasSeenOnboarding =
+        prefs.getBool('has_seen_onboarding') ?? false;
+
     final user = FirebaseAuth.instance.currentUser;
 
-    debugPrint('SPLASH: hasSeenOnboarding=$hasSeenOnboarding, user=${user?.email}, emailVerified=${user?.emailVerified}');
+    debugPrint(
+      'SPLASH: languageSelected=$languageSelected, '
+          'hasSeenOnboarding=$hasSeenOnboarding, '
+          'user=${user?.email}, '
+          'emailVerified=${user?.emailVerified}',
+    );
 
     if (!hasSeenOnboarding) {
       debugPrint('GOING TO ONBOARDING');
