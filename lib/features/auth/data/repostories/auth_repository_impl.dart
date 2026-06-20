@@ -10,10 +10,32 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> login(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    final user = credential.user!;
+
+    final userDoc = _firestore
+        .collection('users')
+        .doc(user.uid);
+
+    final snapshot = await userDoc.get();
+
+    // إعادة إنشاء بيانات المستخدم إذا تم حذفها من Firestore
+    if (!snapshot.exists) {
+      await userDoc.set({
+        'name': user.displayName ?? '',
+        'email': user.email ?? '',
+        'username': '',
+        'totalBalance': 0.0,
+        'totalIncome': 0.0,
+        'totalExpense': 0.0,
+        'createdAt': Timestamp.now(),
+        'imageUrl': '',
+      });
+    }
   }
 
   @override
@@ -29,6 +51,7 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     final user = userCredential.user!;
+
     final usernameRef =
     _firestore.collection('usernames').doc(username);
 
@@ -63,10 +86,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signInWithGoogle() async {
+    // TODO: Implement Google Sign In
   }
 
   @override
   Future<void> signInWithFacebook() async {
+    // TODO: Implement Facebook Sign In
   }
 
   @override

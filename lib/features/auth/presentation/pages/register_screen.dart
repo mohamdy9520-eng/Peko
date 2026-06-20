@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added missing import
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,10 +33,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _isLoading = false;
 
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
   Future<void> pickImage(ImageSource source) async {
     final picked = await ImagePicker().pickImage(source: source);
     if (picked != null) {
       setState(() => imageFile = File(picked.path));
+
+      // ✅ Fixed: Check if user is signed in before accessing currentUser
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'name': nameController.text.trim(), // ✅ Fixed: use nameController instead of undefined 'name'
+          'email': user.email,
+        });
+      }
     }
   }
 
@@ -47,6 +63,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
     confirmPasswordController.dispose();
     usernameController.dispose();
     super.dispose();
+  }
+
+  String _getErrorMessage(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('unavailable') ||
+        errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('timeout')) {
+      return 'Network error: Could not connect to the server. Please check your connection.';
+    }
+
+    if (errorString.contains('permission-denied')) {
+      return 'Access denied. Please contact support.';
+    }
+
+    return 'Error: $error';
   }
 
   @override
@@ -72,9 +105,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }
 
         if (state is AuthFailure) {
+          final message = _getErrorMessage(state.message);
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${state.message}'),
+              content: Text(message),
               backgroundColor: Colors.red,
             ),
           );
@@ -161,13 +196,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       SizedBox(height: 10.h),
 
+                      // ✅ Fixed: Added .r to BorderRadius for consistency
                       TextFormField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.r), // ✅ Fixed: was 12 without .r
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
                         validator: (value) {
@@ -185,11 +234,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       TextFormField(
                         controller: confirmPasswordController,
-                        obscureText: true,
+                        obscureText: _obscureConfirmPassword,
                         decoration: InputDecoration(
                           labelText: "Confirm Password",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
                           ),
                         ),
                         validator: (value) {
@@ -244,9 +306,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             } catch (e) {
                               setState(() => _isLoading = false);
 
+                              final message = _getErrorMessage(e);
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Error: $e'),
+                                  content: Text(message),
                                   backgroundColor: Colors.red,
                                 ),
                               );

@@ -194,15 +194,86 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 final t = _transactions[index].data() as Map<String, dynamic>;
                 final category = _safeCategory(t['category']);
 
-                return Padding(
-                  padding: EdgeInsets.only(bottom: 12.h),
-                  child: TransactionItem(
-                    icon: _getIconForCategory(category),
-                    iconBackgroundColor: _getCategoryColor(category),
-                    title: t['title'] ?? 'Unknown',
-                    subtitle: _formatDate(t['date']),
-                    amount: (t['amount'] ?? 0).toDouble(),
-                    isIncome: t['type'] == 'income',
+                return Dismissible(
+                  key: Key(_transactions[index].id),
+
+                  background: Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  secondaryBackground: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  confirmDismiss: (direction) async {
+                    if (direction == DismissDirection.endToStart) {
+                      await _deleteTransaction(_transactions[index]);
+                      return true;
+                    }
+
+                    if (direction == DismissDirection.startToEnd) {
+                      _editTransaction(_transactions[index]);
+                      return false;
+                    }
+
+                    return false;
+                  },
+
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 12.h),
+                    child: TransactionItem(
+                      icon: _getIconForCategory(category),
+                      iconBackgroundColor: _getCategoryColor(category),
+                      title: t['title'] ?? 'Unknown',
+                      subtitle: _formatDate(t['date']),
+                      amount: (t['amount'] ?? 0).toDouble(),
+                      isIncome: t['type'] == 'income',
+                    ),
                   ),
                 );
               },
@@ -332,6 +403,88 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
       default:
         return Icons.attach_money;
     }
+  }
+
+  Future<void> _deleteTransaction(DocumentSnapshot transaction) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Transaction'),
+        content: const Text(
+          'Are you sure you want to delete this transaction?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final data = transaction.data() as Map<String, dynamic>;
+    final double amount = (data['amount'] ?? 0).toDouble();
+    final bool isIncome = data['type'] == 'income';
+
+    // ⚡️ حذف الـ transaction
+    await transaction.reference.delete();
+
+    // ⚡️ تحديث الـ user document عشان الـ HomeScreen يتحدث
+    final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userDoc = await userDocRef.get();
+    final userData = userDoc.data() ?? {};
+
+    double currentBalance = (userData['totalBalance'] ?? 0).toDouble();
+    double currentIncome = (userData['totalIncome'] ?? 0).toDouble();
+    double currentExpense = (userData['totalExpense'] ?? 0).toDouble();
+
+    if (isIncome) {
+      await userDocRef.update({
+        'totalBalance': currentBalance - amount,
+        'totalIncome': currentIncome - amount,
+      });
+    } else {
+      await userDocRef.update({
+        'totalBalance': currentBalance + amount,
+        'totalExpense': currentExpense - amount,
+      });
+    }
+
+    setState(() {
+      _transactions.remove(transaction);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Transaction deleted'),
+        ),
+      );
+    }
+  }
+
+  void _editTransaction(DocumentSnapshot transaction) {
+    final data = transaction.data() as Map<String, dynamic>;
+
+    context.push(
+      '/edit-transaction',
+      extra: {
+        'docId': transaction.id,
+        'data': data,
+      },
+    );
   }
 
   String _formatDate(dynamic date) {

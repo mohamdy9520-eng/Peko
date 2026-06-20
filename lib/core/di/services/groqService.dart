@@ -6,8 +6,15 @@ class GroqService {
 
   GroqService({required this.apiKey});
 
-  Future<String> getExpenseInsight(List<Map<String, dynamic>> transactions) async {
-    if (transactions.isEmpty) return 'لا توجد معاملات لتحليلها.';
+  Future<String> getExpenseInsight(
+      List<Map<String, dynamic>> transactions, {
+        String language = 'en',
+      }) async {
+    if (transactions.isEmpty) {
+      return language == 'ar'
+          ? 'لا توجد معاملات لتحليلها.'
+          : 'No transactions to analyze.';
+    }
 
     // تجميع البيانات
     final Map<String, double> categoryTotals = {};
@@ -34,7 +41,15 @@ class GroqService {
     "${e.key}: \$${e.value.toStringAsFixed(2)}"
     ).join("\n");
 
-    final prompt = """
+    // ✅ بناء الـ Prompt حسب اللغة
+    final isArabic = language == 'ar';
+
+    final systemPrompt = isArabic
+        ? "You are a helpful financial advisor. Always respond in Arabic (Fusha) with short, practical advice."
+        : "You are a helpful financial advisor. Always respond in English with short, practical advice.";
+
+    final userPrompt = isArabic
+        ? """
 You are a financial expert. Analyze this data and give ONE short, practical financial advice in Arabic (1-2 sentences only):
 
 Total Income: \$${totalIncome.toStringAsFixed(2)}
@@ -49,6 +64,22 @@ Requirements:
 - Practical and actionable
 - In Arabic (Fusha)
 - No introductions, just the advice
+"""
+        : """
+You are a financial expert. Analyze this data and give ONE short, practical financial advice in English (1-2 sentences only):
+
+Total Income: \$${totalIncome.toStringAsFixed(2)}
+Total Expenses: \$${totalExpense.toStringAsFixed(2)}
+Net: \$${(totalIncome - totalExpense).toStringAsFixed(2)}
+
+Top Expense Categories:
+$topCategories
+
+Requirements:
+- Short (under 150 characters)
+- Practical and actionable
+- In English
+- No introductions, just the advice
 """;
 
     try {
@@ -59,15 +90,15 @@ Requirements:
           "Authorization": "Bearer $apiKey",
         },
         body: jsonEncode({
-          "model": "llama-3.3-70b-versatile", // ← النموذج الجديد
+          "model": "llama-3.3-70b-versatile",
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful financial advisor. Always respond in Arabic (Fusha) with short, practical advice."
+              "content": systemPrompt,
             },
             {
               "role": "user",
-              "content": prompt
+              "content": userPrompt,
             }
           ],
           "temperature": 0.7,
@@ -78,14 +109,18 @@ Requirements:
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final text = data["choices"]?[0]?["message"]?["content"];
-        return text?.toString().trim() ?? "لم يتم الحصول على نصيحة.";
+        return text?.toString().trim() ?? (isArabic ? "لم يتم الحصول على نصيحة." : "No advice received.");
       } else {
         print("Status Code: ${response.statusCode}");
         print("Response Body: ${response.body}");
-        return "خطأ ${response.statusCode}";
+        return isArabic
+            ? "خطأ ${response.statusCode}"
+            : "Error ${response.statusCode}";
       }
     } catch (e) {
-      return "حدث خطأ: ${e.toString()}";
+      return isArabic
+          ? "حدث خطأ: ${e.toString()}"
+          : "An error occurred: ${e.toString()}";
     }
   }
 }

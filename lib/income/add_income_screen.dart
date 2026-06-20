@@ -76,7 +76,15 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     }
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not logged in'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final total = _totalAmount;
 
@@ -85,10 +93,19 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       FirebaseFirestore.instance.collection('users').doc(user.uid);
 
       final userDoc = await userRef.get();
-      final data = userDoc.data() ?? {};
 
-      double currentBalance = (data['totalBalance'] ?? 0).toDouble();
-      double currentIncome = (data['totalIncome'] ?? 0).toDouble();
+      double currentBalance = 0;
+      double currentIncome = 0;
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+
+        currentBalance =
+            (data['totalBalance'] as num?)?.toDouble() ?? 0;
+
+        currentIncome =
+            (data['totalIncome'] as num?)?.toDouble() ?? 0;
+      }
 
       final batch = FirebaseFirestore.instance.batch();
 
@@ -116,10 +133,17 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         });
       }
 
-      batch.update(userRef, {
-        'totalBalance': currentBalance + total,
-        'totalIncome': currentIncome + total,
-      });
+      // إنشاء أو تحديث Document المستخدم
+      batch.set(
+        userRef,
+        {
+          'uid': user.uid,
+          'totalBalance': currentBalance + total,
+          'totalIncome': currentIncome + total,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
       await batch.commit();
 
@@ -131,15 +155,21 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             ),
           ),
         );
+
         context.pop();
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } catch (e, s) {
+      debugPrint('ERROR: $e');
+      debugPrintStack(stackTrace: s);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../generated/codegen_loader.g.dart';
+import '../../../../routes/app_router.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../widgets/transaction_item.dart';
 
@@ -69,9 +70,19 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 16.h),
                     _buildTransactionList(),
                     SizedBox(height: 24.h),
-                    _buildSectionTitle('Send Again', LocaleKeys.expense_actions_see_all.tr()),
+                    _buildSectionTitle(
+                      'Contacts',
+                      TextButton(
+                        onPressed: () {
+                          context.push('/contacts');
+                        },
+                        child: Text(
+                          LocaleKeys.expense_actions_see_all.tr(),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 16.h),
-                    _buildSendAgainList(context),
+                    _buildContactsList(context),
                     SizedBox(height: 100.h),
                   ],
                 ),
@@ -126,6 +137,50 @@ class HomeScreen extends StatelessWidget {
                   context.push('/add-expense');
                 },
               ),
+
+              SizedBox(height: 12.h),
+
+              _buildOptionTile(
+                context: context,
+                icon: Icons.arrow_downward,
+                iconColor: AppColors.income,
+                title: LocaleKeys.expense_actions_add_income.tr(),
+                subtitle: LocaleKeys.expense_actions_add_multiple_income_sources.tr(),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/add-income');
+                },
+              ),
+
+              SizedBox(height: 12.h),
+
+              _buildOptionTile(
+                context: context,
+                icon: Icons.send,
+                iconColor: AppColors.primary,
+                title: LocaleKeys.transfer_transfer.tr(),
+                subtitle: LocaleKeys.transfer_send_money.tr(),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showTransferBottomSheet(context);
+                },
+              ),
+
+              SizedBox(height: 12.h),
+
+              _buildOptionTile(
+                context: context,
+                icon: Icons.person_add,
+                iconColor: Colors.blue,
+                title: 'Add Contact',
+                subtitle: 'Add a new contact for transfers',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddContactDialog(context);
+                },
+              ),
+
+              SizedBox(height: 16.h),
               SizedBox(height: 12.h),
               _buildOptionTile(
                 context: context,
@@ -199,10 +254,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+
+
   void _showTransferBottomSheet(BuildContext context) {
     final amountController = TextEditingController();
     String? selectedContactId;
     String? selectedContactName;
+    String? selectedContactEmail;
 
     showModalBottomSheet(
       context: context,
@@ -222,201 +280,253 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
               ),
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40.w,
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2.r),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              child: SingleChildScrollView( // ← Added to prevent overflow
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 24.h),
-                  Text(
-                    LocaleKeys.transfer_title.tr(),
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                    SizedBox(height: 24.h),
+                    Text(
+                      LocaleKeys.transfer_title.tr(),
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 16.h),
+                    SizedBox(height: 16.h),
 
-                  StreamBuilder<QuerySnapshot>(
-                    stream: user != null
-                        ? FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .collection('contacts')
-                        .orderBy('name')
-                        .snapshots()
-                        : null,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                    // Contacts Dropdown
+                    StreamBuilder<QuerySnapshot>(
+                      stream: user != null
+                          ? FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('contacts')
+                          .orderBy('name')
+                          .snapshots()
+                          : null,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Container(
+                            height: 60.h,
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        }
 
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(12.r),
-                            color: Colors.grey[50],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.info_outline, color: Colors.grey),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Text(
-                                  LocaleKeys.transfer_no_contacts.tr(),
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                        if (snapshot.hasError) {
+                          return Container(
+                            height: 60.h,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Error loading contacts',
+                              style: TextStyle(color: Colors.red, fontSize: 12.sp),
+                            ),
+                          );
+                        }
 
-                      final contacts = snapshot.data!.docs;
-
-                      return DropdownButtonFormField<String>(
-                        value: selectedContactId,
-                        decoration: InputDecoration(
-                          labelText: LocaleKeys.transfer_select_contact.tr(),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        hint: Text(LocaleKeys.transfer_choose_contact.tr()),
-                        items: contacts.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final name = data['name'] ?? 'Unknown';
-                          final email = data['email'] ?? '';
-
-                          return DropdownMenuItem<String>(
-                            value: doc.id,
+                        // ← FIXED: Empty state with no undefined variables
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return Container(
+                            padding: EdgeInsets.all(16.w),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12.r),
+                              color: Colors.grey[50],
+                            ),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 14.r,
-                                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                                  child: Text(
-                                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
+                                const Icon(Icons.info_outline, color: Colors.grey),
                                 SizedBox(width: 12.w),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        name,
-                                        style: const TextStyle(
+                                        'No contacts found',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
+                                          fontSize: 14.sp,
                                         ),
                                       ),
-                                      if (email.isNotEmpty)
-                                        Text(
-                                          email,
-                                          style: TextStyle(
-                                            fontSize: 12.sp,
-                                            color: Colors.grey[600],
-                                          ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        'Add a contact first to make transfers',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey[600],
                                         ),
+                                      ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
                           );
-                        }).toList(),
-                        onChanged: (value) {
-                          setModalState(() {
-                            selectedContactId = value;
-                            final selectedDoc = contacts.firstWhere(
-                                  (doc) => doc.id == value,
-                            );
-                            selectedContactName = (selectedDoc.data()
-                            as Map<String, dynamic>)['name'] ?? 'Unknown';
-                          });
-                        },
-                      );
-                    },
-                  ),
-
-                  SizedBox(height: 16.h),
-                  TextField(
-                    controller: amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: LocaleKeys.transfer_amount.tr(),
-                      prefixText: '\$ ',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: selectedContactId == null ||
-                          amountController.text.isEmpty
-                          ? null
-                          : () {
-                        final amount = double.tryParse(amountController.text) ?? 0;
-                        if (amount <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(LocaleKeys.transfer_invalid_amount.tr()),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
                         }
-                        Navigator.pop(context);
-                        _submitTransfer(
-                          context: context,
-                          toUser: selectedContactName!,
-                          amount: amount,
+
+                        final contacts = snapshot.data!.docs;
+
+                        return DropdownButtonFormField<String>(
+                          value: selectedContactId,
+                          isExpanded: true,
+                          itemHeight: 60, // ← FIXED: Added itemHeight to prevent overflow
+                          decoration: InputDecoration(
+                            labelText: LocaleKeys.transfer_select_contact.tr(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 14.h,
+                            ),
+                          ),
+                          hint: Text(
+                            LocaleKeys.transfer_choose_contact.tr(),
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
+                          items: contacts.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final name = data['name'] ?? 'Unknown';
+                            final email = data['email'] ?? '';
+
+                            return DropdownMenuItem<String>(
+                              value: doc.id,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 14.r,
+                                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                                    child: Text(
+                                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setModalState(() {
+                              selectedContactId = value;
+
+                              final selectedDoc = contacts.firstWhere(
+                                    (doc) => doc.id == value,
+                                orElse: () => contacts.first,
+                              );
+
+                              final contactData = selectedDoc.data() as Map<String, dynamic>;
+
+                              selectedContactName = contactData['name'] ?? 'Unknown';
+                              selectedContactEmail = contactData['email'] ?? '';
+                            });
+                          },
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: Colors.grey[300],
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        shape: RoundedRectangleBorder(
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: LocaleKeys.transfer_amount.tr(),
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.h,
+                        ),
                       ),
-                      child: Text(
-                        LocaleKeys.transfer_send.tr(),
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
+                      onChanged: (_) => setModalState(() {}),
+                    ),
+
+                    SizedBox(height: 24.h),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50.h,
+                      child: ElevatedButton(
+                        onPressed: selectedContactId == null ||
+                            amountController.text.isEmpty
+                            ? null
+                            : () {
+                          final amount = double.tryParse(amountController.text) ?? 0;
+                          if (amount <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(LocaleKeys.transfer_invalid_amount.tr()),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context);
+                          _submitTransfer(
+                            context: context,
+                            contactId: selectedContactId!,
+                            contactName: selectedContactName!,
+                            contactEmail: selectedContactEmail ?? '',
+                            amount: amount,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          disabledBackgroundColor: Colors.grey[300],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: Text(
+                          LocaleKeys.transfer_send.tr(),
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 16.h),
-                ],
+
+                    SizedBox(height: 16.h),
+                  ],
+                ),
               ),
             ),
           );
@@ -436,17 +546,28 @@ class HomeScreen extends StatelessWidget {
 
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          userName = data['name'] ?? 'User';
+
+          userName = data['name'] ??
+              FirebaseAuth.instance.currentUser?.displayName ??
+              FirebaseAuth.instance.currentUser?.email?.split('@')[0] ??
+              'User';
+
           totalBalance = (data['totalBalance'] ?? 0).toDouble();
           totalIncome = (data['totalIncome'] ?? 0).toDouble();
           totalExpense = (data['totalExpense'] ?? 0).toDouble();
         } else {
           final user = FirebaseAuth.instance.currentUser;
-          userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+          userName =
+              user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
         }
 
         return Container(
-          padding: EdgeInsets.only(top: 20.h, left: 20.w, right: 20.w, bottom: 30.h),
+          padding: EdgeInsets.only(
+            top: 20.h,
+            left: 20.w,
+            right: 20.w,
+            bottom: 30.h,
+          ),
           decoration: BoxDecoration(
             color: AppColors.primary,
             borderRadius: BorderRadius.only(
@@ -465,8 +586,11 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          LocaleKeys.common_loading.tr(), // أو ضيف مفتاح "good_afternoon"
-                          style: TextStyle(color: Colors.white70, fontSize: 14.sp),
+                          'Welcome Back',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14.sp,
+                          ),
                         ),
                         SizedBox(height: 4.h),
                         Text(
@@ -488,18 +612,28 @@ class HomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.notifications_none, color: Colors.white),
+                      icon: const Icon(
+                        Icons.notifications_none,
+                        color: Colors.white,
+                      ),
                       onPressed: () {},
                     ),
                   ),
                 ],
               ),
+
               SizedBox(height: 24.h),
+
               Text(
-                LocaleKeys.expense_total_expense.tr(), // أو ضيف "total_balance"
-                style: TextStyle(color: Colors.white70, fontSize: 16.sp),
+                'Total Balance',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16.sp,
+                ),
               ),
+
               SizedBox(height: 8.h),
+
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
@@ -511,7 +645,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               SizedBox(height: 20.h),
+
               Row(
                 children: [
                   Expanded(
@@ -590,28 +726,21 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, String action) {
+  Widget _buildSectionTitle(
+      String title,
+      Widget? trailing,
+      ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        TextButton(
-          onPressed: () {},
-          child: Text(
-            action,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
+        if (trailing != null) trailing,
       ],
     );
   }
@@ -896,75 +1025,95 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildSendAgainList(BuildContext context) {
+  Widget _buildContactsList(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const SizedBox();
+    }
+
     return SizedBox(
-      height: 80.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 6,
-        padding: EdgeInsets.only(right: 16.w),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: GestureDetector(
-                onTap: () => _showAddContactDialog(context),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56.w,
-                      height: 56.h,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.divider,
-                        border: Border.all(color: AppColors.primary, width: 2.w),
-                      ),
-                      child: Icon(Icons.person_add, color: AppColors.primary, size: 24.sp),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(LocaleKeys.transfer_add_contact.tr(),
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: AppColors.primary,
-                      ),
-                    )                  ],
+      height: 90.h,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('contacts')
+            .orderBy('name')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          final contacts = snapshot.data!.docs;
+
+          if (contacts.isEmpty) {
+            return Center(
+              child: Text(
+                'No contacts yet',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14.sp,
                 ),
               ),
             );
           }
-          return Padding(
-            padding: EdgeInsets.only(right: 12.w),
-            child: GestureDetector(
-              onTap: () => _showTransferDialog(context, 'User $index'),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56.w,
-                    height: 56.h,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withOpacity(0.1),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'A$index',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: contacts.length,
+            itemBuilder: (context, index) {
+              final data =
+              contacts[index].data() as Map<String, dynamic>;
+
+              final contactId = contacts[index].id;
+              final name = data['name'] ?? 'Unknown';
+              final email = data['email'] ?? '';
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () => _showTransferDialog(
+                    context,
+                    contactId: contactId,
+                    contactName: name,
+                    contactEmail: email,
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor:
+                        AppColors.primary.withOpacity(0.1),
+                        child: Text(
+                          name.isNotEmpty
+                              ? name[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.sp,
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          name,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.sp),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 4.h),
-                  Text(LocaleKeys.transfer_user.tr(
-                    args: [index.toString()],
-                  ),
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -977,41 +1126,64 @@ class HomeScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      useRootNavigator: true,
+      builder: (dialogContext) => AlertDialog(
         title: Text(LocaleKeys.contacts_add_contact.tr()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: InputDecoration(labelText: LocaleKeys.auth_full_name.tr()),
+              decoration: InputDecoration(
+                labelText: LocaleKeys.auth_full_name.tr(),
+              ),
             ),
             TextField(
               controller: emailController,
-              decoration: InputDecoration(labelText: LocaleKeys.transfer_email_or_phone.tr()),
+              decoration: InputDecoration(
+                labelText: LocaleKeys.transfer_email_or_phone.tr(),
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
             child: Text(LocaleKeys.common_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () async {
-              final user = FirebaseAuth.instance.currentUser;
-              if (user != null) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('contacts')
-                    .add({
-                  'name': nameController.text,
-                  'email': emailController.text,
-                  'createdAt': Timestamp.now(),
-                });
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+
+                if (user != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('contacts')
+                      .add({
+                    'name': nameController.text.trim(),
+                    'email': emailController.text.trim(),
+                    'createdAt': Timestamp.now(),
+                  });
+                }
+
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+              } catch (e) {
+                debugPrint('Error saving contact: $e');
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to save contact'),
+                    ),
+                  );
+                }
               }
-              Navigator.pop(context);
             },
             child: Text(LocaleKeys.common_save.tr()),
           ),
@@ -1020,12 +1192,17 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showTransferDialog(BuildContext context, String contactName) {
+  void _showTransferDialog(
+      BuildContext context, {
+        required String contactId,
+        required String contactName,
+        required String contactEmail,
+      }) {
     final amountController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(
           LocaleKeys.transfer_transfer_to.tr(
             args: [contactName],
@@ -1041,15 +1218,20 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleKeys.common_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () {
+              Navigator.pop(dialogContext);
+
               _submitTransfer(
                 context: context,
-                toUser: contactName,
-                amount: double.tryParse(amountController.text) ?? 0,
+                contactId: contactId,
+                contactName: contactName,
+                contactEmail: contactEmail,
+                amount:
+                double.tryParse(amountController.text.trim()) ?? 0,
               );
             },
             child: Text(LocaleKeys.transfer_send.tr()),
@@ -1061,17 +1243,20 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _submitTransfer({
     required BuildContext context,
-    required String toUser,
+    required String contactId,
+    required String contactName,
+    required String contactEmail,
     required double amount,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final userDoc = await FirebaseFirestore.instance
+      final userRef = FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
-          .get();
+          .doc(user.uid);
+
+      final userDoc = await userRef.get();
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1084,12 +1269,19 @@ class HomeScreen extends StatelessWidget {
       }
 
       final data = userDoc.data()!;
-      double balance = (data['totalBalance'] ?? 0).toDouble();
+
+      final double balance =
+      (data['totalBalance'] ?? 0).toDouble();
+
+      final double totalExpense =
+      (data['totalExpense'] ?? 0).toDouble();
 
       if (amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(LocaleKeys.transfer_invalid_amount.tr()),
+            content: Text(
+              LocaleKeys.transfer_invalid_amount.tr(),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1101,9 +1293,7 @@ class HomeScreen extends StatelessWidget {
           SnackBar(
             content: Text(
               LocaleKeys.transfer_insufficient_balance.tr(
-                args: [
-                  balance.toStringAsFixed(2),
-                ],
+                args: [balance.toStringAsFixed(2)],
               ),
             ),
             backgroundColor: Colors.red,
@@ -1112,38 +1302,69 @@ class HomeScreen extends StatelessWidget {
         return;
       }
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('transactions')
-          .add({
-        'title': 'Transfer to $toUser',
+      final batch = FirebaseFirestore.instance.batch();
+
+      final transactionRef =
+      userRef.collection('transactions').doc();
+
+      batch.set(transactionRef, {
+        'title': 'Transfer to $contactName',
         'amount': amount,
         'type': 'expense',
         'category': 'transfer',
+        'contactId': contactId,
+        'contactName': contactName,
+        'contactEmail': contactEmail,
         'date': Timestamp.now(),
       });
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      final recentTransferRef =
+      userRef.collection('recent_transfers').doc(contactId);
+
+      batch.set(
+        recentTransferRef,
+        {
+          'contactId': contactId,
+          'name': contactName,
+          'email': contactEmail,
+          'lastTransferDate': Timestamp.now(),
+          'transferCount': FieldValue.increment(1),
+        },
+        SetOptions(merge: true),
+      );
+
+      batch.update(userRef, {
         'totalBalance': balance - amount,
-        'totalExpense': (data['totalExpense'] ?? 0).toDouble() + amount,
+        'totalExpense': totalExpense + amount,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      await batch.commit();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(LocaleKeys.transfer_transferred.tr(args:[amount.toStringAsFixed(2),
-              toUser,
-            ])
+            content: Text(
+              LocaleKeys.transfer_transferred.tr(
+                args: [
+                  amount.toStringAsFixed(2),
+                  contactName,
+                ],
+              ),
             ),
-          )
-      );
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('Transfer Error: $e');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

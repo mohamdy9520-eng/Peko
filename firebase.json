@@ -13,7 +13,6 @@
       "source": "functions"
     },
     {
-      "source": "JavaScript",
       "codebase": "peko",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
@@ -23,7 +22,19 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "predeploy": [
+      "predeploy": [],
+      "source": "JavaScript"
+    },
+    {
+      "source": "auth-functions",
+      "codebase": "otp-functions",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
       ]
     }
   ]

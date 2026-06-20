@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/pages/forgetPassword_screen/forget_password.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/auth/presentation/pages/register_screen.dart';
 import '../features/auth/presentation/pages/verification/verify.dart';
@@ -12,9 +13,11 @@ import '../features/auth/presentation/pages/verification/verify.dart';
 import '../features/budget/AiResult_Screen/AiResult_screen.dart';
 import '../features/budget/budget_screen.dart';
 
+import '../features/contacts_Screen/contacts_screen.dart';
 import '../features/expenses/add_expense_screen.dart';
 
 import '../features/home/allTransactions/AllTransactionsScreen.dart';
+import '../features/home/allTransactions/edit_transaction.dart';
 import '../features/home/presentation/pages/home_screen.dart';
 
 import '../features/onboarding/onboarding_screen.dart';
@@ -40,10 +43,16 @@ class AppRoutes {
   static const signup = '/signup';
   static const verifyEmail = '/verify-email';
 
+  // ✅ Forgot Password Routes
+  static const forgotPassword = '/forgot-password';
+  static const verifyOtp = '/verify-otp';
+  static const resetPassword = '/reset-password';
+
   static const home = '/home';
   static const statistic = '/statistic';
   static const budget = '/budget';
   static const profile = '/profile';
+  static const contacts = '/contacts';
 
   static const addExpense = '/add-expense';
   static const addIncome = '/add-income';
@@ -87,7 +96,11 @@ class AppRouter {
         AppRoutes.login,
         AppRoutes.signup,
         AppRoutes.verifyEmail,
-        AppRoutes.language, // ✅ مهم جدًا
+        AppRoutes.language,
+        // ✅ Added forgot password routes
+        AppRoutes.forgotPassword,
+        AppRoutes.verifyOtp,
+        AppRoutes.resetPassword,
       ];
 
       // لو داخل public route سيب المستخدم
@@ -133,6 +146,12 @@ class AppRouter {
         builder: (_, __) => const SignUpScreen(),
       ),
 
+      GoRoute(
+        path: AppRoutes.contacts,
+        parentNavigatorKey: AppRouter.rootNavigatorKey,
+        builder: (_, __) => const ContactsScreen(),
+      ),
+
       /// Verify
       GoRoute(
         path: AppRoutes.verifyEmail,
@@ -144,6 +163,13 @@ class AppRouter {
         path: AppRoutes.language,
         builder: (_, __) => const LanguageScreen(),
       ),
+
+      // ✅ Forgot Password Screens
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
+
 
       /// Main Shell
       StatefulShellRoute.indexedStack(
@@ -221,6 +247,23 @@ class AppRouter {
         path: AppRoutes.billPayment,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const BillPaymentScreen(),
+      ),
+
+      GoRoute(
+        path: '/statisticScreen',
+        builder: (context, state) => const StatisticScreen(),
+      ),
+
+      GoRoute(
+        path: '/edit-transaction',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+
+          return EditTransactionScreen(
+            docId: extra['docId'],
+            data: extra['data'],
+          );
+        },
       ),
 
       /// Transactions

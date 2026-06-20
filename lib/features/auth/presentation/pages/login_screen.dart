@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +24,31 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool _obscurePassword = true; // ✅ For visibility toggle
+
+  // ✅ Helper to format error messages
+  String _getErrorMessage(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('invalid-credential') ||
+        errorString.contains('wrong-password') ||
+        errorString.contains('user-not-found')) {
+      return 'Invalid Username/password';
+    }
+
+    if (errorString.contains('unavailable') ||
+        errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('timeout')) {
+      return 'Network error: Could not connect to the server. Please check your connection.';
+    }
+
+    if (errorString.contains('permission-denied')) {
+      return 'Access denied. Please contact support.';
+    }
+
+    return 'Error: $error';
+  }
 
   Future<void> login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -38,18 +64,15 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       context.go('/main');
     } on FirebaseAuthException catch (e) {
-      String msg = "Login failed";
+      // ✅ Use helper for formatted message
+      final msg = _getErrorMessage(e);
 
-      if (e.code == 'user-not-found') {
-        msg = "User not found";
-      } else if (e.code == 'wrong-password') {
-        msg = "Wrong password";
-      } else if (e.code == 'invalid-email') {
-        msg = "Invalid email";
-      }
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -70,13 +93,40 @@ class _LoginScreenState extends State<LoginScreen> {
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential =
+      await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user!;
+
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+
+      final snapshot = await userDoc.get();
+
+      if (!snapshot.exists) {
+        await userDoc.set({
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'username': '',
+          'totalBalance': 0.0,
+          'totalIncome': 0.0,
+          'totalExpense': 0.0,
+          'createdAt': Timestamp.now(),
+          'imageUrl': user.photoURL ?? '',
+        });
+      }
 
       if (!mounted) return;
       context.go('/main');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Google sign-in failed")),
+        SnackBar(
+          content: Text('Google sign-in failed: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => isLoading = false);
@@ -97,13 +147,19 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (state is AuthSuccess) {
-          Navigator.pushReplacementNamed(context, '/home');
+          context.go('/main');
         }
 
         if (state is AuthFailure) {
           Navigator.pop(context);
+          // ✅ Use helper for formatted message
+          final msg = _getErrorMessage(state.message);
+
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       },
@@ -155,9 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 10.h),
 
+                      // ✅ Password with Visibility Icon
                       TextFormField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
@@ -169,6 +226,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.green,
                               width: 2.w,
                             ),
+                          ),
+                          // ✅ Visibility Icon
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
                         validator: (value) {
@@ -182,19 +253,37 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
 
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 4.h, right: 4.w),
+                          child: GestureDetector(
+                            onTap: () => context.go('/forgot-password'),
+                            child: Text(
+                              "Forgot Password?",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
                       SizedBox(height: 20.h),
 
                       ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              context.read<AuthBloc>().add(
-                                LoginRequested(
-                                  email: emailController.text.trim(),
-                                  password: passwordController.text.trim(),
-                                ),
-                              );
-                            }
-                          },
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            context.read<AuthBloc>().add(
+                              LoginRequested(
+                                email: emailController.text.trim(),
+                                password: passwordController.text.trim(),
+                              ),
+                            );
+                          }
+                        },
                         child: const Text("Login"),
                       ),
 
