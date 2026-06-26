@@ -3,7 +3,6 @@
     "name": "Pēco",
     "tagline": "Chat Smarter"
   },
-
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -34,7 +33,6 @@
     "passwords_not_match": "Passwords do not match",
     "invalid_name": "Name must be at least 3 characters"
   },
-
   "chats": {
     "title": "Chats",
     "search": "Search chats...",
@@ -87,7 +85,6 @@
     "links": "Links",
     "search_in_chat": "Search in chat"
   },
-
   "contacts": {
     "title": "Contacts",
     "search": "Search contacts...",
@@ -98,7 +95,6 @@
     "invite_friend": "Invite a friend to Pēco",
     "share_invite": "Share invite link"
   },
-
   "settings": {
     "title": "Settings",
     "account": "Account",
@@ -116,7 +112,6 @@
     "status": "Status",
     "about_me": "About"
   },
-
   "privacy": {
     "title": "Privacy Settings",
     "last_seen": "Last Seen",
@@ -127,7 +122,6 @@
     "contacts": "My Contacts",
     "nobody": "Nobody"
   },
-
   "calls": {
     "title": "Calls",
     "voice_call": "Voice Call",
@@ -142,7 +136,6 @@
     "no_calls": "No calls yet",
     "call_back": "Call back"
   },
-
   "status": {
     "title": "Status",
     "my_status": "My Status",
@@ -152,7 +145,6 @@
     "no_status": "No status updates",
     "tap_to_add": "Tap to add status update"
   },
-
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -196,9 +188,12 @@
     "tap_to_retry": "Tap to retry",
     "coming_soon": "Coming Soon",
     "feature_coming_soon": "This feature will be available soon",
-    "income": "Income"
-  },
+    "income": "Income",
+    "items": "items",
+    "unknown": "Unknown",
+    "other": "other"
 
+  },
   "transfer": {
     "title": "Transfer Money",
     "transfer": "Transfer",
@@ -215,25 +210,25 @@
     "user_not_found": "User data not found",
     "choose_contact": "Choose Contact",
     "select_contact": "Select Contact",
-    "no_contacts": "No contacts yet. Add contacts from the resend section."
+    "no_contacts": "No contacts yet. Add contacts from the resend section.",
+    "add_new_contact": "Add a new contact for transfers",
+    "error_loading_contacts": "Error loading contacts"
   },
-
   "transactions": {
     "history": "Transaction History",
     "top_transactions": "Top Transactions",
     "delete_transaction": "Delete Transaction",
     "transaction_deleted": "Transaction deleted successfully",
-    "no_transactions_yet": "No transactions yet\nTap + to add a transaction!"
+    "no_transactions_yet": "No transactions yet\nTap + to add a transaction!",
+    "all_transactions": "All Transactions"
   },
-
   "analytics": {
     "statistics": "Statistics",
     "insight": "Insight",
     "no_data_for": "No data for",
-    "you_spent_most_on": "You spent most on {category} with ${amount}",
+    "you_spent_most_on": "You spent most on {category} with USD{amount}",
     "trend": "Trend"
   },
-
   "expense_actions": {
     "add": "Add",
     "add_income": "Add Income",
@@ -243,7 +238,6 @@
     "what_would_you_like_to_add": "What would you like to add?",
     "see_all": "See All"
   },
-
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "network": "Connection error. Please check your internet.",
@@ -261,15 +255,11 @@
     "storage_permission": "Please allow storage access",
     "location_permission": "Please allow location access",
     "contacts_permission": "Please allow contacts access",
+    "no_advice": "No advice is available",
     "no_internet": "No Internet",
-    "No advice is available":"No advice is available",
-    "There is no internet connection. Please check your network and try again": "There is no internet connection. Please check your network and try again",
-    "Unable to connect to the server. Please try again later": "Unable to connect to the server. Please try again later",
-    "An unexpected error occurred. Please try again": "An unexpected error occurred. Please try again"
-
-
+    "server_error": "Unable to connect to the server. Please try again later",
+    "unexpected_error": "An unexpected error occurred. Please try again"
   },
-
   "expense": {
     "title": "Expenses",
     "income": "Income",
@@ -277,17 +267,133 @@
     "summary": "Summary",
     "total_expense": "Total Expense",
     "total_income": "Total Income",
+    "total_balance": "Total Balance",
     "net": "Net",
     "count": "Count",
     "distribution": "Distribution",
     "by_category": "By Category",
     "alert": "alert"
   },
-
   "date": {
     "day": "Day",
     "week": "Week",
     "month": "Month",
     "year": "Year"
-  }
+  },
+  "main_navigation": {
+    "budget": "Budget",
+    "home": "Home",
+    "stats": "Stats",
+    "profile": "Profile"
+  },
+  "budget": {
+    "title": "Budget & Goals",
+    "goals": "Goals",
+    "income": "Income",
+    "add_goal": "Add Goal",
+    "add_budget": "Add Budget",
+    "goal_name": "Goal Name",
+    "target_amount": "Target Amount",
+    "current_amount": "Current Amount",
+    "deadline": "Deadline",
+    "select_deadline": "Select Deadline",
+    "no_goals": "No goals yet",
+    "no_budgets": "No budgets yet",
+    "set_first_goal": "Set your first savings goal!",
+    "add_first_goal": "Add Your First Goal",
+    "ask_ai": "Ask AI",
+    "ai_plan": "AI Plan",
+    "monthly_plan": "Monthly Plan",
+    "yearly_plan": "Yearly Plan",
+    "available_budget": "Available Budget",
+    "total_budget": "Total Budget",
+    "used": "used",
+    "left": "left",
+    "over_by": "Over by",
+    "savings": "Savings",
+    "auto_save": "Auto-Save",
+    "auto_save_setup": "Auto-Save Setup",
+    "period_ends": "Period ends",
+    "completed": "COMPLETED",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add_expense": "Add Expense",
+    "expense_amount": "Expense Amount",
+    "expense_description": "Expense Description",
+    "category": "Category",
+    "source": "Source",
+    "period": "Period",
+    "monthly": "monthly",
+    "weekly": "weekly",
+    "one_time": "one-time",
+    "salary": "salary",
+    "freelance": "freelance",
+    "investment": "investment",
+    "business": "business",
+    "gift": "gift",
+    "bonus": "bonus",
+    "other": "other",
+    "food": "food",
+    "shopping": "shopping",
+    "transport": "transport",
+    "bills": "bills",
+    "entertainment": "entertainment",
+    "health": "health",
+    "you_spent_most_on": "You spent most on {category} with {amount}",
+    "education": "education",
+    "error_loading": "Error loading budgets",
+    "retry": "Retry",
+    "goal_added": "Goal added successfully!",
+    "budget_added": "Budget added! Track expenses against it.",
+    "expense_added": "Expense added",
+    "goal_updated": "Goal updated successfully",
+    "goal_deleted": "Goal deleted",
+    "budget_deleted": "Income source removed",
+    "fill_all_fields": "Please fill all fields",
+    "enter_valid_amount": "Enter valid amount",
+    "enter_budget_name": "Enter budget name",
+    "choose_ai_plan": "Choose Your AI Plan",
+    "monthly_saving_plan": "Monthly Saving Plan",
+    "yearly_wealth_plan": "Yearly Wealth Plan",
+    "based_on_budget": "Based on your budget & goals",
+    "long_term_strategy": "Long-term strategy with goals",
+    "ai_analyzing": "AI is analyzing your budget & goals...",
+    "ai_empty_plan": "AI returned empty plan. Please try again.",
+    "personalized_plan": "Your Personalized Plan",
+    "generated_on": "Generated on",
+    "export_plan": "Export Plan",
+    "save_share_plan": "Save or share your budget & savings plan",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "share": "Share",
+    "copy_clipboard": "Copy to Clipboard",
+    "copy_plan_text": "Copy plan text to paste anywhere",
+    "generate_new_plan": "Generate New Plan",
+    "create_different_plan": "Create a different plan based on your data",
+    "plan_copied": "Plan copied to clipboard",
+    "quick_actions": "Quick Actions",
+    "link_to_goals": "Link to Your Goals",
+    "auto_save_percent": "Auto-Save Percentage",
+    "savings_added": "Savings Added!",
+    "goal_achieved": "Goal Achieved!",
+    "congratulations": "Congratulations!",
+    "offline_plan": "Offline Plan",
+
+    "transactions": {
+      "history": "سجل المعاملات",
+      "top_transactions": "أهم المعاملات",
+      "delete_transaction": "حذف المعاملة",
+      "transaction_deleted": "تم حذف العملية بنجاح",
+      "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+      "all_transactions": "جميع المعاملات"
+    }
+  },
+  "transaction": {
+    "type": "Type",
+    "date": "Date",
+    "id": "Transaction ID"
+  },
+  "welcome_back": "Welcome back",
+  "add_first": "Add a contact first to make transfers",
+  "no_contacts_found": "No contacts found"
 }

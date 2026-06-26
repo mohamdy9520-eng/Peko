@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'notification_service.dart';
+import '../notifications/notification_service.dart';
 
 class AIService {
   static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
@@ -38,16 +38,16 @@ class AIService {
         .join('\n');
 
     final planPrompt = """
-💰 INCOME-BASED FINANCIAL ANALYSIS & SAVINGS PLAN
+💰 SMART FINANCIAL ANALYSIS: BUDGET • SAVINGS • GOALS
 
-📊 Financial Summary:
+📊 Financial Overview:
 ━━━━━━━━━━━━━━━━━━━━━
-💵 Total Income: \$${income.toStringAsFixed(2)}
+💵 Total Budget: \$${income.toStringAsFixed(2)}
 📉 Total Expenses: \$${expense.toStringAsFixed(2)}
-📈 Available to Save: \$${savings.toStringAsFixed(2)}
-💰 Savings Rate: ${income > 0 ? ((savings / income) * 100).toStringAsFixed(1) : 0}%
+💰 Available Budget: \$${savings.toStringAsFixed(2)}
+📈 Savings Potential: ${income > 0 ? ((savings / income) * 100).toStringAsFixed(1) : 0}%
 
-💵 Income Sources:
+💵 Active Budgets:
 $budgetsContext
 
 📂 Expense Breakdown:
@@ -56,28 +56,37 @@ $categoriesText
 $goalsContext
 
 🎯 INSTRUCTIONS:
-Create a detailed ${planType.toUpperCase()} financial plan based on INCOME ALLOCATION (not spending limits).
+Create a comprehensive ${planType.toUpperCase()} financial plan that CONNECTS Available Budget, Savings & Goals.
 
 Requirements:
-1. Analyze income sources stability and reliability
-2. Calculate optimal savings rate from available income
-3. For EACH goal: Show exact monthly contribution needed and which income source to allocate from
-4. Show timeline projection: "At this rate, you'll reach [Goal] by [Date]"
-5. If savings are insufficient for goals, suggest:
-   - Which expenses to reduce
-   - Additional income needed
-   - Extended timeline
-6. Include emergency fund recommendation (3-6 months of expenses)
-7. Provide weekly action steps
-8. Use emojis, clear sections, and bullet points
-9. Be specific with numbers and percentages
+1. **BUDGET ANALYSIS**: Analyze each active budget's remaining amount and recommend optimal allocation
+2. **GOALS-BUDGET LINK**: For EACH goal, show:
+   - Exact amount to save from Available Budget
+   - Which specific budget(s) to allocate from
+   - Recommended auto-save percentage per budget
+   - Timeline: "At this rate, you'll reach [Goal] by [Date]"
+3. **SAVINGS STRATEGY**:
+   - Apply 50/30/20 rule to Available Budget
+   - Emergency fund priority (3-6 months expenses = \$${(expense * 3).toStringAsFixed(0)} - \$${(expense * 6).toStringAsFixed(0)})
+   - Balance multiple goals with available resources
+4. **FEASIBILITY CHECK**:
+   - If goals exceed Available Budget, rank by urgency & suggest adjustments
+   - Show "Goal Gap" and how to close it (reduce expenses, extend deadline, or increase budget)
+5. **ACTIONABLE STEPS**:
+   - Week-by-week spending limits per category
+   - Monthly savings targets per goal
+   - Auto-save setup recommendations
+6. Use emojis, clear sections, bullet points, and specific dollar amounts
+7. Be encouraging but realistic about timeline
 
 Example format:
 "🚗 Buy a Car (\$250,000)
-   Current: \$5,000 (2%)
-   Need: \$2,083/month for 120 months
-   Source: Allocate 15% of Monthly Salary
-   Projected: Reach goal by October 2027"
+   Current: \$5,000 (2%) | Remaining: \$245,000
+   📅 Deadline: Dec 2027 (18 months left)
+   ⭐ NEED: \$13,611/month from Available Budget
+   💡 SOURCE: Allocate 40% of Salary Budget (\$20,000/mo)
+   ✅ PROJECTED: Reach goal by Nov 2027 (1 month early!)
+   🔄 AUTO-SAVE: Set 40% auto-save from 'Monthly Salary' budget"
 """;
 
     final response = await http.post(
@@ -337,15 +346,19 @@ Example format:
     } else {
       // Progress notification
       final progress = (newAmount / targetAmount * 100).toStringAsFixed(1);
-      await NotificationService.showNotification(
+
+      // ✅ Save to Firestore + Show system notification
+      await _saveAndNotify(
+        userId: user.uid,
         title: '💰 Savings Added!',
-        body:
-        '\$${amount.toStringAsFixed(0)} saved to "${goalData['name']}"! Progress: $progress%',
-        payload: jsonEncode({
-          'type': 'savings_progress',
+        body: '\$${amount.toStringAsFixed(0)} saved to "${goalData['name']}"! Progress: $progress%',
+        type: 'savings_progress',
+        data: {
           'goalId': goalId,
           'amount': amount,
-        }),
+          'screen': '/budget',
+          'tab': 'goals',
+        },
       );
     }
   }
@@ -369,30 +382,52 @@ Example format:
       'completedAt': Timestamp.now(),
     });
 
-    // Save notification to Firestore
+    // ✅ Save to Firestore + Show system notification
+    await _saveAndNotify(
+      userId: userId,
+      title: '🎉 Goal Achieved! 🏆',
+      body: 'Amazing! You\'ve saved \$${targetAmount.toStringAsFixed(0)} for "${goalData['name']}"! Time to celebrate! 🎊',
+      type: 'goal_completion',
+      data: {
+        'goalId': goalId,
+        'screen': '/budget',
+        'tab': 'goals',
+      },
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // ✅ NEW: Unified Save & Notify Helper
+  // ─────────────────────────────────────────────
+  static Future<void> _saveAndNotify({
+    required String userId,
+    required String title,
+    required String body,
+    required String type,
+    required Map<String, dynamic> data,
+  }) async {
+    // 1. Save to Firestore (for Notification Screen)
     await FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .collection('notifications')
         .add({
-      'title': '🎉 Goal Achieved!',
-      'body':
-      'Congratulations! You\'ve reached your goal "${goalData['name']}" with \$${targetAmount.toStringAsFixed(0)}!',
-      'type': 'goal_completion',
-      'goalId': goalId,
+      'title': title,
+      'body': body,
+      'type': type,
       'read': false,
+      'screen': data['screen'],
+      'tab': data['tab'],
+      'data': data,
       'createdAt': Timestamp.now(),
     });
 
-    // Trigger local notification
+    // 2. Show system notification (payload for deep linking)
     await NotificationService.showNotification(
-      title: '🎉 Goal Achieved! 🏆',
-      body:
-      'Amazing! You\'ve saved \$${targetAmount.toStringAsFixed(0)} for "${goalData['name']}"! Time to celebrate! 🎊',
-      payload: jsonEncode({
-        'type': 'goal_completion',
-        'goalId': goalId,
-      }),
+      title: title,
+      body: body,
+      type: type,
+      data: data,
     );
   }
 

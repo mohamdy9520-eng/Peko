@@ -1,264 +1,812 @@
 // DO NOT EDIT. This is code generated via package:easy_localization/generate.dart
 
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: prefer_single_quotes, avoid_renaming_method_parameters, constant_identifier_names
 
-abstract class LocaleKeys {
-  static const app_name = 'app.name';
-  static const app_tagline = 'app.tagline';
-  static const app = 'app';
-  static const auth_login = 'auth.login';
-  static const auth_register = 'auth.register';
-  static const auth_logout = 'auth.logout';
-  static const auth_email = 'auth.email';
-  static const auth_password = 'auth.password';
-  static const auth_confirm_password = 'auth.confirm_password';
-  static const auth_phone = 'auth.phone';
-  static const auth_forgot_password = 'auth.forgot_password';
-  static const auth_reset_password = 'auth.reset_password';
-  static const auth_verify_phone = 'auth.verify_phone';
-  static const auth_otp_sent = 'auth.otp_sent';
-  static const auth_enter_otp = 'auth.enter_otp';
-  static const auth_resend_otp = 'auth.resend_otp';
-  static const auth_full_name = 'auth.full_name';
-  static const auth_already_have_account = 'auth.already_have_account';
-  static const auth_dont_have_account = 'auth.dont_have_account';
-  static const auth_login_success = 'auth.login_success';
-  static const auth_register_success = 'auth.register_success';
-  static const auth_invalid_credentials = 'auth.invalid_credentials';
-  static const auth_weak_password = 'auth.weak_password';
-  static const auth_email_in_use = 'auth.email_in_use';
-  static const auth_phone_in_use = 'auth.phone_in_use';
-  static const auth_required = 'auth.required';
-  static const auth_invalid_email = 'auth.invalid_email';
-  static const auth_invalid_phone = 'auth.invalid_phone';
-  static const auth_password_short = 'auth.password_short';
-  static const auth_passwords_not_match = 'auth.passwords_not_match';
-  static const auth_invalid_name = 'auth.invalid_name';
-  static const auth = 'auth';
-  static const chats_title = 'chats.title';
-  static const chats_search = 'chats.search';
-  static const chats_no_chats = 'chats.no_chats';
-  static const chats_new_chat = 'chats.new_chat';
-  static const chats_new_group = 'chats.new_group';
-  static const chats_type_message = 'chats.type_message';
-  static const chats_send = 'chats.send';
-  static const chats_voice_message = 'chats.voice_message';
-  static const chats_image = 'chats.image';
-  static const chats_video = 'chats.video';
-  static const chats_file = 'chats.file';
-  static const chats_location = 'chats.location';
-  static const chats_contact = 'chats.contact';
-  static const chats_replying_to = 'chats.replying_to';
-  static const chats_forwarded = 'chats.forwarded';
-  static const chats_edited = 'chats.edited';
-  static const chats_deleted = 'chats.deleted';
-  static const chats_typing = 'chats.typing';
-  static const chats_online = 'chats.online';
-  static const chats_offline = 'chats.offline';
-  static const chats_last_seen = 'chats.last_seen';
-  static const chats_last_seen_at = 'chats.last_seen_at';
-  static const chats_today = 'chats.today';
-  static const chats_yesterday = 'chats.yesterday';
-  static const chats_message_copied = 'chats.message_copied';
-  static const chats_message_deleted = 'chats.message_deleted';
-  static const chats_message_forwarded = 'chats.message_forwarded';
-  static const chats_message_starred = 'chats.message_starred';
-  static const chats_message_unstarred = 'chats.message_unstarred';
-  static const chats_delete_for_me = 'chats.delete_for_me';
-  static const chats_delete_for_all = 'chats.delete_for_all';
-  static const chats_reply = 'chats.reply';
-  static const chats_forward = 'chats.forward';
-  static const chats_copy = 'chats.copy';
-  static const chats_star = 'chats.star';
-  static const chats_info = 'chats.info';
-  static const chats_mute = 'chats.mute';
-  static const chats_unmute = 'chats.unmute';
-  static const chats_block = 'chats.block';
-  static const chats_unblock = 'chats.unblock';
-  static const chats_clear_chat = 'chats.clear_chat';
-  static const chats_delete_chat = 'chats.delete_chat';
-  static const chats_archive = 'chats.archive';
-  static const chats_unarchive = 'chats.unarchive';
-  static const chats_pin = 'chats.pin';
-  static const chats_unpin = 'chats.unpin';
-  static const chats_media = 'chats.media';
-  static const chats_documents = 'chats.documents';
-  static const chats_links = 'chats.links';
-  static const chats_search_in_chat = 'chats.search_in_chat';
-  static const chats = 'chats';
-  static const contacts_title = 'contacts.title';
-  static const contacts_search = 'contacts.search';
-  static const contacts_no_contacts = 'contacts.no_contacts';
-  static const contacts_invite = 'contacts.invite';
-  static const contacts_sync_contacts = 'contacts.sync_contacts';
-  static const contacts_add_contact = 'contacts.add_contact';
-  static const contacts_invite_friend = 'contacts.invite_friend';
-  static const contacts_share_invite = 'contacts.share_invite';
-  static const contacts = 'contacts';
-  static const settings_title = 'settings.title';
-  static const settings_account = 'settings.account';
-  static const settings_profile = 'settings.profile';
-  static const settings_privacy = 'settings.privacy';
-  static const settings_notifications = 'settings.notifications';
-  static const settings_appearance = 'settings.appearance';
-  static const settings_language = 'settings.language';
-  static const settings_storage = 'settings.storage';
-  static const settings_help = 'settings.help';
-  static const settings_about = 'settings.about';
-  static const settings_edit_profile = 'settings.edit_profile';
-  static const settings_change_photo = 'settings.change_photo';
-  static const settings_remove_photo = 'settings.remove_photo';
-  static const settings_status = 'settings.status';
-  static const settings_about_me = 'settings.about_me';
-  static const settings = 'settings';
-  static const privacy_title = 'privacy.title';
-  static const privacy_last_seen = 'privacy.last_seen';
-  static const privacy_profile_photo = 'privacy.profile_photo';
-  static const privacy_status = 'privacy.status';
-  static const privacy_read_receipts = 'privacy.read_receipts';
-  static const privacy_everyone = 'privacy.everyone';
-  static const privacy_contacts = 'privacy.contacts';
-  static const privacy_nobody = 'privacy.nobody';
-  static const privacy = 'privacy';
-  static const calls_title = 'calls.title';
-  static const calls_voice_call = 'calls.voice_call';
-  static const calls_video_call = 'calls.video_call';
-  static const calls_incoming = 'calls.incoming';
-  static const calls_outgoing = 'calls.outgoing';
-  static const calls_missed = 'calls.missed';
-  static const calls_calling = 'calls.calling';
-  static const calls_ringing = 'calls.ringing';
-  static const calls_call_ended = 'calls.call_ended';
-  static const calls_call_failed = 'calls.call_failed';
-  static const calls_no_calls = 'calls.no_calls';
-  static const calls_call_back = 'calls.call_back';
-  static const calls = 'calls';
-  static const status_title = 'status.title';
-  static const status_my_status = 'status.my_status';
-  static const status_add_status = 'status.add_status';
-  static const status_viewed = 'status.viewed';
-  static const status_mute_status = 'status.mute_status';
-  static const status_no_status = 'status.no_status';
-  static const status_tap_to_add = 'status.tap_to_add';
-  static const status = 'status';
-  static const common_save = 'common.save';
-  static const common_cancel = 'common.cancel';
-  static const common_delete = 'common.delete';
-  static const common_edit = 'common.edit';
-  static const common_done = 'common.done';
-  static const common_ok = 'common.ok';
-  static const common_yes = 'common.yes';
-  static const common_no = 'common.no';
-  static const common_back = 'common.back';
-  static const common_next = 'common.next';
-  static const common_skip = 'common.skip';
-  static const common_loading = 'common.loading';
-  static const common_error = 'common.error';
-  static const common_success = 'common.success';
-  static const common_warning = 'common.warning';
-  static const common_info = 'common.info';
-  static const common_confirm = 'common.confirm';
-  static const common_continue = 'common.continue';
-  static const common_close = 'common.close';
-  static const common_retry = 'common.retry';
-  static const common_share = 'common.share';
-  static const common_copy = 'common.copy';
-  static const common_paste = 'common.paste';
-  static const common_select_all = 'common.select_all';
-  static const common_search = 'common.search';
-  static const common_filter = 'common.filter';
-  static const common_sort = 'common.sort';
-  static const common_more = 'common.more';
-  static const common_less = 'common.less';
-  static const common_show = 'common.show';
-  static const common_hide = 'common.hide';
-  static const common_enable = 'common.enable';
-  static const common_disable = 'common.disable';
-  static const common_connected = 'common.connected';
-  static const common_disconnected = 'common.disconnected';
-  static const common_connecting = 'common.connecting';
-  static const common_no_internet = 'common.no_internet';
-  static const common_check_connection = 'common.check_connection';
-  static const common_pull_to_refresh = 'common.pull_to_refresh';
-  static const common_tap_to_retry = 'common.tap_to_retry';
-  static const common_coming_soon = 'common.coming_soon';
-  static const common_feature_coming_soon = 'common.feature_coming_soon';
-  static const common_income = 'common.income';
-  static const common = 'common';
-  static const transfer_title = 'transfer.title';
-  static const transfer_transfer = 'transfer.transfer';
-  static const transfer_send_money = 'transfer.send_money';
-  static const transfer_amount = 'transfer.amount';
-  static const transfer_transfer_to = 'transfer.transfer_to';
-  static const transfer_email_or_phone = 'transfer.email_or_phone';
-  static const transfer_user = 'transfer.user';
-  static const transfer_add_contact = 'transfer.add_contact';
-  static const transfer_send = 'transfer.send';
-  static const transfer_transferred = 'transfer.transferred';
-  static const transfer_insufficient_balance = 'transfer.insufficient_balance';
-  static const transfer_invalid_amount = 'transfer.invalid_amount';
-  static const transfer_user_not_found = 'transfer.user_not_found';
-  static const transfer_choose_contact = 'transfer.choose_contact';
-  static const transfer_select_contact = 'transfer.select_contact';
-  static const transfer_no_contacts = 'transfer.no_contacts';
-  static const transfer = 'transfer';
-  static const transactions_history = 'transactions.history';
-  static const transactions_top_transactions = 'transactions.top_transactions';
-  static const transactions_delete_transaction = 'transactions.delete_transaction';
-  static const transactions_transaction_deleted = 'transactions.transaction_deleted';
-  static const transactions_no_transactions_yet = 'transactions.no_transactions_yet';
-  static const transactions = 'transactions';
-  static const analytics_statistics = 'analytics.statistics';
-  static const analytics_insight = 'analytics.insight';
-  static const analytics_no_data_for = 'analytics.no_data_for';
-  static const analytics_you_spent_most_on = 'analytics.you_spent_most_on';
-  static const analytics = 'analytics';
-  static const expense_actions_add = 'expense_actions.add';
-  static const expense_actions_add_income = 'expense_actions.add_income';
-  static const expense_actions_add_expenses = 'expense_actions.add_expenses';
-  static const expense_actions_add_multiple_income_sources = 'expense_actions.add_multiple_income_sources';
-  static const expense_actions_add_multiple_expenses = 'expense_actions.add_multiple_expenses';
-  static const expense_actions_what_would_you_like_to_add = 'expense_actions.what_would_you_like_to_add';
-  static const expense_actions_see_all = 'expense_actions.see_all';
-  static const expense_actions = 'expense_actions';
-  static const errors_generic = 'errors.generic';
-  static const errors_network = 'errors.network';
-  static const errors_server = 'errors.server';
-  static const errors_timeout = 'errors.timeout';
-  static const errors_unauthorized = 'errors.unauthorized';
-  static const errors_forbidden = 'errors.forbidden';
-  static const errors_not_found = 'errors.not_found';
-  static const errors_conflict = 'errors.conflict';
-  static const errors_too_many_requests = 'errors.too_many_requests';
-  static const errors_file_too_large = 'errors.file_too_large';
-  static const errors_unsupported_format = 'errors.unsupported_format';
-  static const errors_camera_permission = 'errors.camera_permission';
-  static const errors_microphone_permission = 'errors.microphone_permission';
-  static const errors_storage_permission = 'errors.storage_permission';
-  static const errors_location_permission = 'errors.location_permission';
-  static const errors_contacts_permission = 'errors.contacts_permission';
-  static const errors = 'errors';
-  static const expense_title = 'expense.title';
-  static const expense_income = 'expense.income';
-  static const expense_statistics = 'expense.statistics';
-  static const expense_summary = 'expense.summary';
-  static const expense_total_expense = 'expense.total_expense';
-  static const expense_total_income = 'expense.total_income';
-  static const expense_net = 'expense.net';
-  static const expense_count = 'expense.count';
-  static const expense_distribution = 'expense.distribution';
-  static const expense_by_category = 'expense.by_category';
-  static const expense = 'expense';
-  static const date_day = 'date.day';
-  static const date_week = 'date.week';
-  static const date_month = 'date.month';
-  static const date_year = 'date.year';
-  static const date = 'date';
-  static const alert= 'alert';
-  static const no_internet='No Internet';
-  static const No_advice='No advice is available';
-  static const No_Internet='There is no internet connection. Please check your network and try again';
-  static const No_server='Unable to connect to the server. Please try again later';
-  static const unknown_error='An unexpected error occurred. Please try again.';
-  static const trend='trend';
+import 'dart:ui';
+
+import 'package:ai_expense_tracker/generated/locale_keys.g.dart';
+import 'package:easy_localization/easy_localization.dart' show AssetLoader;
+
+class CodegenLoader extends AssetLoader{
+  const CodegenLoader();
+
+  @override
+  Future<Map<String, dynamic>?> load(String path, Locale locale) {
+    return Future.value(mapLocales[locale.toString()]);
+  }
+
+  static const Map<String,dynamic> _ar = {
+  "app": {
+    "name": "Pēco",
+    "tagline": "دردش بذكاء"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "phone": "رقم الهاتف",
+    "forgot_password": "نسيت كلمة المرور؟",
+    "reset_password": "إعادة تعيين كلمة المرور",
+    "verify_phone": "التحقق من رقم الهاتف",
+    "otp_sent": "تم إرسال رمز التحقق",
+    "enter_otp": "أدخل رمز التحقق",
+    "resend_otp": "إعادة إرسال الرمز",
+    "full_name": "الاسم الكامل",
+    "already_have_account": "لديك حساب بالفعل؟",
+    "dont_have_account": "ليس لديك حساب؟",
+    "login_success": "تم تسجيل الدخول بنجاح",
+    "register_success": "تم إنشاء الحساب بنجاح",
+    "invalid_credentials": "بيانات الدخول غير صحيحة",
+    "weak_password": "كلمة المرور ضعيفة جدًا",
+    "email_in_use": "البريد الإلكتروني مستخدم بالفعل",
+    "phone_in_use": "رقم الهاتف مستخدم بالفعل",
+    "required": "هذا الحقل مطلوب",
+    "invalid_email": "البريد الإلكتروني غير صالح",
+    "invalid_phone": "رقم الهاتف غير صالح",
+    "password_short": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
+    "passwords_not_match": "كلمتا المرور غير متطابقتين",
+    "invalid_name": "يجب أن يتكون الاسم من 3 أحرف على الأقل"
+  },
+  "chats": {
+    "title": "الدردشات",
+    "search": "ابحث في الدردشات...",
+    "no_chats": "لا توجد دردشات بعد",
+    "new_chat": "دردشة جديدة",
+    "new_group": "مجموعة جديدة",
+    "type_message": "اكتب رسالة...",
+    "send": "إرسال",
+    "voice_message": "رسالة صوتية",
+    "image": "صورة",
+    "video": "فيديو",
+    "file": "ملف",
+    "location": "الموقع",
+    "contact": "جهة اتصال",
+    "replying_to": "الرد على",
+    "forwarded": "تمت إعادة التوجيه",
+    "edited": "تم التعديل",
+    "deleted": "تم حذف هذه الرسالة",
+    "typing": "يكتب...",
+    "online": "متصل",
+    "offline": "غير متصل",
+    "last_seen": "آخر ظهور",
+    "last_seen_at": "آخر ظهور في {time}",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "message_copied": "تم نسخ الرسالة",
+    "message_deleted": "تم حذف الرسالة",
+    "message_forwarded": "تمت إعادة توجيه الرسالة",
+    "message_starred": "تم تمييز الرسالة",
+    "message_unstarred": "تمت إزالة تمييز الرسالة",
+    "delete_for_me": "حذف لدي",
+    "delete_for_all": "حذف لدى الجميع",
+    "reply": "رد",
+    "forward": "إعادة توجيه",
+    "copy": "نسخ",
+    "star": "تمييز",
+    "info": "معلومات",
+    "mute": "كتم الإشعارات",
+    "unmute": "إلغاء كتم الإشعارات",
+    "block": "حظر",
+    "unblock": "إلغاء الحظر",
+    "clear_chat": "مسح الدردشة",
+    "delete_chat": "حذف الدردشة",
+    "archive": "أرشفة",
+    "unarchive": "إلغاء الأرشفة",
+    "pin": "تثبيت",
+    "unpin": "إلغاء التثبيت",
+    "media": "الوسائط",
+    "documents": "المستندات",
+    "links": "الروابط",
+    "search_in_chat": "البحث في الدردشة"
+  },
+  "contacts": {
+    "title": "جهات الاتصال",
+    "search": "ابحث في جهات الاتصال...",
+    "no_contacts": "لم يتم العثور على جهات اتصال",
+    "invite": "دعوة صديق",
+    "sync_contacts": "مزامنة جهات الاتصال",
+    "add_contact": "إضافة جهة اتصال",
+    "invite_friend": "ادعُ صديقًا إلى Pēco",
+    "share_invite": "مشاركة رابط الدعوة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "account": "الحساب",
+    "profile": "الملف الشخصي",
+    "privacy": "الخصوصية",
+    "notifications": "الإشعارات",
+    "appearance": "المظهر",
+    "language": "اللغة",
+    "storage": "التخزين والبيانات",
+    "help": "المساعدة",
+    "about": "حول التطبيق",
+    "edit_profile": "تعديل الملف الشخصي",
+    "change_photo": "تغيير الصورة",
+    "remove_photo": "إزالة الصورة",
+    "status": "الحالة",
+    "about_me": "نبذة عني"
+  },
+  "privacy": {
+    "title": "إعدادات الخصوصية",
+    "last_seen": "آخر ظهور",
+    "profile_photo": "الصورة الشخصية",
+    "status": "حالتي",
+    "read_receipts": "إيصالات القراءة",
+    "everyone": "الجميع",
+    "contacts": "جهات اتصالي",
+    "nobody": "لا أحد"
+  },
+  "calls": {
+    "title": "المكالمات",
+    "voice_call": "مكالمة صوتية",
+    "video_call": "مكالمة فيديو",
+    "incoming": "مكالمة واردة",
+    "outgoing": "مكالمة صادرة",
+    "missed": "مكالمة فائتة",
+    "calling": "جارٍ الاتصال...",
+    "ringing": "جارٍ الرنين...",
+    "call_ended": "انتهت المكالمة",
+    "call_failed": "فشل الاتصال",
+    "no_calls": "لا توجد مكالمات بعد",
+    "call_back": "إعادة الاتصال"
+  },
+  "status": {
+    "title": "الحالة",
+    "my_status": "حالتي",
+    "add_status": "إضافة حالة",
+    "viewed": "تمت المشاهدة",
+    "mute_status": "كتم الحالة",
+    "no_status": "لا توجد تحديثات للحالة",
+    "tap_to_add": "اضغط لإضافة تحديث حالة"
+  },
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "done": "تم",
+    "ok": "موافق",
+    "yes": "نعم",
+    "no": "لا",
+    "back": "رجوع",
+    "next": "التالي",
+    "skip": "تخطي",
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "success": "نجاح",
+    "warning": "تحذير",
+    "info": "معلومات",
+    "confirm": "تأكيد",
+    "continue": "متابعة",
+    "close": "إغلاق",
+    "retry": "إعادة المحاولة",
+    "share": "مشاركة",
+    "copy": "نسخ",
+    "paste": "لصق",
+    "select_all": "تحديد الكل",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "more": "المزيد",
+    "less": "أقل",
+    "show": "إظهار",
+    "hide": "إخفاء",
+    "enable": "تفعيل",
+    "disable": "تعطيل",
+    "connected": "متصل",
+    "disconnected": "غير متصل",
+    "connecting": "جارٍ الاتصال...",
+    "no_internet": "لا يوجد اتصال بالإنترنت",
+    "check_connection": "يرجى التحقق من اتصال الإنترنت",
+    "pull_to_refresh": "اسحب للتحديث",
+    "tap_to_retry": "اضغط لإعادة المحاولة",
+    "coming_soon": "قريبًا",
+    "feature_coming_soon": "هذه الميزة ستتوفر قريبًا",
+    "income": "الدخل",
+    "items": "عناصر",
+    "unknown": "غير معروف"
+  },
+  "transfer": {
+    "title": "تحويل الأموال",
+    "transfer": "تحويل",
+    "send_money": "أرسل الأموال إلى جهة اتصال",
+    "amount": "المبلغ",
+    "transfer_to": "تحويل إلى",
+    "email_or_phone": "البريد الإلكتروني أو الهاتف",
+    "user": "المستخدم",
+    "add_contact": "إضافة جهة اتصال",
+    "send": "إرسال",
+    "transferred": "تم التحويل",
+    "insufficient_balance": "الرصيد غير كافٍ",
+    "invalid_amount": "يرجى إدخال مبلغ صحيح",
+    "user_not_found": "لم يتم العثور على بيانات المستخدم",
+    "choose_contact": "اختر جهة اتصال",
+    "select_contact": "اختر جهة الاتصال",
+    "no_contacts": "لا توجد جهات اتصال حتى الآن. أضف جهات اتصال من قسم إعادة الإرسال.",
+    "add_new_contact": "إضافة جهة اتصال جديدة للتحويل",
+    "error_loading_contacts": "خطأ في تحميل جهات الاتصال"
+  },
+  "transactions": {
+    "history": "سجل المعاملات",
+    "top_transactions": "أهم المعاملات",
+    "delete_transaction": "حذف المعاملة",
+    "transaction_deleted": "تم حذف العملية بنجاح",
+    "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+    "all_transactions": "جميع المعاملات"
+  },
+  "analytics": {
+    "statistics": "الإحصائيات",
+    "insight": "تحليل",
+    "no_data_for": "لا توجد بيانات لـ",
+    'you_spent_most_on': r'أنفقت معظم أموالك على {category} بقيمة ${amount}',  // raw string    "trend": "الاتجاه"
+  },
+  "expense_actions": {
+    "add": "إضافة",
+    "add_income": "إضافة دخل",
+    "add_expenses": "إضافة المصروفات",
+    "add_multiple_income_sources": "أضف مصادر دخل متعددة",
+    "add_multiple_expenses": "أضف عدة نفقات في وقت واحد",
+    "what_would_you_like_to_add": "ماذا تود أن تضيف؟",
+    "see_all": "عرض الكل",
+    "alert":"expense_alert"
+  },
+  "errors": {
+    "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "network": "خطأ في الاتصال. يرجى التحقق من الإنترنت.",
+    "server": "خطأ في الخادم. يرجى المحاولة لاحقًا.",
+    "timeout": "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.",
+    "unauthorized": "غير مصرح لك. يرجى تسجيل الدخول مجددًا.",
+    "forbidden": "الوصول غير مسموح.",
+    "not_found": "العنصر غير موجود.",
+    "conflict": "يوجد تعارض في البيانات.",
+    "too_many_requests": "طلبات كثيرة جدًا. يرجى الانتظار.",
+    "file_too_large": "حجم الملف كبير جدًا",
+    "unsupported_format": "صيغة الملف غير مدعومة",
+    "camera_permission": "يرجى السماح بالوصول إلى الكاميرا",
+    "microphone_permission": "يرجى السماح بالوصول إلى الميكروفون",
+    "storage_permission": "يرجى السماح بالوصول إلى التخزين",
+    "location_permission": "يرجى السماح بالوصول إلى الموقع",
+    "contacts_permission": "يرجى السماح بالوصول إلى جهات الاتصال",
+    "no_internet": "لا يوجد اتصال بالإنترنت",
+    "no_advice": "لا توجد نصيحة متاحة",
+    "server_error": "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً.",
+    "unexpected_error": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى"
+  },
+  "expense": {
+    "title": "المصروفات",
+    "income": "الدخل",
+    "statistics": "الإحصائيات",
+    "summary": "الملخص",
+    "total_expense": "إجمالي المصروفات",
+    "total_income": "إجمالي الدخل",
+    "total_balance": "إجمالي الرصيد",
+    "net": "صافي",
+    "count": "عدد",
+    "distribution": "التوزيع",
+    "by_category": "حسب الفئة",
+    "alert": "تنبيه"
+  },
+  "date": {
+    "day": "اليوم",
+    "week": "الأسبوع",
+    "month": "الشهر",
+    "year": "السنة"
+  },
+  "main_navigation": {
+    "home": "الرئيسية",
+    "stats": "الاحصائيات",
+    "budget": "الميزانية",
+    "profile": "الملف الشخصي"
+  },
+  "budget": {
+    "title": "الميزانية والأهداف",
+    "goals": "الأهداف",
+    "income": "الدخل",
+    "add_goal": "إضافة هدف",
+    "add_budget": "إضافة ميزانية",
+    "goal_name": "اسم الهدف",
+    "target_amount": "المبلغ المستهدف",
+    "current_amount": "المبلغ الحالي",
+    "deadline": "الموعد النهائي",
+    "select_deadline": "اختر الموعد النهائي",
+    "no_goals": "لا توجد أهداف بعد",
+    "no_budgets": "لا توجد ميزانيات بعد",
+    "set_first_goal": "حدد هدفك الأول للادخار!",
+    "add_first_goal": "أضف هدفك الأول",
+    "ask_ai": "اسأل الذكاء الاصطناعي",
+    "ai_plan": "خطة الذكاء الاصطناعي",
+    "monthly_plan": "الخطة الشهرية",
+    "yearly_plan": "الخطة السنوية",
+    "available_budget": "الميزانية المتاحة",
+    "total_budget": "إجمالي الميزانية",
+    "used": "مستخدم",
+    "left": "متبقي",
+    "over_by": "تجاوز بمقدار",
+    "savings": "الادخار",
+    "auto_save": "حفظ تلقائي",
+    "auto_save_setup": "إعداد الحفظ التلقائي",
+    "period_ends": "ينتهي الفترة",
+    "completed": "مكتمل",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "add_expense": "إضافة مصروف",
+    "expense_amount": "مبلغ المصروف",
+    "expense_description": "وصف المصروف",
+    "category": "الفئة",
+    "source": "المصدر",
+    "period": "الفترة",
+    "monthly": "شهري",
+    "weekly": "أسبوعي",
+    "one_time": "مرة واحدة",
+    "salary": "راتب",
+    "freelance": "عمل حر",
+    "investment": "استثمار",
+    "business": "عمل تجاري",
+    "gift": "هدية",
+    "bonus": "مكافأة",
+    "other": "أخرى",
+    "food": "طعام",
+    "shopping": "تسوق",
+    "transport": "مواصلات",
+    "bills": "فواتير",
+    "entertainment": "ترفيه",
+    "health": "صحة",
+    "education": "تعليم",
+    "error_loading": "خطأ في تحميل الميزانية",
+    "retry": "إعادة المحاولة",
+    "goal_added": "تم إضافة الهدف بنجاح!",
+    "budget_added": "تم إضافة الميزانية! تتبع المصروفات ضدها.",
+    "expense_added": "تم إضافة المصروف",
+    "goal_updated": "تم تحديث الهدف بنجاح",
+    "goal_deleted": "تم حذف الهدف",
+    "budget_deleted": "تمت إزالة مصدر الدخل",
+    "fill_all_fields": "يرجى ملء جميع الحقول",
+    "enter_valid_amount": "أدخل مبلغ صحيح",
+    "enter_budget_name": "أدخل اسم الميزانية",
+    "choose_ai_plan": "اختر خطة الذكاء الاصطناعي",
+    "monthly_saving_plan": "خطة الادخار الشهرية",
+    "yearly_wealth_plan": "خطة الثروة السنوية",
+    "based_on_budget": "بناءً على ميزانيتك وأهدافك",
+    "long_term_strategy": "استراتيجية طويلة المدى مع الأهداف",
+    "ai_analyzing": "الذكاء الاصطناعي يحلل ميزانيتك وأهدافك...",
+    "ai_empty_plan": "الذكاء الاصطناعي أرجع خطة فارغة",
+    "personalized_plan": "خطتك المخصصة",
+    "generated_on": "تم إنشاؤها في",
+    "export_plan": "تصدير الخطة",
+    "save_share_plan": "احفظ أو شارك خطتك المالية",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "share": "مشاركة",
+    "copy_clipboard": "نسخ إلى الحافظة",
+    "copy_plan_text": "انسخ نص الخطة للصق في أي مكان",
+    "generate_new_plan": "إنشاء خطة جديدة",
+    "create_different_plan": "أنشئ خطة مختلفة بناءً على بياناتك",
+    "plan_copied": "تم نسخ الخطة إلى الحافظة",
+    "quick_actions": "إجراءات سريعة",
+    "link_to_goals": "الربط بأهدافك",
+    "auto_save_percent": "نسبة الحفظ التلقائي",
+    "savings_added": "تمت إضافة الادخارات!",
+    "goal_achieved": "تم تحقيق الهدف!",
+    "congratulations": "تهانينا!",
+    "offline_plan": "خطة بدون اتصال",
+    "transactions": {
+      "history": "سجل المعاملات",
+      "top_transactions": "أهم المعاملات",
+      "delete_transaction": "حذف المعاملة",
+      "transaction_deleted": "تم حذف العملية بنجاح",
+      "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+      "all_transactions": "جميع المعاملات",
+      "you_spent_most_on": "أنفقت معظم أموالك على {category} بقيمة {amount} دولار"
+    }
+  },
+  "transaction": {
+    "type": "النوع",
+    "date": "التاريخ",
+    "id": "رقم العملية"
+  },
+  "welcome_back": "مرحباً بعودتك",
+  "add_first": "أضف جهة اتصال أولاً",
+  "no_contacts_found": "لم يتم العثور على جهات اتصال"
+};
+static const Map<String,dynamic> _en = {
+  "app": {
+    "name": "Pēco",
+    "tagline": "Chat Smarter"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "phone": "Phone Number",
+    "forgot_password": "Forgot Password?",
+    "reset_password": "Reset Password",
+    "verify_phone": "Verify Phone Number",
+    "otp_sent": "Verification code sent",
+    "enter_otp": "Enter verification code",
+    "resend_otp": "Resend Code",
+    "full_name": "Full Name",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account?",
+    "login_success": "Login successful",
+    "register_success": "Registration successful",
+    "invalid_credentials": "Invalid credentials",
+    "weak_password": "Password is too weak",
+    "email_in_use": "Email is already in use",
+    "phone_in_use": "Phone number is already in use",
+    "required": "This field is required",
+    "invalid_email": "Invalid email address",
+    "invalid_phone": "Invalid phone number",
+    "password_short": "Password must be at least 6 characters",
+    "passwords_not_match": "Passwords do not match",
+    "invalid_name": "Name must be at least 3 characters"
+  },
+  "chats": {
+    "title": "Chats",
+    "search": "Search chats...",
+    "no_chats": "No chats yet",
+    "new_chat": "New Chat",
+    "new_group": "New Group",
+    "type_message": "Type a message...",
+    "send": "Send",
+    "voice_message": "Voice Message",
+    "image": "Image",
+    "video": "Video",
+    "file": "File",
+    "location": "Location",
+    "contact": "Contact",
+    "replying_to": "Replying to",
+    "forwarded": "Forwarded",
+    "edited": "Edited",
+    "deleted": "This message was deleted",
+    "typing": "typing...",
+    "online": "Online",
+    "offline": "Offline",
+    "last_seen": "Last seen",
+    "last_seen_at": "Last seen at {time}",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "message_copied": "Message copied",
+    "message_deleted": "Message deleted",
+    "message_forwarded": "Message forwarded",
+    "message_starred": "Message starred",
+    "message_unstarred": "Message unstarred",
+    "delete_for_me": "Delete for me",
+    "delete_for_all": "Delete for everyone",
+    "reply": "Reply",
+    "forward": "Forward",
+    "copy": "Copy",
+    "star": "Star",
+    "info": "Info",
+    "mute": "Mute notifications",
+    "unmute": "Unmute notifications",
+    "block": "Block",
+    "unblock": "Unblock",
+    "clear_chat": "Clear chat",
+    "delete_chat": "Delete chat",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "media": "Media",
+    "documents": "Documents",
+    "links": "Links",
+    "search_in_chat": "Search in chat"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "search": "Search contacts...",
+    "no_contacts": "No contacts found",
+    "invite": "Invite Friend",
+    "sync_contacts": "Sync Contacts",
+    "add_contact": "Add Contact",
+    "invite_friend": "Invite a friend to Pēco",
+    "share_invite": "Share invite link"
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "profile": "Profile",
+    "privacy": "Privacy",
+    "notifications": "Notifications",
+    "appearance": "Appearance",
+    "language": "Language",
+    "storage": "Storage and Data",
+    "help": "Help",
+    "about": "About",
+    "edit_profile": "Edit Profile",
+    "change_photo": "Change Photo",
+    "remove_photo": "Remove Photo",
+    "status": "Status",
+    "about_me": "About"
+  },
+  "privacy": {
+    "title": "Privacy Settings",
+    "last_seen": "Last Seen",
+    "profile_photo": "Profile Photo",
+    "status": "My Status",
+    "read_receipts": "Read Receipts",
+    "everyone": "Everyone",
+    "contacts": "My Contacts",
+    "nobody": "Nobody"
+  },
+  "calls": {
+    "title": "Calls",
+    "voice_call": "Voice Call",
+    "video_call": "Video Call",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "missed": "Missed",
+    "calling": "Calling...",
+    "ringing": "Ringing...",
+    "call_ended": "Call ended",
+    "call_failed": "Call failed",
+    "no_calls": "No calls yet",
+    "call_back": "Call back"
+  },
+  "status": {
+    "title": "Status",
+    "my_status": "My Status",
+    "add_status": "Add Status",
+    "viewed": "Viewed",
+    "mute_status": "Mute Status",
+    "no_status": "No status updates",
+    "tap_to_add": "Tap to add status update"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "done": "Done",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "confirm": "Confirm",
+    "continue": "Continue",
+    "close": "Close",
+    "retry": "Retry",
+    "share": "Share",
+    "copy": "Copy",
+    "paste": "Paste",
+    "select_all": "Select All",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "more": "More",
+    "less": "Less",
+    "show": "Show",
+    "hide": "Hide",
+    "enable": "Enable",
+    "disable": "Disable",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting...",
+    "no_internet": "No internet connection",
+    "check_connection": "Please check your internet connection",
+    "pull_to_refresh": "Pull to refresh",
+    "tap_to_retry": "Tap to retry",
+    "coming_soon": "Coming Soon",
+    "feature_coming_soon": "This feature will be available soon",
+    "income": "Income",
+    "items": "items",
+    "unknown": "Unknown"
+  },
+  "transfer": {
+    "title": "Transfer Money",
+    "transfer": "Transfer",
+    "send_money": "Send money to a contact",
+    "amount": "Amount",
+    "transfer_to": "Transfer to",
+    "email_or_phone": "Email or Phone",
+    "user": "User",
+    "add_contact": "Add Contact",
+    "send": "Send",
+    "transferred": "Transferred",
+    "insufficient_balance": "Insufficient balance",
+    "invalid_amount": "Please enter a valid amount",
+    "user_not_found": "User data not found",
+    "choose_contact": "Choose Contact",
+    "select_contact": "Select Contact",
+    "no_contacts": "No contacts yet. Add contacts from the resend section.",
+    "add_new_contact": "Add a new contact for transfers",
+    "error_loading_contacts": "Error loading contacts"
+  },
+  "transactions": {
+    "history": "Transaction History",
+    "top_transactions": "Top Transactions",
+    "delete_transaction": "Delete Transaction",
+    "transaction_deleted": "Transaction deleted successfully",
+    "no_transactions_yet": "No transactions yet\nTap + to add a transaction!",
+    "all_transactions": "All Transactions"
+  },
+  "analytics": {
+    "statistics": "Statistics",
+    "insight": "Insight",
+    "no_data_for": "No data for",
+    'you_spent_most_on': r'أنفقت معظم أموالك على {category} بقيمة ${amount}',  // raw string    "trend": "Trend"
+  },
+  "expense_actions": {
+    "add": "Add",
+    "add_income": "Add Income",
+    "add_expenses": "Add Expenses",
+    "add_multiple_income_sources": "Add multiple income sources",
+    "add_multiple_expenses": "Add multiple expenses at once",
+    "what_would_you_like_to_add": "What would you like to add?",
+    "see_all": "See All",
+    "budget_other":'other budget'
+
+},
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Connection error. Please check your internet.",
+    "server": "Server error. Please try again later.",
+    "timeout": "Request timed out. Please try again.",
+    "unauthorized": "Unauthorized. Please log in again.",
+    "forbidden": "Access not allowed.",
+    "not_found": "Item not found.",
+    "conflict": "Data conflict exists.",
+    "too_many_requests": "Too many requests. Please wait.",
+    "file_too_large": "File is too large",
+    "unsupported_format": "Unsupported file format",
+    "camera_permission": "Please allow camera access",
+    "microphone_permission": "Please allow microphone access",
+    "storage_permission": "Please allow storage access",
+    "location_permission": "Please allow location access",
+    "contacts_permission": "Please allow contacts access",
+    "no_advice": "No advice is available",
+    "no_internet": "No Internet",
+    "server_error": "Unable to connect to the server. Please try again later",
+    "unexpected_error": "An unexpected error occurred. Please try again"
+  },
+  "expense": {
+    "title": "Expenses",
+    "income": "Income",
+    "statistics": "Statistics",
+    "summary": "Summary",
+    "total_expense": "Total Expense",
+    "total_income": "Total Income",
+    "total_balance": "Total Balance",
+    "net": "Net",
+    "count": "Count",
+    "distribution": "Distribution",
+    "by_category": "By Category",
+    "alert": "alert"
+  },
+  "date": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year"
+  },
+  "main_navigation": {
+    "budget": "Budget",
+    "home": "Home",
+    "stats": "Stats",
+    "profile": "Profile"
+  },
+  "budget": {
+    "title": "Budget & Goals",
+    "goals": "Goals",
+    "income": "Income",
+    "add_goal": "Add Goal",
+    "add_budget": "Add Budget",
+    "goal_name": "Goal Name",
+    "target_amount": "Target Amount",
+    "current_amount": "Current Amount",
+    "deadline": "Deadline",
+    "select_deadline": "Select Deadline",
+    "no_goals": "No goals yet",
+    "no_budgets": "No budgets yet",
+    "set_first_goal": "Set your first savings goal!",
+    "add_first_goal": "Add Your First Goal",
+    "ask_ai": "Ask AI",
+    "ai_plan": "AI Plan",
+    "monthly_plan": "Monthly Plan",
+    "yearly_plan": "Yearly Plan",
+    "available_budget": "Available Budget",
+    "total_budget": "Total Budget",
+    "used": "used",
+    "left": "left",
+    "over_by": "Over by",
+    "savings": "Savings",
+    "auto_save": "Auto-Save",
+    "auto_save_setup": "Auto-Save Setup",
+    "period_ends": "Period ends",
+    "completed": "COMPLETED",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add_expense": "Add Expense",
+    "expense_amount": "Expense Amount",
+    "expense_description": "Expense Description",
+    "category": "Category",
+    "source": "Source",
+    "period": "Period",
+    "monthly": "monthly",
+    "weekly": "weekly",
+    "one_time": "one-time",
+    "salary": "salary",
+    "freelance": "freelance",
+    "investment": "investment",
+    "business": "business",
+    "gift": "gift",
+    "bonus": "bonus",
+    "other": "other",
+    "food": "food",
+    "shopping": "shopping",
+    "transport": "transport",
+    "bills": "bills",
+    "entertainment": "entertainment",
+    "health": "health",
+    "you_spent_most_on": "You spent most on {category} with {amount}",
+    "education": "education",
+    "error_loading": "Error loading budgets",
+    "retry": "Retry",
+    "goal_added": "Goal added successfully!",
+    "budget_added": "Budget added! Track expenses against it.",
+    "expense_added": "Expense added",
+    "goal_updated": "Goal updated successfully",
+    "goal_deleted": "Goal deleted",
+    "budget_deleted": "Income source removed",
+    "fill_all_fields": "Please fill all fields",
+    "enter_valid_amount": "Enter valid amount",
+    "enter_budget_name": "Enter budget name",
+    "choose_ai_plan": "Choose Your AI Plan",
+    "monthly_saving_plan": "Monthly Saving Plan",
+    "yearly_wealth_plan": "Yearly Wealth Plan",
+    "based_on_budget": "Based on your budget & goals",
+    "long_term_strategy": "Long-term strategy with goals",
+    "ai_analyzing": "AI is analyzing your budget & goals...",
+    "ai_empty_plan": "AI returned empty plan. Please try again.",
+    "personalized_plan": "Your Personalized Plan",
+    "generated_on": "Generated on",
+    "export_plan": "Export Plan",
+    "save_share_plan": "Save or share your budget & savings plan",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "share": "Share",
+    "copy_clipboard": "Copy to Clipboard",
+    "copy_plan_text": "Copy plan text to paste anywhere",
+    "generate_new_plan": "Generate New Plan",
+    "create_different_plan": "Create a different plan based on your data",
+    "plan_copied": "Plan copied to clipboard",
+    "quick_actions": "Quick Actions",
+    "link_to_goals": "Link to Your Goals",
+    "auto_save_percent": "Auto-Save Percentage",
+    "savings_added": "Savings Added!",
+    "goal_achieved": "Goal Achieved!",
+    "congratulations": "Congratulations!",
+    "offline_plan": "Offline Plan",
+    "transactions": {
+      "history": "سجل المعاملات",
+      "top_transactions": "أهم المعاملات",
+      "delete_transaction": "حذف المعاملة",
+      "transaction_deleted": "تم حذف العملية بنجاح",
+      "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+      "all_transactions": "جميع المعاملات"
+    }
+  },
+  "transaction": {
+    "type": "Type",
+    "date": "Date",
+    "id": "Transaction ID"
+  },
+  "welcome_back": "Welcome back",
+  "add_first": "Add a contact first to make transfers",
+  "no_contacts_found": "No contacts found"
+};
+static const Map<String, Map<String,dynamic>> mapLocales = {"ar": _ar, "en": _en};
 }

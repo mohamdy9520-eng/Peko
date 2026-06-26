@@ -3,7 +3,6 @@
     "name": "Pēco",
     "tagline": "دردش بذكاء"
   },
-
   "auth": {
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",
@@ -34,7 +33,6 @@
     "passwords_not_match": "كلمتا المرور غير متطابقتين",
     "invalid_name": "يجب أن يتكون الاسم من 3 أحرف على الأقل"
   },
-
   "chats": {
     "title": "الدردشات",
     "search": "ابحث في الدردشات...",
@@ -87,7 +85,6 @@
     "links": "الروابط",
     "search_in_chat": "البحث في الدردشة"
   },
-
   "contacts": {
     "title": "جهات الاتصال",
     "search": "ابحث في جهات الاتصال...",
@@ -98,7 +95,6 @@
     "invite_friend": "ادعُ صديقًا إلى Pēco",
     "share_invite": "مشاركة رابط الدعوة"
   },
-
   "settings": {
     "title": "الإعدادات",
     "account": "الحساب",
@@ -116,7 +112,6 @@
     "status": "الحالة",
     "about_me": "نبذة عني"
   },
-
   "privacy": {
     "title": "إعدادات الخصوصية",
     "last_seen": "آخر ظهور",
@@ -127,7 +122,6 @@
     "contacts": "جهات اتصالي",
     "nobody": "لا أحد"
   },
-
   "calls": {
     "title": "المكالمات",
     "voice_call": "مكالمة صوتية",
@@ -142,7 +136,6 @@
     "no_calls": "لا توجد مكالمات بعد",
     "call_back": "إعادة الاتصال"
   },
-
   "status": {
     "title": "الحالة",
     "my_status": "حالتي",
@@ -152,7 +145,6 @@
     "no_status": "لا توجد تحديثات للحالة",
     "tap_to_add": "اضغط لإضافة تحديث حالة"
   },
-
   "common": {
     "save": "حفظ",
     "cancel": "إلغاء",
@@ -196,9 +188,10 @@
     "tap_to_retry": "اضغط لإعادة المحاولة",
     "coming_soon": "قريبًا",
     "feature_coming_soon": "هذه الميزة ستتوفر قريبًا",
-    "income": "الدخل"
+    "income": "الدخل",
+    "items": "عناصر",
+    "unknown": "غير معروف"
   },
-
   "transfer": {
     "title": "تحويل الأموال",
     "transfer": "تحويل",
@@ -215,17 +208,18 @@
     "user_not_found": "لم يتم العثور على بيانات المستخدم",
     "choose_contact": "اختر جهة اتصال",
     "select_contact": "اختر جهة الاتصال",
-    "no_contacts": "لا توجد جهات اتصال حتى الآن. أضف جهات اتصال من قسم إعادة الإرسال."
+    "no_contacts": "لا توجد جهات اتصال حتى الآن. أضف جهات اتصال من قسم إعادة الإرسال.",
+    "add_new_contact": "إضافة جهة اتصال جديدة للتحويل",
+    "error_loading_contacts": "خطأ في تحميل جهات الاتصال"
   },
-
   "transactions": {
     "history": "سجل المعاملات",
     "top_transactions": "أهم المعاملات",
     "delete_transaction": "حذف المعاملة",
     "transaction_deleted": "تم حذف العملية بنجاح",
-    "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!"
+    "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+    "all_transactions": "جميع المعاملات"
   },
-
   "analytics": {
     "statistics": "الإحصائيات",
     "insight": "تحليل",
@@ -233,7 +227,6 @@
     "you_spent_most_on": "أنفقت معظم أموالك على {category} بقيمة ${amount}",
     "trend": "الاتجاه"
   },
-
   "expense_actions": {
     "add": "إضافة",
     "add_income": "إضافة دخل",
@@ -243,7 +236,6 @@
     "what_would_you_like_to_add": "ماذا تود أن تضيف؟",
     "see_all": "عرض الكل"
   },
-
   "errors": {
     "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "network": "خطأ في الاتصال. يرجى التحقق من الإنترنت.",
@@ -261,14 +253,11 @@
     "storage_permission": "يرجى السماح بالوصول إلى التخزين",
     "location_permission": "يرجى السماح بالوصول إلى الموقع",
     "contacts_permission": "يرجى السماح بالوصول إلى جهات الاتصال",
-    "no_internet": "لا يوجد اتصال بالانترنت",
-    "No advice is available": "لا توجد نصيحة متاحة",
-    "There is no internet connection. Please check your network and try again": "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مرة أخرى.",
-    "Unable to connect to the server. Please try again later": "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً.",
-    "An unexpected error occurred. Please try again": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى"
-
+    "no_internet": "لا يوجد اتصال بالإنترنت",
+    "no_advice": "لا توجد نصيحة متاحة",
+    "server_error": "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً.",
+    "unexpected_error": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى"
   },
-
   "expense": {
     "title": "المصروفات",
     "income": "الدخل",
@@ -276,17 +265,134 @@
     "summary": "الملخص",
     "total_expense": "إجمالي المصروفات",
     "total_income": "إجمالي الدخل",
+    "total_balance": "إجمالي الرصيد",
     "net": "صافي",
     "count": "عدد",
     "distribution": "التوزيع",
     "by_category": "حسب الفئة",
     "alert": "تنبيه"
   },
-
   "date": {
     "day": "اليوم",
     "week": "الأسبوع",
     "month": "الشهر",
     "year": "السنة"
-  }
+  },
+  "main_navigation": {
+    "home": "الرئيسية",
+    "stats": "الاحصائيات",
+    "budget": "الميزانية",
+    "profile": "الملف الشخصي"
+  },
+  "budget": {
+    "title": "الميزانية والأهداف",
+    "goals": "الأهداف",
+    "income": "الدخل",
+    "add_goal": "إضافة هدف",
+    "add_budget": "إضافة ميزانية",
+    "goal_name": "اسم الهدف",
+    "target_amount": "المبلغ المستهدف",
+    "current_amount": "المبلغ الحالي",
+    "deadline": "الموعد النهائي",
+    "select_deadline": "اختر الموعد النهائي",
+    "no_goals": "لا توجد أهداف بعد",
+    "no_budgets": "لا توجد ميزانيات بعد",
+    "set_first_goal": "حدد هدفك الأول للادخار!",
+    "add_first_goal": "أضف هدفك الأول",
+    "ask_ai": "اسأل الذكاء الاصطناعي",
+    "ai_plan": "خطة الذكاء الاصطناعي",
+    "monthly_plan": "الخطة الشهرية",
+    "yearly_plan": "الخطة السنوية",
+    "available_budget": "الميزانية المتاحة",
+    "total_budget": "إجمالي الميزانية",
+    "used": "مستخدم",
+    "left": "متبقي",
+    "over_by": "تجاوز بمقدار",
+    "savings": "الادخار",
+    "auto_save": "حفظ تلقائي",
+    "auto_save_setup": "إعداد الحفظ التلقائي",
+    "period_ends": "ينتهي الفترة",
+    "completed": "مكتمل",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "add_expense": "إضافة مصروف",
+    "expense_amount": "مبلغ المصروف",
+    "expense_description": "وصف المصروف",
+    "category": "الفئة",
+    "source": "المصدر",
+    "period": "الفترة",
+    "monthly": "شهري",
+    "weekly": "أسبوعي",
+    "one_time": "مرة واحدة",
+    "salary": "راتب",
+    "freelance": "عمل حر",
+    "investment": "استثمار",
+    "business": "عمل تجاري",
+    "gift": "هدية",
+    "bonus": "مكافأة",
+    "other": "أخرى",
+    "food": "طعام",
+    "shopping": "تسوق",
+    "transport": "مواصلات",
+    "bills": "فواتير",
+    "entertainment": "ترفيه",
+    "health": "صحة",
+    "education": "تعليم",
+    "error_loading": "خطأ في تحميل الميزانية",
+    "retry": "إعادة المحاولة",
+    "goal_added": "تم إضافة الهدف بنجاح!",
+    "budget_added": "تم إضافة الميزانية! تتبع المصروفات ضدها.",
+    "expense_added": "تم إضافة المصروف",
+    "goal_updated": "تم تحديث الهدف بنجاح",
+    "goal_deleted": "تم حذف الهدف",
+    "budget_deleted": "تمت إزالة مصدر الدخل",
+    "fill_all_fields": "يرجى ملء جميع الحقول",
+    "enter_valid_amount": "أدخل مبلغ صحيح",
+    "enter_budget_name": "أدخل اسم الميزانية",
+    "choose_ai_plan": "اختر خطة الذكاء الاصطناعي",
+    "monthly_saving_plan": "خطة الادخار الشهرية",
+    "yearly_wealth_plan": "خطة الثروة السنوية",
+    "based_on_budget": "بناءً على ميزانيتك وأهدافك",
+    "long_term_strategy": "استراتيجية طويلة المدى مع الأهداف",
+    "ai_analyzing": "الذكاء الاصطناعي يحلل ميزانيتك وأهدافك...",
+    "ai_empty_plan": "الذكاء الاصطناعي أرجع خطة فارغة",
+    "personalized_plan": "خطتك المخصصة",
+    "generated_on": "تم إنشاؤها في",
+    "export_plan": "تصدير الخطة",
+    "save_share_plan": "احفظ أو شارك خطتك المالية",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "share": "مشاركة",
+    "copy_clipboard": "نسخ إلى الحافظة",
+    "copy_plan_text": "انسخ نص الخطة للصق في أي مكان",
+    "generate_new_plan": "إنشاء خطة جديدة",
+    "create_different_plan": "أنشئ خطة مختلفة بناءً على بياناتك",
+    "plan_copied": "تم نسخ الخطة إلى الحافظة",
+    "quick_actions": "إجراءات سريعة",
+    "link_to_goals": "الربط بأهدافك",
+    "auto_save_percent": "نسبة الحفظ التلقائي",
+    "savings_added": "تمت إضافة الادخارات!",
+    "goal_achieved": "تم تحقيق الهدف!",
+    "congratulations": "تهانينا!",
+    "offline_plan": "خطة بدون اتصال",
+
+
+    "transactions": {
+      "history": "سجل المعاملات",
+      "top_transactions": "أهم المعاملات",
+      "delete_transaction": "حذف المعاملة",
+      "transaction_deleted": "تم حذف العملية بنجاح",
+      "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
+      "all_transactions": "جميع المعاملات",
+      "you_spent_most_on": "أنفقت معظم أموالك على {category} بقيمة {amount} دولار"
+    }
+  },
+  "transaction": {
+    "type": "النوع",
+    "date": "التاريخ",
+    "id": "رقم العملية"
+  },
+  "welcome_back": "مرحباً بعودتك",
+  "add_first": "أضف جهة اتصال أولاً",
+  "no_contacts_found": "لم يتم العثور على جهات اتصال"
 }

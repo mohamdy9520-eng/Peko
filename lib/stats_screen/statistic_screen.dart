@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../config/env.dart';
 import '../generated/codegen_loader.g.dart';
+import '../generated/locale_keys.g.dart';
 import '../theme/app_colors.dart';
 import '../widgets/transaction_item.dart';
 
@@ -980,12 +981,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
           bool showCached = false;
 
           if (error is SocketException || error.toString().contains('SocketException')) {
-            errorMessage = LocaleKeys.No_Internet.tr();
+            errorMessage = LocaleKeys.errors_no_internet.tr();
             showCached = true;
           } else if (error is HttpException) {
-            errorMessage = LocaleKeys.No_server.tr();
+            errorMessage = LocaleKeys.errors_server_error.tr();
           } else {
-            errorMessage = LocaleKeys.unknown_error.tr();
+            errorMessage = LocaleKeys.errors_unexpected_error.tr();
           }
 
           if (showCached && _cachedAdvice != null) {
@@ -998,7 +999,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
           return _buildErrorInsightCard(errorMessage);
         }
 
-        final advice = snapshot.data ?? LocaleKeys.no_internet.tr();
+        final advice = snapshot.data ?? LocaleKeys.errors_no_internet.tr();
         _saveCachedAdvice(advice);
 
         return _buildInsightCard(advice);
@@ -1061,7 +1062,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
                           borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
-                          LocaleKeys.no_internet.tr(),
+                          LocaleKeys.errors_no_internet.tr(),
                           style: TextStyle(
                             fontSize: 10.sp,
                             color: Colors.grey[700],

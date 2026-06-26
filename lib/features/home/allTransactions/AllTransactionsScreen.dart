@@ -1,9 +1,12 @@
+import 'package:ai_expense_tracker/generated/codegen_loader.g.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../generated/locale_keys.g.dart';
 import '../../../widgets/transaction_item.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
@@ -120,9 +123,9 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'All Transactions',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+        title: Text(
+          LocaleKeys.transactions_all_transactions.tr(),
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),

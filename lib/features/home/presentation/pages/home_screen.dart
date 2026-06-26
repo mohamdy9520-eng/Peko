@@ -4,10 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../generated/codegen_loader.g.dart';
-import '../../../../routes/app_router.dart';
+import '../../../../generated/locale_keys.g.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../widgets/transaction_item.dart';
+import '../../../../widgets/notification_icon.dart'; // ← الـ Widget الجديد
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
         .doc(user.uid)
         .collection('transactions')
         .orderBy('date', descending: true)
-        .limit(10)
+        .limit(5)
         .snapshots();
   }
 
@@ -41,7 +41,10 @@ class HomeScreen extends StatelessWidget {
         onPressed: () => _showAddOptionsBottomSheet(context),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(LocaleKeys.expense_actions_add.tr(), style: const TextStyle(color: Colors.white)),
+        label: Text(
+          LocaleKeys.expense_actions_add.tr(),
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -51,35 +54,25 @@ class HomeScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          LocaleKeys.transactions_history.tr(),
-                          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed: () => context.push('/transactions'),
-                          child: Text(LocaleKeys.expense_actions_see_all.tr()),
-                        ),
-                      ],
+                    SizedBox(height: 24.h),
+
+                    // Transactions Section
+                    _buildSectionHeader(
+                      LocaleKeys.transactions_history.tr(),
+                      onSeeAll: () => context.push('/transactions'),
                     ),
                     SizedBox(height: 16.h),
                     _buildTransactionList(),
                     SizedBox(height: 24.h),
-                    _buildSectionTitle(
-                      'Contacts',
-                      TextButton(
-                        onPressed: () {
-                          context.push('/contacts');
-                        },
-                        child: Text(
-                          LocaleKeys.expense_actions_see_all.tr(),
-                        ),
-                      ),
+
+                    // Contacts Section
+                    _buildSectionHeader(
+                      LocaleKeys.contacts_title.tr(),
+                      onSeeAll: () => context.push('/contacts'),
                     ),
                     SizedBox(height: 16.h),
                     _buildContactsList(context),
@@ -94,447 +87,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showAddOptionsBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              SizedBox(height: 24.h),
-              Text(
-                LocaleKeys.expense_actions_what_would_you_like_to_add.tr(),
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              SizedBox(height: 24.h),
-              _buildOptionTile(
-                context: context,
-                icon: Icons.arrow_upward,
-                iconColor: AppColors.expense,
-                title: LocaleKeys.expense_actions_add_expenses.tr(),
-                subtitle: LocaleKeys.expense_actions_add_multiple_expenses.tr(),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.push('/add-expense');
-                },
-              ),
-
-              SizedBox(height: 12.h),
-
-              _buildOptionTile(
-                context: context,
-                icon: Icons.arrow_downward,
-                iconColor: AppColors.income,
-                title: LocaleKeys.expense_actions_add_income.tr(),
-                subtitle: LocaleKeys.expense_actions_add_multiple_income_sources.tr(),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.push('/add-income');
-                },
-              ),
-
-              SizedBox(height: 12.h),
-
-              _buildOptionTile(
-                context: context,
-                icon: Icons.send,
-                iconColor: AppColors.primary,
-                title: LocaleKeys.transfer_transfer.tr(),
-                subtitle: LocaleKeys.transfer_send_money.tr(),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showTransferBottomSheet(context);
-                },
-              ),
-
-              SizedBox(height: 12.h),
-
-              _buildOptionTile(
-                context: context,
-                icon: Icons.person_add,
-                iconColor: Colors.blue,
-                title: 'Add Contact',
-                subtitle: 'Add a new contact for transfers',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showAddContactDialog(context);
-                },
-              ),
-
-              SizedBox(height: 16.h),
-              SizedBox(height: 12.h),
-              _buildOptionTile(
-                context: context,
-                icon: Icons.arrow_downward,
-                iconColor: AppColors.income,
-                title: LocaleKeys.expense_actions_add_income.tr(),
-                subtitle: LocaleKeys.expense_actions_add_multiple_income_sources.tr(),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.push('/add-income');
-                },
-              ),
-              SizedBox(height: 12.h),
-              _buildOptionTile(
-                context: context,
-                icon: Icons.send,
-                iconColor: AppColors.primary,
-                title: LocaleKeys.transfer_transfer.tr(),
-                subtitle: LocaleKeys.transfer_send_money.tr(),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showTransferBottomSheet(context);
-                },
-              ),
-              SizedBox(height: 16.h),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionTile({
-    required BuildContext context,
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Icon(icon, color: iconColor),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 16.sp,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 13.sp,
-          color: AppColors.textSecondary,
-        ),
-      ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: Colors.grey),
-    );
-  }
-
-
-
-  void _showTransferBottomSheet(BuildContext context) {
-    final amountController = TextEditingController();
-    String? selectedContactId;
-    String? selectedContactName;
-    String? selectedContactEmail;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final user = FirebaseAuth.instance.currentUser;
-
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-              ),
-              padding: const EdgeInsets.all(24),
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.7,
-              ),
-              child: SingleChildScrollView( // ← Added to prevent overflow
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    Text(
-                      LocaleKeys.transfer_title.tr(),
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-
-                    // Contacts Dropdown
-                    StreamBuilder<QuerySnapshot>(
-                      stream: user != null
-                          ? FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .collection('contacts')
-                          .orderBy('name')
-                          .snapshots()
-                          : null,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Container(
-                            height: 60.h,
-                            alignment: Alignment.center,
-                            child: const CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return Container(
-                            height: 60.h,
-                            alignment: Alignment.center,
-                            child: Text(
-                              'Error loading contacts',
-                              style: TextStyle(color: Colors.red, fontSize: 12.sp),
-                            ),
-                          );
-                        }
-
-                        // ← FIXED: Empty state with no undefined variables
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return Container(
-                            padding: EdgeInsets.all(16.w),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(12.r),
-                              color: Colors.grey[50],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline, color: Colors.grey),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'No contacts found',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14.sp,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4.h),
-                                      Text(
-                                        'Add a contact first to make transfers',
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        final contacts = snapshot.data!.docs;
-
-                        return DropdownButtonFormField<String>(
-                          value: selectedContactId,
-                          isExpanded: true,
-                          itemHeight: 60, // ← FIXED: Added itemHeight to prevent overflow
-                          decoration: InputDecoration(
-                            labelText: LocaleKeys.transfer_select_contact.tr(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                              vertical: 14.h,
-                            ),
-                          ),
-                          hint: Text(
-                            LocaleKeys.transfer_choose_contact.tr(),
-                            style: TextStyle(fontSize: 14.sp),
-                          ),
-                          items: contacts.map((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            final name = data['name'] ?? 'Unknown';
-                            final email = data['email'] ?? '';
-
-                            return DropdownMenuItem<String>(
-                              value: doc.id,
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 14.r,
-                                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                                    child: Text(
-                                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 12.w),
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setModalState(() {
-                              selectedContactId = value;
-
-                              final selectedDoc = contacts.firstWhere(
-                                    (doc) => doc.id == value,
-                                orElse: () => contacts.first,
-                              );
-
-                              final contactData = selectedDoc.data() as Map<String, dynamic>;
-
-                              selectedContactName = contactData['name'] ?? 'Unknown';
-                              selectedContactEmail = contactData['email'] ?? '';
-                            });
-                          },
-                        );
-                      },
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: LocaleKeys.transfer_amount.tr(),
-                        prefixText: '\$ ',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 14.h,
-                        ),
-                      ),
-                      onChanged: (_) => setModalState(() {}),
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50.h,
-                      child: ElevatedButton(
-                        onPressed: selectedContactId == null ||
-                            amountController.text.isEmpty
-                            ? null
-                            : () {
-                          final amount = double.tryParse(amountController.text) ?? 0;
-                          if (amount <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(LocaleKeys.transfer_invalid_amount.tr()),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.pop(context);
-                          _submitTransfer(
-                            context: context,
-                            contactId: selectedContactId!,
-                            contactName: selectedContactName!,
-                            contactEmail: selectedContactEmail ?? '',
-                            amount: amount,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          disabledBackgroundColor: Colors.grey[300],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                        ),
-                        child: Text(
-                          LocaleKeys.transfer_send.tr(),
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
+  // ═══════════════════════════════════════════
+  // HEADER — Balance + Notification Icon
+  // ═══════════════════════════════════════════
   Widget _buildHeader(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
       stream: getUserData(),
@@ -578,6 +133,7 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Welcome + Notification Icon
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -586,7 +142,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome Back',
+                          LocaleKeys.welcome_back.tr(),
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14.sp,
@@ -606,32 +162,20 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {},
-                    ),
-                  ),
+                  const NotificationIcon(), // ← الـ Widget الجديد مع Badge
                 ],
               ),
 
               SizedBox(height: 24.h),
 
+              // Total Balance
               Text(
-                'Total Balance',
+                LocaleKeys.expense_total_balance.tr(),
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 16.sp,
                 ),
               ),
-
               SizedBox(height: 8.h),
 
               FittedBox(
@@ -648,12 +192,13 @@ class HomeScreen extends StatelessWidget {
 
               SizedBox(height: 20.h),
 
+              // Income / Expense Cards
               Row(
                 children: [
                   Expanded(
                     child: _buildIncomeExpenseCard(
                       title: LocaleKeys.common_income.tr(),
-                      amount: '\$ ${totalIncome.toStringAsFixed(2)}',
+                      amount: totalIncome,
                       icon: Icons.arrow_downward,
                       color: AppColors.income,
                     ),
@@ -662,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _buildIncomeExpenseCard(
                       title: LocaleKeys.expense_title.tr(),
-                      amount: '\$ ${totalExpense.toStringAsFixed(2)}',
+                      amount: totalExpense,
                       icon: Icons.arrow_upward,
                       color: AppColors.expense,
                     ),
@@ -678,12 +223,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildIncomeExpenseCard({
     required String title,
-    required String amount,
+    required double amount,
     required IconData icon,
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16.r),
@@ -691,7 +236,7 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: EdgeInsets.all(6.w),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
@@ -710,7 +255,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  amount,
+                  '\$${amount.toStringAsFixed(0)}',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14.sp,
@@ -726,102 +271,307 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(
-      String title,
-      Widget? trailing,
-      ) {
+  // ═══════════════════════════════════════════
+  // QUICK ACTIONS
+  // ═══════════════════════════════════════════
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28.sp),
+            SizedBox(height: 8.h),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // SECTION HEADER
+  // ═══════════════════════════════════════════
+  Widget _buildSectionHeader(String title, {required VoidCallback onSeeAll}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
+          style: TextStyle(
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
-        if (trailing != null) trailing,
+        TextButton(
+          onPressed: onSeeAll,
+          child: const Text('See All'),
+        ),
       ],
     );
   }
 
+  // ═══════════════════════════════════════════
+  // ADD BOTTOM SHEET
+  // ═══════════════════════════════════════════
+  void _showAddOptionsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        padding: EdgeInsets.all(24.w),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 24.h),
+              Text(
+                'What did you do?',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Quickly add your transaction',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.grey[600],
+                ),
+              ),
+              SizedBox(height: 24.h),
+
+              // Expense
+              _buildAddOption(
+                context: context,
+                icon: Icons.arrow_upward,
+                iconColor: Colors.red,
+                title: 'I spent money',
+                subtitle: 'Food, shopping, bills...',
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/add-expense');
+                },
+              ),
+              SizedBox(height: 12.h),
+
+              // Income
+              _buildAddOption(
+                context: context,
+                icon: Icons.arrow_downward,
+                iconColor: Colors.green,
+                title: 'I received money',
+                subtitle: 'Salary, gift, refund...',
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/add-income');
+                },
+              ),
+              SizedBox(height: 12.h),
+
+              // Transfer
+              _buildAddOption(
+                context: context,
+                icon: Icons.swap_horiz,
+                iconColor: Colors.purple,
+                title: 'Transfer',
+                subtitle: 'Send money to contact',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showTransferBottomSheet(context);
+                },
+              ),
+              SizedBox(height: 12.h),
+
+              // Add Contact
+              _buildAddOption(
+                context: context,
+                icon: Icons.person_add,
+                iconColor: Colors.blue,
+                title: 'Add Contact',
+                subtitle: 'Save a new contact',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddContactDialog(context);
+                },
+              ),
+              SizedBox(height: 16.h),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddOption({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      leading: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Icon(icon, color: iconColor),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16.sp,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 13.sp,
+          color: Colors.grey[600],
+        ),
+      ),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp, color: Colors.grey),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // TRANSACTIONS LIST
+  // ═══════════════════════════════════════════
   Widget _buildTransactionList() {
     return StreamBuilder<QuerySnapshot>(
       stream: getTransactions(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
-                LocaleKeys.transactions_no_transactions_yet.tr(),
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16.sp),
-              ),
+          return Container(
+            padding: EdgeInsets.all(24.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.receipt_long, size: 48.sp, color: Colors.grey[300]),
+                SizedBox(height: 12.h),
+                Text(
+                  'No transactions yet',
+                  style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                ),
+              ],
             ),
           );
         }
 
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: snapshot.data!.docs.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-          itemBuilder: (context, index) {
-            final doc = snapshot.data!.docs[index];
-            final data = doc.data() as Map<String, dynamic>;
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: snapshot.data!.docs.length,
+            separatorBuilder: (_, __) => Divider(
+              height: 1,
+              indent: 68.w,
+              endIndent: 16.w,
+            ),
+            itemBuilder: (context, index) {
+              final doc = snapshot.data!.docs[index];
+              final data = doc.data() as Map<String, dynamic>;
 
-            final raw = data['category'];
+              final raw = data['category'];
+              List<String> categories;
+              if (raw is List) {
+                categories = List<String>.from(raw);
+              } else if (raw is String) {
+                categories = [raw];
+              } else {
+                categories = [];
+              }
 
-            List<String> categories;
+              final displayCategory = categories.isEmpty ? 'other' : categories.first;
 
-            if (raw is List) {
-              categories = List<String>.from(raw);
-            } else if (raw is String) {
-              categories = [raw];
-            } else {
-              categories = [];
-            }
-
-            final categoriesText = categories.isEmpty
-                ? 'other'
-                : categories.join(', ');
-
-            final displayCategory =
-            categories.length > 1 ? 'multiple' : categories.firstOrNull ?? 'other';
-
-            return GestureDetector(
-              onTap: () => _showTransactionDetails(context, doc.id, data),
-              child: TransactionItem(
-                icon: _getIconForCategory(displayCategory),
-                iconBackgroundColor: _getColorForCategory(displayCategory),
-                title: data['title'] ?? 'Unknown',
-                subtitle: categoriesText,
-                amount: (data['amount'] ?? 0).toDouble(),
-                isIncome: data['type'] == 'income',
-              ),
-            );
-          },
+              return InkWell(
+                onTap: () => _showTransactionDetails(context, doc.id, data),
+                borderRadius: BorderRadius.vertical(
+                  top: index == 0 ? Radius.circular(16.r) : Radius.zero,
+                  bottom: index == snapshot.data!.docs.length - 1
+                      ? Radius.circular(16.r)
+                      : Radius.zero,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  child: TransactionItem(
+                    icon: _getIconForCategory(displayCategory),
+                    iconBackgroundColor: _getColorForCategory(displayCategory),
+                    title: data['title'] ?? 'Unknown',
+                    subtitle: categories.join(', '),
+                    amount: (data['amount'] ?? 0).toDouble(),
+                    isIncome: data['type'] == 'income',
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
   }
 
+  // ═══════════════════════════════════════════
+  // TRANSACTION DETAILS
+  // ═══════════════════════════════════════════
   void _showTransactionDetails(BuildContext context, String docId, Map<String, dynamic> data) {
     final bool isIncome = data['type'] == 'income';
     final String title = data['title'] ?? 'Unknown';
     final double amount = (data['amount'] ?? 0).toDouble();
     final String category = data['category'] ?? 'other';
-    final int? itemCount = data['itemCount'];
     final Timestamp? date = data['date'];
 
     showModalBottomSheet(
@@ -829,9 +579,9 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.85,
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.7,
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
@@ -840,105 +590,75 @@ class HomeScreen extends StatelessWidget {
           ),
           child: SingleChildScrollView(
             controller: scrollController,
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.w),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40.w,
-                    height: 4.h,
-                    margin: EdgeInsets.only(bottom: 24.h),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _getColorForCategory(category).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16.r),
-                      ),
-                      child: Icon(
-                        _getIconForCategory(category),
-                        color: _getColorForCategory(category),
-                        size: 28.sp,
-                      ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          if (itemCount != null)
-                            Text(
-                              '$itemCount items',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
                 SizedBox(height: 24.h),
 
-                Center(
-                  child: Text(
-                    '${isIncome ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 36.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isIncome ? AppColors.income : AppColors.expense,
-                    ),
+                // Amount
+                Container(
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    color: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: isIncome ? Colors.green : Colors.red,
+                    size: 40.sp,
                   ),
                 ),
+                SizedBox(height: 16.h),
 
+                Text(
+                  '${isIncome ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 36.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isIncome ? Colors.green : Colors.red,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 SizedBox(height: 24.h),
 
+                // Details
                 _buildDetailRow('Type', isIncome ? 'Income' : 'Expense'),
                 Divider(height: 16.h),
                 _buildDetailRow('Category', category.toUpperCase()),
                 Divider(height: 16.h),
                 _buildDetailRow('Date', date != null ? _formatDate(date) : 'Unknown'),
-                Divider(height: 16.h),
-                _buildDetailRow('Transaction ID', docId.substring(0, 8) + '...'),
 
                 SizedBox(height: 24.h),
 
+                // Delete
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () => _deleteTransaction(context, docId, amount, isIncome),
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: Text(
-                      LocaleKeys.transactions_delete_transaction.tr(),
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                    label: const Text('Delete', style: TextStyle(color: Colors.red)),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
                       padding: EdgeInsets.symmetric(vertical: 14.h),
                     ),
                   ),
                 ),
-
                 SizedBox(height: 16.h),
               ],
             ),
@@ -949,25 +669,24 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: Colors.grey[600],
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -985,7 +704,6 @@ class HomeScreen extends StatelessWidget {
       double currentBalance = (data['totalBalance'] ?? 0).toDouble();
       double currentIncome = (data['totalIncome'] ?? 0).toDouble();
       double currentExpense = (data['totalExpense'] ?? 0).toDouble();
-
 
       await FirebaseFirestore.instance
           .collection('users')
@@ -1007,33 +725,25 @@ class HomeScreen extends StatelessWidget {
       }
 
       Navigator.pop(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(LocaleKeys.transactions_transaction_deleted.tr())),
+        const SnackBar(content: Text('Transaction deleted')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            LocaleKeys.errors_generic.tr(
-              args: [e.toString()],
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
+  // ═══════════════════════════════════════════
+  // CONTACTS
+  // ═══════════════════════════════════════════
   Widget _buildContactsList(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return const SizedBox();
-    }
+    if (user == null) return const SizedBox();
 
     return SizedBox(
-      height: 90.h,
+      height: 100.h,
       child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -1043,70 +753,95 @@ class HomeScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           final contacts = snapshot.data!.docs;
 
-          if (contacts.isEmpty) {
-            return Center(
-              child: Text(
-                'No contacts yet',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14.sp,
-                ),
-              ),
-            );
-          }
-
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: contacts.length,
+            itemCount: contacts.length + 1, // +1 for "Add" button
             itemBuilder: (context, index) {
-              final data =
-              contacts[index].data() as Map<String, dynamic>;
+              // "Add Contact" button as first item
+              if (index == 0) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 12.w),
+                  child: GestureDetector(
+                    onTap: () => _showAddContactDialog(context),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 56.w,
+                          height: 56.w,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            color: AppColors.primary,
+                            size: 24.sp,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        SizedBox(
+                          width: 70.w,
+                          child: Text(
+                            'Add',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
-              final contactId = contacts[index].id;
+              final contactIndex = index - 1;
+              final data = contacts[contactIndex].data() as Map<String, dynamic>;
+              final contactId = contacts[contactIndex].id;
               final name = data['name'] ?? 'Unknown';
-              final email = data['email'] ?? '';
 
               return Padding(
-                padding: const EdgeInsets.only(right: 12),
+                padding: EdgeInsets.only(right: 12.w),
                 child: GestureDetector(
                   onTap: () => _showTransferDialog(
                     context,
                     contactId: contactId,
                     contactName: name,
-                    contactEmail: email,
+                    contactEmail: data['email'] ?? '',
                   ),
                   child: Column(
                     children: [
                       CircleAvatar(
-                        radius: 28,
-                        backgroundColor:
-                        AppColors.primary.withOpacity(0.1),
+                        radius: 28.r,
+                        backgroundColor: Colors.grey[200],
                         child: Text(
-                          name.isNotEmpty
-                              ? name[0].toUpperCase()
-                              : '?',
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18.sp,
-                            color: AppColors.primary,
+                            color: Colors.grey[700],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 8.h),
                       SizedBox(
-                        width: 70,
+                        width: 70.w,
                         child: Text(
                           name,
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11.sp),
+                          style: TextStyle(fontSize: 12.sp),
                         ),
                       ),
                     ],
@@ -1120,74 +855,240 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showAddContactDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
+  // ═══════════════════════════════════════════
+  // TRANSFER
+  // ═══════════════════════════════════════════
+  void _showTransferBottomSheet(BuildContext context) {
+    final amountController = TextEditingController();
+    String? selectedContactId;
+    String? selectedContactName;
+    String? selectedContactEmail;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      useRootNavigator: true,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(LocaleKeys.contacts_add_contact.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: LocaleKeys.auth_full_name.tr(),
-              ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final user = FirebaseAuth.instance.currentUser;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                labelText: LocaleKeys.transfer_email_or_phone.tr(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-            },
-            child: Text(LocaleKeys.common_cancel.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final user = FirebaseAuth.instance.currentUser;
-
-                if (user != null) {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user.uid)
-                      .collection('contacts')
-                      .add({
-                    'name': nameController.text.trim(),
-                    'email': emailController.text.trim(),
-                    'createdAt': Timestamp.now(),
-                  });
-                }
-
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              } catch (e) {
-                debugPrint('Error saving contact: $e');
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to save contact'),
+              padding: EdgeInsets.all(24.w),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
                     ),
-                  );
-                }
-              }
-            },
-            child: Text(LocaleKeys.common_save.tr()),
-          ),
-        ],
+                    SizedBox(height: 24.h),
+                    Text(
+                      'Transfer Money',
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+
+                    // Contacts Dropdown
+                    StreamBuilder<QuerySnapshot>(
+                      stream: user != null
+                          ? FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('contacts')
+                          .orderBy('name')
+                          .snapshots()
+                          : null,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return Container(
+                            padding: EdgeInsets.all(16.w),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12.r),
+                              color: Colors.grey[50],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: Colors.grey),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'No contacts found',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14.sp,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        'Add your first contact',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        final contacts = snapshot.data!.docs;
+
+                        return DropdownButtonFormField<String>(
+                          value: selectedContactId,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: 'Select Contact',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          hint: const Text('Choose a contact'),
+                          items: contacts.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final name = data['name'] ?? 'Unknown';
+
+                            return DropdownMenuItem<String>(
+                              value: doc.id,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 14.r,
+                                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                                    child: Text(
+                                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Text(name),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setModalState(() {
+                              selectedContactId = value;
+                              final selectedDoc = contacts.firstWhere(
+                                    (doc) => doc.id == value,
+                              );
+                              final contactData = selectedDoc.data() as Map<String, dynamic>;
+                              selectedContactName = contactData['name'] ?? 'Unknown';
+                              selectedContactEmail = contactData['email'] ?? '';
+                            });
+                          },
+                        );
+                      },
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+
+                    SizedBox(height: 24.h),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50.h,
+                      child: ElevatedButton(
+                        onPressed: selectedContactId == null ||
+                            amountController.text.isEmpty
+                            ? null
+                            : () {
+                          final amount = double.tryParse(amountController.text) ?? 0;
+                          if (amount <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Enter valid amount'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context);
+                          _submitTransfer(
+                            context: context,
+                            contactId: selectedContactId!,
+                            contactName: selectedContactName!,
+                            contactEmail: selectedContactEmail ?? '',
+                            amount: amount,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          disabledBackgroundColor: Colors.grey[300],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: Text(
+                          'Send',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 16.h),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1203,15 +1104,11 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(
-          LocaleKeys.transfer_transfer_to.tr(
-            args: [contactName],
-          ),
-        ),
+        title: Text('Transfer to $contactName'),
         content: TextField(
           controller: amountController,
-          decoration: InputDecoration(
-            labelText: LocaleKeys.transfer_amount.tr(),
+          decoration: const InputDecoration(
+            labelText: 'Amount',
             prefixText: '\$ ',
           ),
           keyboardType: TextInputType.number,
@@ -1219,22 +1116,20 @@ class HomeScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(LocaleKeys.common_cancel.tr()),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-
               _submitTransfer(
                 context: context,
                 contactId: contactId,
                 contactName: contactName,
                 contactEmail: contactEmail,
-                amount:
-                double.tryParse(amountController.text.trim()) ?? 0,
+                amount: double.tryParse(amountController.text.trim()) ?? 0,
               );
             },
-            child: Text(LocaleKeys.transfer_send.tr()),
+            child: const Text('Send'),
           ),
         ],
       ),
@@ -1252,16 +1147,13 @@ class HomeScreen extends StatelessWidget {
     if (user == null) return;
 
     try {
-      final userRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
-
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final userDoc = await userRef.get();
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(LocaleKeys.transfer_user_not_found.tr()),
+          const SnackBar(
+            content: Text('User not found'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1269,19 +1161,13 @@ class HomeScreen extends StatelessWidget {
       }
 
       final data = userDoc.data()!;
-
-      final double balance =
-      (data['totalBalance'] ?? 0).toDouble();
-
-      final double totalExpense =
-      (data['totalExpense'] ?? 0).toDouble();
+      final double balance = (data['totalBalance'] ?? 0).toDouble();
+      final double totalExpense = (data['totalExpense'] ?? 0).toDouble();
 
       if (amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              LocaleKeys.transfer_invalid_amount.tr(),
-            ),
+          const SnackBar(
+            content: Text('Invalid amount'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1291,11 +1177,7 @@ class HomeScreen extends StatelessWidget {
       if (amount > balance) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              LocaleKeys.transfer_insufficient_balance.tr(
-                args: [balance.toStringAsFixed(2)],
-              ),
-            ),
+            content: Text('Insufficient balance: \$${balance.toStringAsFixed(2)}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1304,9 +1186,7 @@ class HomeScreen extends StatelessWidget {
 
       final batch = FirebaseFirestore.instance.batch();
 
-      final transactionRef =
-      userRef.collection('transactions').doc();
-
+      final transactionRef = userRef.collection('transactions').doc();
       batch.set(transactionRef, {
         'title': 'Transfer to $contactName',
         'amount': amount,
@@ -1318,9 +1198,7 @@ class HomeScreen extends StatelessWidget {
         'date': Timestamp.now(),
       });
 
-      final recentTransferRef =
-      userRef.collection('recent_transfers').doc(contactId);
-
+      final recentTransferRef = userRef.collection('recent_transfers').doc(contactId);
       batch.set(
         recentTransferRef,
         {
@@ -1343,20 +1221,11 @@ class HomeScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              LocaleKeys.transfer_transferred.tr(
-                args: [
-                  amount.toStringAsFixed(2),
-                  contactName,
-                ],
-              ),
-            ),
+            content: Text('Transferred \$${amount.toStringAsFixed(2)} to $contactName'),
           ),
         );
       }
     } catch (e) {
-      debugPrint('Transfer Error: $e');
-
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1368,10 +1237,66 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  void _showAddContactDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add Contact'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email or Phone'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('contacts')
+                      .add({
+                    'name': nameController.text.trim(),
+                    'email': emailController.text.trim(),
+                    'createdAt': Timestamp.now(),
+                  });
+                }
+                Navigator.pop(dialogContext);
+              } catch (e) {
+                debugPrint('Error saving contact: $e');
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════
   IconData _getIconForCategory(String category) {
     switch (category) {
       case 'work': return Icons.work_outline;
-      case 'transfer': return Icons.person_outline;
+      case 'transfer': return Icons.swap_horiz;
       case 'payment': return Icons.payment;
       case 'food': return Icons.restaurant;
       case 'shopping': return Icons.shopping_bag;

@@ -38,7 +38,7 @@ class AIResultScreen extends StatelessWidget {
               onPressed: () => GoRouter.of(context).pop(),
             ),
             title: Text(
-              isMonthly ? 'AI Monthly Plan' : 'AI Yearly Plan',
+              isMonthly ? 'AI Monthly Budget Plan' : 'AI Yearly Budget Plan',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -124,7 +124,7 @@ class AIResultScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your Personalized Plan',
+                        'Budget, Savings & Goals Plan',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -197,7 +197,7 @@ class AIResultScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Export Plan',
+          'Export Budget Plan',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -206,7 +206,7 @@ class AIResultScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Save or share your financial plan',
+          'Save or share your budget & savings plan',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -309,7 +309,7 @@ class AIResultScreen extends StatelessWidget {
             Clipboard.setData(ClipboardData(text: safePlan));
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Plan copied to clipboard'),
+                content: Text('Budget plan copied to clipboard'),
                 duration: Duration(seconds: 2),
               ),
             );
@@ -318,7 +318,7 @@ class AIResultScreen extends StatelessWidget {
         const SizedBox(height: 12),
         _buildActionTile(
           icon: Icons.refresh,
-          title: 'Generate New Plan',
+          title: 'Generate New Budget Plan',
           subtitle: 'Create a different plan based on your data',
           onTap: () => GoRouter.of(context).pop(),
         ),
@@ -400,8 +400,8 @@ class AIResultScreen extends StatelessWidget {
             return [
               pw.Text(
                 safePlanType == 'monthly'
-                    ? 'AI Monthly Saving Plan'
-                    : 'AI Yearly Wealth Plan',
+                    ? 'AI Monthly Budget Plan'
+                    : 'AI Yearly Budget Plan',
                 style: pw.TextStyle(
                   fontSize: 20,
                   fontWeight: pw.FontWeight.bold,
@@ -476,7 +476,7 @@ class AIResultScreen extends StatelessWidget {
       final file = File('${output.path}/ai_plan_${safePlanType}_${DateTime.now().millisecondsSinceEpoch}.csv');
       await file.writeAsString(csvContent);
 
-      await Share.shareXFiles([XFile(file.path)], text: 'My AI Financial Plan');
+      await Share.shareXFiles([XFile(file.path)], text: 'My AI Budget & Savings Plan');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -497,6 +497,6 @@ class AIResultScreen extends StatelessWidget {
   }
 
   void _shareText(String safePlan) {
-    Share.share(safePlan, subject: 'My AI Financial Plan');
+    Share.share(safePlan, subject: 'My AI Budget & Savings Plan');
   }
 }

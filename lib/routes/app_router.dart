@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/di/notifications/notification_screen.dart';
 import '../features/auth/presentation/pages/forgetPassword_screen/forget_password.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/auth/presentation/pages/register_screen.dart';
@@ -144,6 +145,12 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.signup,
         builder: (_, __) => const SignUpScreen(),
+      ),
+
+      // في app_router.dart
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationScreen(),
       ),
 
       GoRoute(
