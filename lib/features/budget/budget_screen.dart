@@ -1,3 +1,9 @@
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/addExpense.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/addIncome.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/addSavings.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/deleteBudget.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/deleteGoal.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/income_icon.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,7 +55,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     _initializeNotifications();
     _checkMonthlySavings();
 
-    // NEW: Check budget alerts after first frame to avoid build-phase issues
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkBudgetAlerts();
     });
@@ -359,586 +364,11 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // ADD INCOME DIALOG
-  // ─────────────────────────────────────────────
-  void _showAddIncomeDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final amountController = TextEditingController();
-    final sourceController = TextEditingController();
-
-    String selectedCategory = 'salary';
-    String selectedPeriod = 'monthly';
-    DateTime? endDate;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    Text(
-                      'Add Income Source',
-                      style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Income Name',
-                        hintText: 'e.g., Monthly Salary, Freelance Project',
-                        prefixIcon: const Icon(Icons.label_outline),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Amount',
-                        hintText: '0.00',
-                        prefixText: '\$ ',
-                        prefixIcon: const Icon(Icons.attach_money),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    TextField(
-                      controller: sourceController,
-                      decoration: InputDecoration(
-                        labelText: 'Source / Company',
-                        hintText: 'e.g., Google, Upwork',
-                        prefixIcon: const Icon(Icons.source_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Income Type',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: _incomeCategories.map((cat) {
-                        final isSelected = selectedCategory == cat;
-                        return FilterChip(
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setModalState(() => selectedCategory = cat);
-                            }
-                          },
-                          selectedColor: Colors.green.withOpacity(0.2),
-                          checkmarkColor: Colors.green,
-                          label: Text(
-                            cat.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: isSelected ? Colors.green : Colors.grey[700],
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Period',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Wrap(
-                      spacing: 8.w,
-                      children: ['monthly', 'weekly', 'one-time'].map((p) {
-                        final isSelected = selectedPeriod == p;
-                        return ChoiceChip(
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) setModalState(() => selectedPeriod = p);
-                          },
-                          selectedColor: AppColors.primary.withOpacity(0.2),
-                          label: Text(
-                            p.toUpperCase(),
-                            style: TextStyle(
-                              color: isSelected ? AppColors.primary : Colors.grey[700],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 16.h),
-                    ListTile(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(const Duration(days: 30)),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365 * 10)), // FIXED: Dynamic
-                        );
-                        if (picked != null) {
-                          setModalState(() => endDate = picked);
-                        }
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        side: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      leading: const Icon(Icons.calendar_today),
-                      title: Text(
-                        endDate == null
-                            ? 'Period End Date (Optional)'
-                            : DateFormat('MMM dd, yyyy').format(endDate!),
-                        style: TextStyle(
-                          color: endDate == null ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp),
-                    ),
-                    SizedBox(height: 24.h),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final amount = double.tryParse(amountController.text) ?? 0;
-
-                          if (name.isEmpty || amount <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill all fields')),
-                            );
-                            return;
-                          }
-
-                          final user = FirebaseAuth.instance.currentUser;
-                          if (user == null) return;
-
-                          try {
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('budgets')
-                                .add({
-                              'name': name,
-                              'amount': amount,
-                              'used': 0,
-                              'remaining': amount, // FIXED: Initialize remaining
-                              'source': sourceController.text.trim(),
-                              'category': selectedCategory,
-                              'period': selectedPeriod,
-                              'endDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
-                              'autoSave': false,
-                              'active': true,
-                              'createdAt': Timestamp.now(),
-                            });
-
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Income added successfully!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            debugPrint('Error adding income: $e');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Failed to add income. Please try again.')),
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: Text(
-                          'Add Income',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
 
   // ─────────────────────────────────────────────
   // ADD SAVINGS / BUDGET (Outside Income)
   // ─────────────────────────────────────────────
-  void _showAddSavingsDialog(BuildContext context) {
-    final nameController = TextEditingController(text: 'My Savings');
-    final amountController = TextEditingController();
-    String? selectedGoalId;
-    String? selectedGoalName;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final user = FirebaseAuth.instance.currentUser;
-
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    Text(
-                      'Add Savings',
-                      style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        hintText: 'e.g., Emergency Fund, Vacation Savings',
-                        prefixIcon: const Icon(Icons.savings_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Amount',
-                        hintText: '0.00',
-                        prefixText: '\$ ',
-                        prefixIcon: const Icon(Icons.attach_money),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-
-                    // SELECT GOAL Dropdown
-                    StreamBuilder<QuerySnapshot>(
-                      stream: user != null
-                          ? FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .collection('goals')
-                          .where('completed', isEqualTo: false)
-                          .orderBy('createdAt', descending: true)
-                          .snapshots()
-                          : null,
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return Container(
-                            padding: EdgeInsets.all(12.w),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12.r),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline, color: Colors.grey[600]),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: Text(
-                                    'No active goals. Create a goal first!',
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        final goals = snapshot.data!.docs;
-
-                        return DropdownButtonFormField<String>(
-                          value: selectedGoalId,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            labelText: 'Link to Goal (Optional)',
-                            hintText: 'Select a goal to add savings to',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[50],
-                          ),
-                          items: [
-                            const DropdownMenuItem(
-                              value: null,
-                              child: Text('No goal (standalone savings)'),
-                            ),
-                            ...goals.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              return DropdownMenuItem(
-                                value: doc.id,
-                                child: Text(data['name'] ?? 'Unnamed Goal'),
-                              );
-                            }),
-                          ],
-                          onChanged: (value) {
-                            setModalState(() {
-                              selectedGoalId = value;
-                              if (value != null) {
-                                final goalDoc = goals.firstWhere((g) => g.id == value);
-                                selectedGoalName = (goalDoc.data() as Map<String, dynamic>)['name'];
-                              }
-                            });
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 24.h),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final amount = double.tryParse(amountController.text) ?? 0;
-
-                          if (name.isEmpty || amount <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill all fields')),
-                            );
-                            return;
-                          }
-
-                          final user = FirebaseAuth.instance.currentUser;
-                          if (user == null) return;
-
-                          try {
-                            final batch = FirebaseFirestore.instance.batch();
-
-                            // 1. Create savings budget
-                            final savingsRef = FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('budgets')
-                                .doc();
-
-                            batch.set(savingsRef, {
-                              'name': name,
-                              'amount': amount,
-                              'used': 0,
-                              'remaining': amount,
-                              'source': 'savings',
-                              'category': 'other',
-                              'period': 'one-time',
-                              'isSavings': true,
-                              'autoSave': false,
-                              'active': true,
-                              'goalId': selectedGoalId,
-                              'goalName': selectedGoalName,
-                              'createdAt': Timestamp.now(),
-                            });
-
-                            // 2. If linked to goal, update goal currentAmount
-                            if (selectedGoalId != null) {
-                              final goalRef = FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .collection('goals')
-                                  .doc(selectedGoalId);
-
-                              final goalDoc = await goalRef.get();
-
-                              // FIXED: Check if goal exists before proceeding
-                              if (!goalDoc.exists) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Selected goal no longer exists. Please choose another.'),
-                                      backgroundColor: Colors.orange,
-                                    ),
-                                  );
-                                }
-                                return;
-                              }
-
-                              final currentAmount = (goalDoc.data()?['currentAmount'] ?? 0).toDouble();
-                              final targetAmount = (goalDoc.data()?['targetAmount'] ?? 0).toDouble();
-                              final newAmount = currentAmount + amount;
-
-                              batch.update(goalRef, {
-                                'currentAmount': newAmount,
-                                'updatedAt': Timestamp.now(),
-                              });
-
-                              // Check if goal completed
-                              if (newAmount >= targetAmount) {
-                                batch.update(goalRef, {
-                                  'completed': true,
-                                  'completedAt': Timestamp.now(),
-                                });
-                              }
-
-                              // Create savings record
-                              final savingsRecordRef = FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .collection('savings_records')
-                                  .doc();
-
-                              batch.set(savingsRecordRef, {
-                                'amount': amount,
-                                'goalId': selectedGoalId,
-                                'goalName': selectedGoalName,
-                                'source': 'manual',
-                                'budgetId': savingsRef.id,
-                                'budgetName': name,
-                                'createdAt': Timestamp.now(),
-                              });
-                            }
-
-                            await batch.commit();
-
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    selectedGoalId != null
-                                        ? '\$${amount.toStringAsFixed(0)} added to "$selectedGoalName"!'
-                                        : 'Savings added successfully!',
-                                  ),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            debugPrint('Error adding savings: $e');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Failed to add savings. Please try again.')),
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.savings),
-                        label: Text(
-                          'Add Savings',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   // ─────────────────────────────────────────────
   // EDIT INCOME DIALOG - WITH FIX
@@ -1361,7 +791,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  // Dialog to add savings to existing goal
   void _showAddSavingsToGoalDialog(
       BuildContext context,
       String goalId,
@@ -1501,182 +930,6 @@ class _BudgetScreenState extends State<BudgetScreen>
   // ─────────────────────────────────────────────
   // ADD EXPENSE DIALOG - WITH CRITICAL FIX
   // ─────────────────────────────────────────────
-  void _showAddExpenseDialog(String budgetId, String budgetName) {
-    final amountController = TextEditingController();
-    final descController = TextEditingController();
-
-    final List<String> expenseCategories = [
-      'food', 'shopping', 'transport', 'bills',
-      'entertainment', 'health', 'education', 'other'
-    ];
-
-    String selectedCategory = 'food';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add Expense from $budgetName',
-                      style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    TextField(
-                      controller: amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Amount',
-                        prefixText: '\$ ',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    TextField(
-                      controller: descController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'e.g., Lunch, Uber, etc.',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Category',
-                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
-                    ),
-                    SizedBox(height: 8.h),
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: expenseCategories.map((cat) {
-                        final isSelected = selectedCategory == cat;
-                        return ChoiceChip(
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setModalState(() => selectedCategory = cat);
-                            }
-                          },
-                          selectedColor: Colors.red.withOpacity(0.2),
-                          label: Text(
-                            cat.toUpperCase(),
-                            style: TextStyle(
-                              color: isSelected ? Colors.red : Colors.grey[700],
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: 24.h),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final amount = double.tryParse(amountController.text) ?? 0;
-                          if (amount <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Enter valid amount')),
-                            );
-                            return;
-                          }
-
-                          final user = FirebaseAuth.instance.currentUser;
-                          if (user == null) return;
-
-                          final batch = FirebaseFirestore.instance.batch();
-
-                          final budgetRef = FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .collection('budgets')
-                              .doc(budgetId);
-
-                          final budgetDoc = await budgetRef.get();
-                          final budgetData = budgetDoc.data() as Map<String, dynamic>? ?? {};
-                          final budgetAmount = (budgetData['amount'] ?? 0).toDouble();
-                          final currentUsed = (budgetData['used'] ?? 0).toDouble();
-                          final newUsed = currentUsed + amount;
-                          final newRemaining = budgetAmount - newUsed;
-
-                          // CRITICAL FIX: Update BOTH used AND remaining
-                          batch.update(budgetRef, {
-                            'used': newUsed,
-                            'remaining': newRemaining, // WAS MISSING!
-                          });
-
-                          final transRef = FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .collection('transactions')
-                              .doc();
-
-                          batch.set(transRef, {
-                            'type': 'expense',
-                            'amount': amount,
-                            'category': selectedCategory,
-                            'budgetId': budgetId,
-                            'budgetName': budgetName,
-                            'description': descController.text.trim(),
-                            'date': Timestamp.now(),
-                            'createdAt': Timestamp.now(),
-                          });
-
-                          await batch.commit();
-
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('-\$${amount.toStringAsFixed(0)} from $budgetName'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.remove_circle),
-                        label: const Text('Add Expense'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16.h),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   // ─────────────────────────────────────────────
   // AUTO-SAVE: Check if any budget period ended
@@ -1731,7 +984,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     }
   }
 
-  // Create standalone savings when no goal linked
   Future<void> _createAutoSavingsBudget({
     required String budgetId,
     required double amount,
@@ -1742,7 +994,6 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     final batch = FirebaseFirestore.instance.batch();
 
-    // Create savings budget
     final savingsRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -1765,7 +1016,6 @@ class _BudgetScreenState extends State<BudgetScreen>
       'createdAt': Timestamp.now(),
     });
 
-    // Close old budget
     final budgetRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -1774,7 +1024,7 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     batch.update(budgetRef, {
       'active': false,
-      'remaining': 0, // FIXED: Set remaining to 0
+      'remaining': 0,
       'closedAt': Timestamp.now(),
       'savedAmount': amount,
       'autoSaved': true,
@@ -1977,7 +1227,6 @@ class _BudgetScreenState extends State<BudgetScreen>
         final isSavings = data['isSavings'] == true;
         final isAutoSaved = data['autoSaved'] == true;
 
-        // FIXED: Exclude savings and auto-saved from income calculation
         if (!isSavings && !isAutoSaved) {
           totalIncome += (data['amount'] ?? 0).toDouble();
           totalUsed += (data['used'] ?? 0).toDouble();
@@ -2332,7 +1581,7 @@ class _BudgetScreenState extends State<BudgetScreen>
             SizedBox(height: 12.h),
             FloatingActionButton.extended(
               heroTag: "add_savings_btn",
-              onPressed: () => _showAddSavingsDialog(context),
+              onPressed: () => AddSavingsDialog.show(context),
               backgroundColor: Colors.teal,
               icon: const Icon(Icons.savings, color: Colors.white),
               label: Text(
@@ -2346,18 +1595,10 @@ class _BudgetScreenState extends State<BudgetScreen>
             ),
             SizedBox(height: 12.h),
             FloatingActionButton.extended(
-              heroTag: "add_income_btn",
-              onPressed: () => _showAddIncomeDialog(context),
-              backgroundColor: AppColors.primary,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(
-                'Add Income',
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              onPressed: (){
+                AddIncomeDialog.show(context);
+              }, label:const Text("Add Income"),
+
             ),
           ],
         ),
@@ -2539,19 +1780,21 @@ class _BudgetScreenState extends State<BudgetScreen>
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isSavings
-                                    ? Colors.teal.withOpacity(0.1)
-                                    : AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              child: Icon(
-                                isSavings ? Icons.savings : _getIncomeIcon(category),
-                                color: isSavings ? Colors.teal : AppColors.primary,
-                              ),
-                            ),
+                    Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isSavings
+                          ? Colors.teal.withOpacity(0.1)
+                          : AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: IncomeCategoryIcon(
+                      category: category,
+                      isSavings: isSavings,
+                      color: isSavings ? Colors.teal : AppColors.primary,
+                      size: 24.sp,
+                    ),
+                  ),
                             SizedBox(width: 12.w),
                             Expanded(
                               child: Column(
@@ -2638,7 +1881,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                             if (autoSave)
                               Container(
                                 padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w, vertical: 4.h),
+                                  horizontal: 8.w,
+                                  vertical: 4.h,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.green,
                                   borderRadius: BorderRadius.circular(8.r),
@@ -2652,20 +1897,42 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   ),
                                 ),
                               ),
+
                             PopupMenuButton<String>(
                               onSelected: (value) {
-                                if (value == 'delete') _deleteBudget(docId);
-                                if (value == 'edit') _showEditIncomeDialog(context, docId, budget);
-                                if (value == 'add_expense') _showAddExpenseDialog(docId, budgetName);
+                                switch (value) {
+                                  case 'edit':
+                                    _showEditIncomeDialog(
+                                      context,
+                                      docId,
+                                      budget,
+                                    );
+                                    break;
+
+                                  case 'add_expense':
+                                    AddExpenseDialog.show(
+                                      context,
+                                      budgetId: docId,
+                                      budgetName: budgetName,
+                                    );
+                                    break;
+
+                                  case 'delete':
+                                    DeleteBudget.show(
+                                      context,
+                                      docId: docId,
+                                    );
+                                    break;
+                                }
                               },
                               itemBuilder: (context) => [
                                 PopupMenuItem(
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, color: Colors.blue),
+                                      const Icon(Icons.edit, color: Colors.blue),
                                       SizedBox(width: 8.w),
-                                      Text('Edit'),
+                                      const Text('Edit'),
                                     ],
                                   ),
                                 ),
@@ -2673,9 +1940,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   value: 'add_expense',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.remove_circle, color: Colors.orange),
+                                      const Icon(Icons.remove_circle, color: Colors.orange),
                                       SizedBox(width: 8.w),
-                                      Text('Add Expense'),
+                                      const Text('Add Expense'),
                                     ],
                                   ),
                                 ),
@@ -2683,9 +1950,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   value: 'delete',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.delete, color: Colors.red),
+                                      const Icon(Icons.delete, color: Colors.red),
                                       SizedBox(width: 8.w),
-                                      Text('Delete'),
+                                      const Text('Delete'),
                                     ],
                                   ),
                                 ),
@@ -2694,6 +1961,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ],
                         ),
                         SizedBox(height: 16.h),
+
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
@@ -2789,7 +2057,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ),
                         ],
                         if (isAutoSaved && budget['parentBudgetName'] != null) ...[
+
                           SizedBox(height: 8.h),
+
                           Container(
                             padding: EdgeInsets.all(12.w),
                             decoration: BoxDecoration(
@@ -2821,7 +2091,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                     ),
                   ),
                 ),
-              );
+                );
             },
           ),
         );
@@ -2874,10 +2144,10 @@ class _BudgetScreenState extends State<BudgetScreen>
           );
         }
 
-        // FIXED: Added RefreshIndicator for pull-to-refresh
+
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {}); // Trigger rebuild to refresh streams
+            setState(() {});
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -2901,7 +2171,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.r),
                   side: completed
-                      ? BorderSide(color: Colors.green, width: 2)
+                      ? const BorderSide(color: Colors.green, width: 2)
                       : BorderSide.none,
                 ),
                 child: InkWell(
@@ -2969,18 +2239,28 @@ class _BudgetScreenState extends State<BudgetScreen>
                               ),
                             PopupMenuButton<String>(
                               onSelected: (value) {
-                                if (value == 'delete') _deleteGoal(docId);
-                                if (value == 'edit')
-                                  _showEditGoalDialog(context, docId, goal);
+                                if (value == 'delete') {
+                                  DeleteGoal.show(
+                                    context,
+                                    docId: docId,
+                                  );
+                                }
+                                if (value == 'edit') {
+                                  _showEditGoalDialog(
+                                    context,
+                                    docId,
+                                    goal,
+                                  );
+                                }
                               },
                               itemBuilder: (context) => [
                                 PopupMenuItem(
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, color: Colors.blue),
+                                      const Icon(Icons.edit, color: Colors.blue),
                                       SizedBox(width: 8.w),
-                                      Text('Edit'),
+                                      const Text('Edit'),
                                     ],
                                   ),
                                 ),
@@ -2999,6 +2279,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ],
                         ),
                         SizedBox(height: 16.h),
+
                         LinearProgressIndicator(
                           value: percent,
                           backgroundColor: Colors.grey[200],
@@ -3007,7 +2288,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ),
                           minHeight: 8.h,
                         ),
+
                         SizedBox(height: 12.h),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -3036,79 +2319,9 @@ class _BudgetScreenState extends State<BudgetScreen>
   // ─────────────────────────────────────────────
   // DELETE OPERATIONS
   // ─────────────────────────────────────────────
-  Future<void> _deleteBudget(String docId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
 
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('budgets')
-          .doc(docId)
-          .update({'active': false});
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Income source removed')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error deleting budget: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to remove income source. Please try again.')),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteGoal(String docId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('goals')
-          .doc(docId)
-          .delete();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Goal deleted')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error deleting goal: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete goal. Please try again.')),
-        );
-      }
-    }
-  }
 
   // ─────────────────────────────────────────────
   // HELPERS
   // ─────────────────────────────────────────────
-  IconData _getIncomeIcon(String c) {
-    switch (c) {
-      case 'salary':
-        return Icons.work;
-      case 'freelance':
-        return Icons.laptop;
-      case 'investment':
-        return Icons.trending_up;
-      case 'business':
-        return Icons.store;
-      case 'gift':
-        return Icons.card_giftcard;
-      case 'bonus':
-        return Icons.star;
-      default:
-        return Icons.account_balance_wallet;
-    }
-  }
 }
