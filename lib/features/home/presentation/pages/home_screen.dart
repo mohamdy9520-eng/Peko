@@ -42,6 +42,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_home', // ← ADDED: unique heroTag to fix Hero animation conflict
         onPressed: () => _showAddOptionsBottomSheet(context),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),

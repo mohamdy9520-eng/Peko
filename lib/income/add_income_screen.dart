@@ -3,7 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../theme/app_colors.dart';
+import '../providers/currency_provider.dart';
+import 'package:provider/provider.dart';
 
 class AddIncomeScreen extends StatefulWidget {
   const AddIncomeScreen({super.key});
@@ -89,9 +92,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     final total = _totalAmount;
 
     try {
-      final userRef =
-      FirebaseFirestore.instance.collection('users').doc(user.uid);
-
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final userDoc = await userRef.get();
 
       double currentBalance = 0;
@@ -99,16 +100,11 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
       if (userDoc.exists) {
         final data = userDoc.data() as Map<String, dynamic>;
-
-        currentBalance =
-            (data['totalBalance'] as num?)?.toDouble() ?? 0;
-
-        currentIncome =
-            (data['totalIncome'] as num?)?.toDouble() ?? 0;
+        currentBalance = (data['totalBalance'] as num?)?.toDouble() ?? 0;
+        currentIncome = (data['totalIncome'] as num?)?.toDouble() ?? 0;
       }
 
       final batch = FirebaseFirestore.instance.batch();
-
       final transactionsRef = userRef.collection('transactions');
 
       for (int i = 0; i < titleControllers.length; i++) {
@@ -133,7 +129,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         });
       }
 
-      // إنشاء أو تحديث Document المستخدم
       batch.set(
         userRef,
         {
@@ -148,10 +143,18 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       await batch.commit();
 
       if (mounted) {
+        final currencyProvider = context.read<CurrencyProvider>();
+        final currency = currencyProvider.selectedCurrency;
+        final formattedTotal = currency.symbol + total.toStringAsFixed(currency.decimalDigits);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Added ${titleControllers.length} incomes (\$${total.toStringAsFixed(2)})',
+              'Added ' +
+                  titleControllers.length.toString() +
+                  ' incomes (' +
+                  formattedTotal +
+                  ')',
             ),
           ),
         );
@@ -159,13 +162,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         context.pop();
       }
     } catch (e, s) {
-      debugPrint('ERROR: $e');
+      debugPrint('ERROR: ' + e.toString());
       debugPrintStack(stackTrace: s);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Error: ' + e.toString()),
             backgroundColor: Colors.red,
           ),
         );
@@ -200,12 +203,18 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             child: Column(
               children: [
                 const Text('Total'),
-                Text(
-                  '\$${_totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Consumer<CurrencyProvider>(
+                  builder: (context, currencyProvider, child) {
+                    final currency = currencyProvider.selectedCurrency;
+                    final formattedTotal = currency.symbol + _totalAmount.toStringAsFixed(currency.decimalDigits);
+                    return Text(
+                      formattedTotal,
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

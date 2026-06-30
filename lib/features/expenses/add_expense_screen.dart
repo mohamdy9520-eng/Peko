@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../providers/currency_provider.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -26,7 +29,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   bool isScanning = false;
 
-  final String geminiApiKey = "AIzaSyDoQbhL__7RW1-z31PDAHxeEAcalZTDw7k";
+  final geminiApiKey = dotenv.env['GEMINI_API_KEY']!;
+
 
   final List<Map<String, dynamic>> categories = [
     {"name": "food", "icon": Icons.restaurant},
@@ -91,8 +95,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return titleControllers.isNotEmpty;
   }
-
-
 
   Future<void> _scanReceipt() async {
     try {
@@ -187,8 +189,7 @@ $receiptText
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        final text =
-        data['candidates'][0]['content']['parts'][0]['text'];
+        final text = data['candidates'][0]['content']['parts'][0]['text'];
 
         final cleanText = text
             .replaceAll('```json', '')
@@ -231,8 +232,6 @@ $receiptText
     }
   }
 
-
-
   Future<void> _submitAll() async {
     if (!_isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -259,17 +258,17 @@ $receiptText
 
       final data = userDoc.data() ?? {};
 
-      double currentBalance =
-      (data['totalBalance'] ?? 0).toDouble();
+      double currentBalance = (data['totalBalance'] ?? 0).toDouble();
 
-      double currentExpense =
-      (data['totalExpense'] ?? 0).toDouble();
+      double currentExpense = (data['totalExpense'] ?? 0).toDouble();
 
       if (total > currentBalance) {
+        final currency = context.read<CurrencyProvider>();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Insufficient balance! You have only \$${currentBalance.toStringAsFixed(2)}',
+              'Insufficient balance! You have only ${currency.formatAmount(currentBalance)}',
             ),
             backgroundColor: Colors.red,
           ),
@@ -288,8 +287,7 @@ $receiptText
       for (int i = 0; i < titleControllers.length; i++) {
         final title = titleControllers[i].text.trim();
 
-        final amount =
-        double.parse(amountControllers[i].text);
+        final amount = double.parse(amountControllers[i].text);
 
         final category = selectedCategories[i];
 
@@ -305,9 +303,7 @@ $receiptText
       }
 
       batch.update(
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid),
+        FirebaseFirestore.instance.collection('users').doc(user.uid),
         {
           'totalBalance': currentBalance - total,
           'totalExpense': currentExpense + total,
@@ -317,10 +313,12 @@ $receiptText
       await batch.commit();
 
       if (mounted) {
+        final currency = context.read<CurrencyProvider>();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Added ${titleControllers.length} expenses (\$${total.toStringAsFixed(2)})',
+              'Added ${titleControllers.length} expenses (${currency.formatAmount(total)})',
             ),
           ),
         );
@@ -352,6 +350,8 @@ $receiptText
 
   @override
   Widget build(BuildContext context) {
+    final currency = context.watch<CurrencyProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
@@ -386,7 +386,7 @@ $receiptText
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  '\$ ${_totalAmount.toStringAsFixed(2)}',
+                  currency.formatAmount(_totalAmount),
                   style: TextStyle(
                     fontSize: 32.sp,
                     fontWeight: FontWeight.bold,
@@ -405,8 +405,7 @@ $receiptText
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: titleControllers.length,
-              itemBuilder: (context, index) =>
-                  _buildItemCard(index),
+              itemBuilder: (context, index) => _buildItemCard(index),
             ),
           ),
 
@@ -431,8 +430,7 @@ $receiptText
                         : 'AI Receipt Scanner',
                   ),
                   style: OutlinedButton.styleFrom(
-                    minimumSize:
-                    Size(double.infinity, 50.h),
+                    minimumSize: Size(double.infinity, 50.h),
                     side: const BorderSide(
                       color: AppColors.primary,
                     ),
@@ -446,8 +444,7 @@ $receiptText
                   icon: const Icon(Icons.add),
                   label: const Text('Add Another Expense'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize:
-                    Size(double.infinity, 50.h),
+                    minimumSize: Size(double.infinity, 50.h),
                     side: const BorderSide(
                       color: AppColors.primary,
                     ),
@@ -465,8 +462,7 @@ $receiptText
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.expense,
-                    minimumSize:
-                    Size(double.infinity, 50.h),
+                    minimumSize: Size(double.infinity, 50.h),
                   ),
                 ),
               ],
@@ -478,6 +474,8 @@ $receiptText
   }
 
   Widget _buildItemCard(int index) {
+    final currency = context.read<CurrencyProvider>();
+
     return Card(
       margin: EdgeInsets.only(bottom: 12.h),
       elevation: 2,
@@ -491,13 +489,10 @@ $receiptText
                   child: TextField(
                     controller: titleControllers[index],
                     decoration: InputDecoration(
-                      labelText:
-                      'Item ${index + 1} Name',
-                      prefixIcon:
-                      const Icon(Icons.label_outline),
+                      labelText: 'Item ${index + 1} Name',
+                      prefixIcon: const Icon(Icons.label_outline),
                       border: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                     ),
                   ),
@@ -521,14 +516,12 @@ $receiptText
                   flex: 2,
                   child: TextField(
                     controller: amountControllers[index],
-                    keyboardType:
-                    TextInputType.number,
+                    keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: 'Amount',
-                      prefixText: '\$ ',
+                      prefixText: '${currency.symbol} ',
                       border: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                     ),
                   ),
@@ -538,17 +531,14 @@ $receiptText
 
                 Expanded(
                   flex: 3,
-                  child:
-                  DropdownButtonFormField<String>(
+                  child: DropdownButtonFormField<String>(
                     value: selectedCategories[index],
                     isExpanded: true,
                     decoration: InputDecoration(
                       border: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      contentPadding:
-                      EdgeInsets.symmetric(
+                      contentPadding: EdgeInsets.symmetric(
                         horizontal: 12.w,
                       ),
                     ),
@@ -565,10 +555,8 @@ $receiptText
                             SizedBox(width: 8.w),
                             Expanded(
                               child: Text(
-                                cat["name"]
-                                    .toUpperCase(),
-                                overflow:
-                                TextOverflow.ellipsis,
+                                cat["name"].toUpperCase(),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -577,8 +565,7 @@ $receiptText
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
-                        selectedCategories[index] =
-                        value!;
+                        selectedCategories[index] = value!;
                       });
                     },
                   ),
