@@ -2,49 +2,39 @@ import 'package:ai_expense_tracker/profile/screens_profile/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/di/notifications/notification_screen.dart';
 import '../features/auth/presentation/pages/forgetPassword_screen/forget_password.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/auth/presentation/pages/register_screen.dart';
 import '../features/auth/presentation/pages/verification/verify.dart';
-
 import '../features/budget/AiResult_Screen/AiResult_screen.dart';
 import '../features/budget/budget_screen.dart';
-
 import '../features/contacts_Screen/contacts_screen.dart';
 import '../features/expenses/add_expense_screen.dart';
-
 import '../features/home/allTransactions/AllTransactionsScreen.dart';
 import '../features/home/allTransactions/edit_transaction.dart';
 import '../features/home/presentation/pages/home_screen.dart';
-
 import '../features/onboarding/onboarding_screen.dart';
-
 import '../features/splash/splash_screen.dart';
-
 import '../income/add_income_screen.dart';
-
 import '../main_navigation_screen/main_navScreen.dart';
-
-import '../profile/screens_profile/personal_profile_screen.dart';
 import '../screens/bill_payment_screen.dart';
+import '../screens/currency_screen.dart';
 import '../screens/language_screen.dart';
 import '../screens/transaction_details_screen.dart';
-
 import '../stats_screen/statistic_screen.dart';
 
 class AppRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
+  static const language = '/language';
+  static const currency = '/currency'; // ⬅️ NEW
 
   static const login = '/login';
   static const signup = '/signup';
   static const verifyEmail = '/verify-email';
-
-  // ✅ Forgot Password Routes
   static const forgotPassword = '/forgot-password';
   static const verifyOtp = '/verify-otp';
   static const resetPassword = '/reset-password';
@@ -57,16 +47,11 @@ class AppRoutes {
 
   static const addExpense = '/add-expense';
   static const addIncome = '/add-income';
-
   static const transactionDetails = '/transaction-details';
   static const billPayment = '/bill-payment';
   static const transactions = '/transactions';
-
   static const aiResult = '/ai-result';
-
   static const main = '/main';
-
-  static const language = '/language';
 }
 
 class AppRouter {
@@ -87,7 +72,7 @@ class AppRouter {
       );
     },
 
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final user = FirebaseAuth.instance.currentUser;
       final location = state.matchedLocation;
 
@@ -98,25 +83,26 @@ class AppRouter {
         AppRoutes.signup,
         AppRoutes.verifyEmail,
         AppRoutes.language,
-        // ✅ Added forgot password routes
+        AppRoutes.currency, // ⬅️ Currency is public (can access before auth)
         AppRoutes.forgotPassword,
         AppRoutes.verifyOtp,
         AppRoutes.resetPassword,
       ];
 
-      // لو داخل public route سيب المستخدم
-      if (publicRoutes.contains(location)) {
-        return null;
-      }
+      if (publicRoutes.contains(location)) return null;
 
-      // غير مسجل
-      if (user == null) {
-        return AppRoutes.login;
-      }
+      // Not logged in → login
+      if (user == null) return AppRoutes.login;
 
-      // الإيميل غير متحقق
-      if (!user.emailVerified) {
-        return AppRoutes.verifyEmail;
+      // Email not verified
+      if (!user.emailVerified) return AppRoutes.verifyEmail;
+
+      // ⬅️ Check currency selection (AFTER auth)
+      final prefs = await SharedPreferences.getInstance();
+      final hasSelectedCurrency = prefs.getBool('has_selected_currency') ?? false;
+
+      if (!hasSelectedCurrency && location != AppRoutes.currency) {
+        return AppRoutes.currency;
       }
 
       return null;
@@ -147,12 +133,13 @@ class AppRouter {
         builder: (_, __) => const SignUpScreen(),
       ),
 
-      // في app_router.dart
+      /// Notifications
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
       ),
 
+      /// Contacts
       GoRoute(
         path: AppRoutes.contacts,
         parentNavigatorKey: AppRouter.rootNavigatorKey,
@@ -171,14 +158,24 @@ class AppRouter {
         builder: (_, __) => const LanguageScreen(),
       ),
 
-      // ✅ Forgot Password Screens
+      /// ⬅️ NEW: Currency Selection Screen
+      GoRoute(
+        path: AppRoutes.currency,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return CurrencySelectionScreen(
+            isFirstTime: extra?['isFirstTime'] ?? true,
+          );
+        },
+      ),
+
+      /// Forgot Password Screens
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (_, __) => const ForgotPasswordScreen(),
       ),
 
-
-      /// Main Shell
+      /// Main Shell (Bottom Navigation)
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainNavigationScreen(
@@ -195,7 +192,6 @@ class AppRouter {
               ),
             ],
           ),
-
           StatefulShellBranch(
             navigatorKey: GlobalKey<NavigatorState>(),
             routes: [
@@ -205,7 +201,6 @@ class AppRouter {
               ),
             ],
           ),
-
           StatefulShellBranch(
             navigatorKey: GlobalKey<NavigatorState>(),
             routes: [
@@ -215,7 +210,6 @@ class AppRouter {
               ),
             ],
           ),
-
           StatefulShellBranch(
             navigatorKey: GlobalKey<NavigatorState>(),
             routes: [
@@ -237,9 +231,8 @@ class AppRouter {
 
       /// Add Income
       GoRoute(
-        path: AppRoutes.addIncome,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (_, __) => const AddIncomeScreen(),
+        path: '/add-income',
+        builder: (context, state) => const AddIncomeScreen(),
       ),
 
       /// Transaction Details
@@ -256,16 +249,17 @@ class AppRouter {
         builder: (_, __) => const BillPaymentScreen(),
       ),
 
+      /// Statistic (duplicate route - for direct access)
       GoRoute(
         path: '/statisticScreen',
         builder: (context, state) => const StatisticScreen(),
       ),
 
+      /// Edit Transaction
       GoRoute(
         path: '/edit-transaction',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>;
-
           return EditTransactionScreen(
             docId: extra['docId'],
             data: extra['data'],
@@ -273,7 +267,7 @@ class AppRouter {
         },
       ),
 
-      /// Transactions
+      /// All Transactions
       GoRoute(
         path: AppRoutes.transactions,
         parentNavigatorKey: rootNavigatorKey,
@@ -286,13 +280,11 @@ class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-
           if (extra == null) {
             return const Scaffold(
               body: Center(child: Text('No data received')),
             );
           }
-
           return AIResultScreen(
             plan: extra['plan'],
             planType: extra['planType'],

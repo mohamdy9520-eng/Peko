@@ -55,7 +55,7 @@ class AddIncomeDialog {static Future<void> show(BuildContext context) async {
                         ),
                         SizedBox(height: 24.h),
                         Text(
-                          'Add Income Source',
+                          'Add Income',
                           style: TextStyle(
                             fontSize: 22.sp,
                             fontWeight: FontWeight.bold,
@@ -158,8 +158,10 @@ class AddIncomeDialog {static Future<void> show(BuildContext context) async {
                             return ChoiceChip(
                               selected: isSelected,
                               onSelected: (selected) {
-                                if (selected) setModalState(() =>
+                                if (selected) {
+                                  setModalState(() =>
                                 selectedPeriod = p);
+                                }
                               },
                               selectedColor: AppColors.primary.withOpacity(0.2),
                               label: Text(
@@ -273,9 +275,13 @@ class AddIncomeDialog {static Future<void> show(BuildContext context) async {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.primary, // أو Colors.green لو عايز يفضل أخضر
                               foregroundColor: Colors.white,
+                              elevation: 2,
                               padding: EdgeInsets.symmetric(vertical: 16.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
                             ),
                           ),
                         ),

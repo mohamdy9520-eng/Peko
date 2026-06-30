@@ -7,7 +7,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../routes/app_router.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -136,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthLoading) {
           showDialog(
             context: context,
@@ -147,24 +149,28 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (state is AuthSuccess) {
-          context.go('/main');
+          context.go('/curre');
         }
 
-        if (state is AuthFailure) {
-          Navigator.pop(context);
-          // ✅ Use helper for formatted message
-          final msg = _getErrorMessage(state.message);
+        // في الـ BlocListener أو wherever you handle auth success:
+        if (state is AuthSuccess) {
+          // ⬅️ Check if currency already selected
+          final prefs = await SharedPreferences.getInstance();
+          final hasSelectedCurrency = prefs.getBool('has_selected_currency') ?? false;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(msg),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (!mounted) return;
+
+          if (hasSelectedCurrency) {
+            // User already selected currency before → go Home
+            context.go(AppRoutes.home);
+          } else {
+            // First time → go to Currency Selection
+            context.go(AppRoutes.currency);
+          }
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text("𝓛𝓸𝓰𝓲𝓷", style: TextStyle(
+        appBar: AppBar(title: Text("Log In", style: TextStyle(
             fontWeight: FontWeight.bold, fontSize: 40.sp
         ),)),
         body: GestureDetector(
@@ -211,7 +217,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       SizedBox(height: 10.h),
 
-                      // ✅ Password with Visibility Icon
                       TextFormField(
                         controller: passwordController,
                         obscureText: _obscurePassword,
@@ -227,7 +232,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 2.w,
                             ),
                           ),
-                          // ✅ Visibility Icon
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword

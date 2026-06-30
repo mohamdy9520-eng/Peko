@@ -9,6 +9,7 @@ class TransactionItem extends StatelessWidget {
   final String subtitle;
   final double amount;
   final bool isIncome;
+  final String? currencySymbol; // ⬅️ NEW
 
   const TransactionItem({
     super.key,
@@ -18,6 +19,7 @@ class TransactionItem extends StatelessWidget {
     required this.subtitle,
     required this.amount,
     required this.isIncome,
+    this.currencySymbol, // ⬅️ NEW
   });
 
   @override

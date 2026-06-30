@@ -2,12 +2,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../generated/locale_keys.g.dart';
+import '../../../../providers/currency_provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../widgets/transaction_item.dart';
-import '../../../../widgets/notification_icon.dart'; // ← الـ Widget الجديد
+import '../../../../widgets/notification_icon.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -60,16 +64,14 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     SizedBox(height: 24.h),
 
-                    // Transactions Section
                     _buildSectionHeader(
                       LocaleKeys.transactions_history.tr(),
                       onSeeAll: () => context.push('/transactions'),
                     ),
                     SizedBox(height: 16.h),
-                    _buildTransactionList(),
+                    _buildTransactionList(context),
                     SizedBox(height: 24.h),
 
-                    // Contacts Section
                     _buildSectionHeader(
                       LocaleKeys.contacts_title.tr(),
                       onSeeAll: () => context.push('/contacts'),
@@ -91,6 +93,8 @@ class HomeScreen extends StatelessWidget {
   // HEADER — Balance + Notification Icon
   // ═══════════════════════════════════════════
   Widget _buildHeader(BuildContext context) {
+    final currency = context.watch<CurrencyProvider>();
+
     return StreamBuilder<DocumentSnapshot>(
       stream: getUserData(),
       builder: (context, snapshot) {
@@ -162,13 +166,12 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const NotificationIcon(), // ← الـ Widget الجديد مع Badge
+                  const NotificationIcon(),
                 ],
               ),
 
               SizedBox(height: 24.h),
 
-              // Total Balance
               Text(
                 LocaleKeys.expense_total_balance.tr(),
                 style: TextStyle(
@@ -181,7 +184,7 @@ class HomeScreen extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  '\$ ${totalBalance.toStringAsFixed(2)}',
+                  currency.formatAmount(totalBalance),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 36.sp,
@@ -201,6 +204,7 @@ class HomeScreen extends StatelessWidget {
                       amount: totalIncome,
                       icon: Icons.arrow_downward,
                       color: AppColors.income,
+                      currency: currency,
                     ),
                   ),
                   SizedBox(width: 12.w),
@@ -210,6 +214,7 @@ class HomeScreen extends StatelessWidget {
                       amount: totalExpense,
                       icon: Icons.arrow_upward,
                       color: AppColors.expense,
+                      currency: currency,
                     ),
                   ),
                 ],
@@ -226,6 +231,7 @@ class HomeScreen extends StatelessWidget {
     required double amount,
     required IconData icon,
     required Color color,
+    required CurrencyProvider currency,
   }) {
     return Container(
       padding: EdgeInsets.all(12.w),
@@ -253,9 +259,11 @@ class HomeScreen extends StatelessWidget {
                   style: TextStyle(color: Colors.white70, fontSize: 10.sp),
                   overflow: TextOverflow.ellipsis,
                 ),
+
                 SizedBox(height: 2.h),
+
                 Text(
-                  '\$${amount.toStringAsFixed(0)}',
+                  currency.formatAmountCompact(amount),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14.sp,
@@ -479,7 +487,9 @@ class HomeScreen extends StatelessWidget {
   // ═══════════════════════════════════════════
   // TRANSACTIONS LIST
   // ═══════════════════════════════════════════
-  Widget _buildTransactionList() {
+  Widget _buildTransactionList(BuildContext context) {
+    final currency = context.watch<CurrencyProvider>();
+
     return StreamBuilder<QuerySnapshot>(
       stream: getTransactions(),
       builder: (context, snapshot) {
@@ -489,14 +499,18 @@ class HomeScreen extends StatelessWidget {
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Container(
-            padding: EdgeInsets.all(24.w),
+            width: double.infinity,
+            margin: EdgeInsets.symmetric(horizontal: 4.w),
+            padding: EdgeInsets.symmetric(vertical: 40.h),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.receipt_long, size: 48.sp, color: Colors.grey[300]),
+                Icon(Icons.receipt_long, size: 64.sp, color: Colors.grey[300]),
                 SizedBox(height: 12.h),
                 Text(
                   'No transactions yet',
@@ -554,6 +568,7 @@ class HomeScreen extends StatelessWidget {
                     subtitle: categories.join(', '),
                     amount: (data['amount'] ?? 0).toDouble(),
                     isIncome: data['type'] == 'income',
+                    currencySymbol: currency.symbol,
                   ),
                 ),
               );
@@ -568,6 +583,7 @@ class HomeScreen extends StatelessWidget {
   // TRANSACTION DETAILS
   // ═══════════════════════════════════════════
   void _showTransactionDetails(BuildContext context, String docId, Map<String, dynamic> data) {
+    final currency = context.read<CurrencyProvider>();
     final bool isIncome = data['type'] == 'income';
     final String title = data['title'] ?? 'Unknown';
     final double amount = (data['amount'] ?? 0).toDouble();
@@ -620,7 +636,7 @@ class HomeScreen extends StatelessWidget {
                 SizedBox(height: 16.h),
 
                 Text(
-                  '${isIncome ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
+                  '${isIncome ? '+' : '-'}${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}',
                   style: TextStyle(
                     fontSize: 36.sp,
                     fontWeight: FontWeight.bold,
@@ -760,9 +776,8 @@ class HomeScreen extends StatelessWidget {
 
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: contacts.length + 1, // +1 for "Add" button
+            itemCount: contacts.length + 1,
             itemBuilder: (context, index) {
-              // "Add Contact" button as first item
               if (index == 0) {
                 return Padding(
                   padding: EdgeInsets.only(right: 12.w),
@@ -871,6 +886,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           final user = FirebaseAuth.instance.currentUser;
+          final currency = context.read<CurrencyProvider>();
 
           return Padding(
             padding: EdgeInsets.only(
@@ -1026,7 +1042,7 @@ class HomeScreen extends StatelessWidget {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Amount',
-                        prefixText: '\$ ',
+                        prefixText: '${currency.symbol} ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
@@ -1100,6 +1116,7 @@ class HomeScreen extends StatelessWidget {
         required String contactEmail,
       }) {
     final amountController = TextEditingController();
+    final currency = context.read<CurrencyProvider>();
 
     showDialog(
       context: context,
@@ -1107,9 +1124,9 @@ class HomeScreen extends StatelessWidget {
         title: Text('Transfer to $contactName'),
         content: TextField(
           controller: amountController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Amount',
-            prefixText: '\$ ',
+            prefixText: '${currency.symbol} ',
           ),
           keyboardType: TextInputType.number,
         ),
@@ -1177,7 +1194,7 @@ class HomeScreen extends StatelessWidget {
       if (amount > balance) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Insufficient balance: \$${balance.toStringAsFixed(2)}'),
+            content: Text('Insufficient balance: ${context.read<CurrencyProvider>().formatAmount(balance)}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1219,9 +1236,10 @@ class HomeScreen extends StatelessWidget {
       await batch.commit();
 
       if (context.mounted) {
+        final currency = context.read<CurrencyProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Transferred \$${amount.toStringAsFixed(2)} to $contactName'),
+            content: Text('Transferred ${currency.formatAmount(amount)} to $contactName'),
           ),
         );
       }

@@ -9,28 +9,33 @@ class DeleteGoal {
       }) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Goal'),
-        content: const Text(
-          'Are you sure you want to delete this goal?\nThis action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Goal'),
+          content: const Text(
+            'Are you sure you want to delete this goal?\nThis action cannot be undone.',
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext, rootNavigator: true).pop(false);
+              },
+              child: const Text('Cancel'),
             ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.white),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext, rootNavigator: true).pop(true);
+              },
+              child: const Text('Delete'),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
 
     if (confirm != true) return;
@@ -46,25 +51,26 @@ class DeleteGoal {
           .doc(docId)
           .delete();
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Goal deleted'),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Delete Goal Error: $e');
+      if (!context.mounted) return;
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Failed to delete goal. Please try again.',
-            ),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Goal deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Delete Goal Error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete goal.\n$e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

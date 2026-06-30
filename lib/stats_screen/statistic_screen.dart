@@ -18,11 +18,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../config/env.dart';
 import '../generated/codegen_loader.g.dart';
 import '../generated/locale_keys.g.dart';
+import '../providers/currency_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/transaction_item.dart';
 
@@ -212,6 +214,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currency = context.watch<CurrencyProvider>();
+
     return PopScope(
       canPop: _selectedFilterIndex == 2,
       onPopInvokedWithResult: (didPop, result) {
@@ -286,7 +290,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 children: [
                   _buildPeriodFilters(),
                   SizedBox(height: 24.h),
-                  _buildStatisticsCards(transactions),
+                  _buildStatisticsCards(transactions, currency),
                   SizedBox(height: 24.h),
                   _buildTypeToggle(),
                   SizedBox(height: 24.h),
@@ -329,7 +333,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
         ),
         SizedBox(height: 32.h),
 
-        // Pie Chart
         _buildStackedChart(
           expenseChild: RepaintBoundary(
             key: _pieChartKeyExpense,
@@ -342,7 +345,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
         ),
         SizedBox(height: 32.h),
 
-        // Bar Chart
         _buildStackedChart(
           expenseChild: RepaintBoundary(
             key: _barChartKeyExpense,
@@ -467,7 +469,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  Widget _buildStatisticsCards(List<Map<String, dynamic>> transactions) {
+  Widget _buildStatisticsCards(List<Map<String, dynamic>> transactions, CurrencyProvider currency) {
     double totalIncome = 0;
     double totalExpense = 0;
     int count = transactions.length;
@@ -501,21 +503,21 @@ class _StatisticScreenState extends State<StatisticScreen> {
             children: [
               _buildStatCard(
                 LocaleKeys.expense_total_expense.tr(),
-                '\$${totalExpense.toStringAsFixed(0)}',
+                currency.formatAmountCompact(totalExpense),
                 AppColors.expense,
                 Icons.arrow_upward,
               ),
               SizedBox(width: 12.w),
               _buildStatCard(
                 LocaleKeys.expense_total_income.tr(),
-                '\$${totalIncome.toStringAsFixed(0)}',
+                currency.formatAmountCompact(totalIncome),
                 AppColors.income,
                 Icons.arrow_downward,
               ),
               SizedBox(width: 12.w),
               _buildStatCard(
                 LocaleKeys.expense_net.tr(),
-                '\$${net.toStringAsFixed(0)}',
+                currency.formatAmountCompact(net),
                 net >= 0 ? AppColors.income : AppColors.expense,
                 net >= 0 ? Icons.trending_up : Icons.trending_down,
               ),
@@ -625,8 +627,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     showTitles: true,
                     reservedSize: 40.w,
                     getTitlesWidget: (value, meta) {
+                      final currency = context.read<CurrencyProvider>();
                       return Text(
-                        '\$${value.toInt()}',
+                        '${currency.symbol}${value.toInt()}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 10.sp,
@@ -817,8 +820,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     showTitles: true,
                     reservedSize: 40.r,
                     getTitlesWidget: (value, meta) {
+                      final currency = context.read<CurrencyProvider>();
                       return Text(
-                        '\$${value.toInt()}',
+                        '${currency.symbol}${value.toInt()}',
                         style: TextStyle(fontSize: 10.sp),
                       );
                     },
@@ -1205,7 +1209,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-
   pw.Widget _buildRtlText(String text, bool isArabic,
       {double fontSize = 12, bool bold = false, PdfColor? color}) {
     return pw.Directionality(
@@ -1271,8 +1274,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
       ),
     );
   }
-
-
 
   Future<void> _exportData() async {
     BuildContext? dialogContext;
@@ -1381,7 +1382,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
       final dateLabel = isArabic ? 'التاريخ' : 'Date';
       final categoryLabel = isArabic ? 'الفئة' : 'Category';
 
-      // PAGE 1: SUMMARY
+      final currency = context.read<CurrencyProvider>();
+
       pdf.addPage(
         pw.MultiPage(
           theme: customTheme,
@@ -1402,12 +1404,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
               border: pw.TableBorder.all(),
               children: [
                 _buildPdfTableRow(
-                    balanceLabel, '\$${balance.toStringAsFixed(2)}', isArabic),
-                _buildPdfTableRow(incomeLabel, '+\$${income.toStringAsFixed(2)}',
+                    balanceLabel, '${currency.symbol}${balance.toStringAsFixed(currency.decimalDigits)}', isArabic),
+                _buildPdfTableRow(incomeLabel, '+${currency.symbol}${income.toStringAsFixed(currency.decimalDigits)}',
                     isArabic,
                     textColor: PdfColors.green),
                 _buildPdfTableRow(expenseLabel,
-                    '-\$${expense.toStringAsFixed(2)}', isArabic,
+                    '-${currency.symbol}${expense.toStringAsFixed(currency.decimalDigits)}', isArabic,
                     textColor: PdfColors.red),
               ],
             ),
@@ -1415,7 +1417,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
         ),
       );
 
-      // PAGE 2: EXPENSE CHARTS
       final hasExpenseCharts = _lineChartImages['expense'] != null ||
           _pieChartImages['expense'] != null ||
           _barChartImages['expense'] != null;
@@ -1615,8 +1616,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   final isIncome = item['type'] == 'income';
                   final amount = (item['amount'] ?? 0).toDouble();
                   final amountStr = isIncome
-                      ? '+\$${amount.toStringAsFixed(2)}'
-                      : '-\$${amount.toStringAsFixed(2)}';
+                      ? '+${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}'
+                      : '-${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}';
                   final amountColor = isIncome ? PdfColors.green : PdfColors.red;
                   final typeStr = isIncome
                       ? (isArabic ? 'دخل' : 'Income')

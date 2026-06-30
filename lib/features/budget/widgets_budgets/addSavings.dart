@@ -91,7 +91,6 @@ class AddSavingsDialog {
                         ),
                         SizedBox(height: 16.h),
 
-                        // SELECT GOAL Dropdown
                         StreamBuilder<QuerySnapshot>(
                           stream: user != null
                               ? FirebaseFirestore.instance
@@ -132,42 +131,40 @@ class AddSavingsDialog {
                             }
 
                             final goals = snapshot.data!.docs;
+                            final goalIds = goals.map((g) => g.id).toSet();
+
+                            final String? dropdownValue =
+                            goalIds.contains(selectedGoalId) ? selectedGoalId : null;
 
                             return DropdownButtonFormField<String>(
-                              value: selectedGoalId,
+                              value: dropdownValue,
+                              hint: const Text('Select a goal (optional)'),
                               isExpanded: true,
                               decoration: InputDecoration(
                                 labelText: 'Link to Goal (Optional)',
-                                hintText: 'Select a goal to add savings to',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 filled: true,
                                 fillColor: Colors.grey[50],
                               ),
-                              items: [
-                                const DropdownMenuItem(
-                                  value: null,
-                                  child: Text('No goal (standalone savings)'),
-                                ),
-                                ...goals.map((doc) {
-                                  final data = doc.data() as Map<String,
-                                      dynamic>;
-                                  return DropdownMenuItem(
-                                    value: doc.id,
-                                    child: Text(data['name'] ?? 'Unnamed Goal'),
-                                  );
-                                }),
-                              ],
+                              items: goals.map((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                return DropdownMenuItem<String>(
+                                  value: doc.id,
+                                  child: Text(data['name'] ?? 'Unnamed Goal'),
+                                );
+                              }).toList(),
                               onChanged: (value) {
                                 setModalState(() {
                                   selectedGoalId = value;
+
                                   if (value != null) {
-                                    final goalDoc = goals.firstWhere((g) =>
-                                    g.id == value);
-                                    selectedGoalName = (goalDoc.data() as Map<
-                                        String,
-                                        dynamic>)['name'];
+                                    final goalDoc = goals.firstWhere((g) => g.id == value);
+                                    selectedGoalName =
+                                    (goalDoc.data() as Map<String, dynamic>)['name'];
+                                  } else {
+                                    selectedGoalName = null;
                                   }
                                 });
                               },

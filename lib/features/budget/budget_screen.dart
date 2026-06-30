@@ -1,8 +1,13 @@
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/FAB.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/addExpense.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/addGoal.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/addIncome.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/addSavings.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/ai_planType.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/customFabMenu.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/deleteBudget.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/deleteGoal.dart';
+import 'package:ai_expense_tracker/features/budget/widgets_budgets/goal_check.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/income_icon.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +15,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../core/di/services/ai_service.dart';
 import '../../core/di/notifications/notification_service.dart';
 import '../../theme/app_colors.dart';
+import '../../providers/currency_provider.dart'; // <-- أضف ده
 import 'dart:async';
 
 class BudgetScreen extends StatefulWidget {
@@ -29,9 +36,6 @@ class _BudgetScreenState extends State<BudgetScreen>
   bool _loadingAi = false;
   List<Map<String, dynamic>> _goalsList = [];
 
-  // REMOVED: _sentAlertIds - now using Firestore field 'lastAlertAt' instead
-
-  // INCOME CATEGORIES
   final List<String> _incomeCategories = [
     'salary',
     'freelance',
@@ -41,6 +45,10 @@ class _BudgetScreenState extends State<BudgetScreen>
     'bonus',
     'other',
   ];
+
+  // Helper method للوصول للعملة بسهولة
+  CurrencyProvider get _currencyProvider => context.read<CurrencyProvider>();
+  String get _currencySymbol => _currencyProvider.selectedCurrency.symbol;
 
   @override
   void initState() {
@@ -117,16 +125,18 @@ class _BudgetScreenState extends State<BudgetScreen>
     final percentUsed = ((budgetAmount - remaining) / budgetAmount * 100)
         .toStringAsFixed(0);
 
+    final symbol = _currencySymbol;
+
     await NotificationService.showNotification(
       title: 'Budget Alert: $budgetName',
-      body: 'You\'ve used $percentUsed% of your budget! Only \$${remaining.toStringAsFixed(0)} remaining.',
+      body: "You've used $percentUsed% of your budget! Only $symbol${remaining.toStringAsFixed(0)} remaining.",
     );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '⚠️ "$budgetName" is at $percentUsed%! Only \$${remaining.toStringAsFixed(0)} left.',
+            '⚠️ "$budgetName" is at $percentUsed%! Only $symbol${remaining.toStringAsFixed(0)} left.',
           ),
           backgroundColor: Colors.orange[800],
           duration: const Duration(seconds: 6),
@@ -144,235 +154,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     await NotificationService.initialize();
   }
 
-  // ─────────────────────────────────────────────
-  // ADD GOAL DIALOG
-  // ─────────────────────────────────────────────
-  void _showAddGoalDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final targetController = TextEditingController();
-    DateTime? deadline;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => StatefulBuilder(
-        builder: (statefulContext, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(statefulContext).viewInsets.bottom,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(24.r),
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-
-                    Text(
-                      'Add New Goal',
-                      style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-
-                    TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Goal Name',
-                        hintText: 'e.g., Buy a Car, Vacation',
-                        prefixIcon: const Icon(Icons.flag_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-
-                    TextField(
-                      controller: targetController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Target Amount',
-                        hintText: '0.00',
-                        prefixText: '\$ ',
-                        prefixIcon: const Icon(Icons.attach_money),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-
-                    ListTile(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: statefulContext,
-                          initialDate:
-                          DateTime.now().add(const Duration(days: 365)),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365 * 10)), // FIXED: Dynamic date
-                        );
-
-                        if (picked != null) {
-                          setModalState(() {
-                            deadline = picked;
-                          });
-                        }
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        side: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      leading: const Icon(Icons.calendar_today),
-                      title: Text(
-                        deadline == null
-                            ? 'Select Deadline'
-                            : DateFormat('MMM dd, yyyy').format(deadline!),
-                        style: TextStyle(
-                          color:
-                          deadline == null ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                      trailing: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16.sp,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final target =
-                              double.tryParse(targetController.text) ?? 0;
-
-                          if (name.isEmpty || target <= 0) {
-                            ScaffoldMessenger.of(statefulContext).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please fill all fields',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          final user =
-                              FirebaseAuth.instance.currentUser;
-
-                          if (user == null) return;
-
-                          try {
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .collection('goals')
-                                .add({
-                              'name': name,
-                              'targetAmount': target,
-                              'currentAmount': 0,
-                              'deadline': deadline != null
-                                  ? Timestamp.fromDate(deadline!)
-                                  : null,
-                              'completed': false,
-                              'createdAt': Timestamp.now(),
-                              'updatedAt': Timestamp.now(),
-                            });
-
-                            if (Navigator.canPop(bottomSheetContext)) {
-                              Navigator.of(bottomSheetContext).pop();
-                            }
-
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Goal added successfully!',
-                                  ),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            debugPrint('Error adding goal: $e');
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to add goal. Please try again.'),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: Text(
-                          'Add Goal',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                            vertical: 16.h,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12.r),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-
-  // ─────────────────────────────────────────────
-  // ADD SAVINGS / BUDGET (Outside Income)
-  // ─────────────────────────────────────────────
-
-
-  // ─────────────────────────────────────────────
-  // EDIT INCOME DIALOG - WITH FIX
-  // ─────────────────────────────────────────────
   void _showEditIncomeDialog(BuildContext context, String docId, Map<String, dynamic> budget) {
     final nameController = TextEditingController(text: budget['name']);
     final amountController = TextEditingController(
@@ -442,7 +223,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Amount',
-                        prefixText: '\$ ',
+                        prefixText: '${_currencySymbol} ',
                         prefixIcon: const Icon(Icons.attach_money),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
@@ -533,7 +314,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                           context: context,
                           initialDate: endDate ?? DateTime.now().add(const Duration(days: 30)),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365 * 10)), // FIXED: Dynamic
+                          lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
                         );
                         if (picked != null) {
                           setModalState(() => endDate = picked);
@@ -573,7 +354,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                           if (user == null) return;
 
                           try {
-                            // FIXED: Read current used to recalculate remaining
                             final budgetDoc = await FirebaseFirestore.instance
                                 .collection('users')
                                 .doc(user.uid)
@@ -590,7 +370,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                                 .update({
                               'name': name,
                               'amount': amount,
-                              'remaining': amount - currentUsed, // FIXED: Recalculate remaining
+                              'remaining': amount - currentUsed,
                               'source': sourceController.text.trim(),
                               'category': selectedCategory,
                               'period': selectedPeriod,
@@ -642,9 +422,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // EDIT GOAL DIALOG
-  // ─────────────────────────────────────────────
   void _showEditGoalDialog(BuildContext context, String docId, Map<String, dynamic> goal) {
     final nameController = TextEditingController(text: goal['name']);
     final currentController = TextEditingController(
@@ -684,7 +461,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                     ),
                   ),
                   SizedBox(height: 16.h),
-
                   TextField(
                     controller: nameController,
                     decoration: const InputDecoration(
@@ -693,7 +469,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                     ),
                   ),
                   SizedBox(height: 16.h),
-
                   Row(
                     children: [
                       Expanded(
@@ -701,10 +476,10 @@ class _BudgetScreenState extends State<BudgetScreen>
                           controller: currentController,
                           keyboardType: TextInputType.number,
                           readOnly: true,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Current Amount Saved',
-                            prefixText: '\$ ',
-                            prefixIcon: Icon(Icons.savings),
+                            prefixText: '${_currencySymbol} ',
+                            prefixIcon: const Icon(Icons.savings),
                           ),
                         ),
                       ),
@@ -731,14 +506,13 @@ class _BudgetScreenState extends State<BudgetScreen>
                     ],
                   ),
                   SizedBox(height: 16.h),
-
                   TextField(
                     controller: targetController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Target Amount',
-                      prefixText: '\$ ',
-                      prefixIcon: Icon(Icons.attach_money),
+                      prefixText: '${_currencySymbol} ',
+                      prefixIcon: const Icon(Icons.attach_money),
                     ),
                   ),
                 ],
@@ -819,9 +593,9 @@ class _BudgetScreenState extends State<BudgetScreen>
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount to Add',
-                prefixText: '\$ ',
+                prefixText: '${_currencySymbol} ',
               ),
             ),
           ],
@@ -898,14 +672,34 @@ class _BudgetScreenState extends State<BudgetScreen>
                 });
 
                 await batch.commit();
+                final goalSnapshot = await goalRef.get();
+                final goalData = goalSnapshot.data();
+
+                final targetAmount = (goalData?['targetAmount'] ?? 0).toDouble();
+                await GoalCompletionChecker.check(
+                  goalId: goalId,
+                  newAmount: newAmount,
+                  onGoalCompleted: _triggerGoalCompletion,
+                );
+                onAmountAdded(newAmount);
+
+                if (newAmount >= targetAmount &&
+                    (goalData?['completed'] ?? false) == false) {
+                  await _triggerGoalCompletion(
+                    goalId: goalId,
+                    goalName: goalName,
+                    targetAmount: targetAmount,
+                  );
+                }
 
                 onAmountAdded(newAmount);
 
                 if (context.mounted) {
                   Navigator.pop(context);
+                  final symbol = _currencySymbol;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('\$${amount.toStringAsFixed(0)} added to "$goalName"!'),
+                      content: Text('$symbol${amount.toStringAsFixed(0)} added to "$goalName"!'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -926,14 +720,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-
-  // ─────────────────────────────────────────────
-  // ADD EXPENSE DIALOG - WITH CRITICAL FIX
-  // ─────────────────────────────────────────────
-
-  // ─────────────────────────────────────────────
-  // AUTO-SAVE: Check if any budget period ended
-  // ─────────────────────────────────────────────
   Future<void> _checkMonthlySavings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -945,17 +731,15 @@ class _BudgetScreenState extends State<BudgetScreen>
         .collection('budgets')
         .where('active', isEqualTo: true)
         .where('autoSave', isEqualTo: true)
-        .where('autoSaved', isNotEqualTo: true) // FIXED: Prevent duplicates
+        .where('autoSaved', isNotEqualTo: true)
         .get();
 
     for (var doc in budgetsSnapshot.docs) {
       final budget = doc.data();
       final endDate = (budget['endDate'] as Timestamp?)?.toDate();
-
       final createdAt = (budget['createdAt'] as Timestamp?)?.toDate();
       final isPeriodEnded = endDate != null && endDate.isBefore(now);
-      final is30DaysPassed = createdAt != null &&
-          now.difference(createdAt).inDays >= 30;
+      final is30DaysPassed = createdAt != null && now.difference(createdAt).inDays >= 30;
 
       if (isPeriodEnded || is30DaysPassed) {
         final budgetAmount = (budget['amount'] ?? 0).toDouble();
@@ -993,6 +777,7 @@ class _BudgetScreenState extends State<BudgetScreen>
     if (user == null) return;
 
     final batch = FirebaseFirestore.instance.batch();
+    final symbol = _currencySymbol;
 
     final savingsRef = FirebaseFirestore.instance
         .collection('users')
@@ -1034,7 +819,7 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     await NotificationService.showNotification(
       title: 'Auto-Save Complete!',
-      body: '\$${amount.toStringAsFixed(0)} from "$budgetName" saved automatically!',
+      body: '$symbol${amount.toStringAsFixed(0)} from "$budgetName" saved automatically!',
     );
   }
 
@@ -1048,6 +833,7 @@ class _BudgetScreenState extends State<BudgetScreen>
     if (user == null) return;
 
     final batch = FirebaseFirestore.instance.batch();
+    final symbol = _currencySymbol;
 
     final goalRef = FirebaseFirestore.instance
         .collection('users')
@@ -1091,7 +877,7 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     batch.update(budgetRef, {
       'active': false,
-      'remaining': 0, // FIXED: Set remaining to 0
+      'remaining': 0,
       'closedAt': Timestamp.now(),
       'savedAmount': amount,
     });
@@ -1099,16 +885,26 @@ class _BudgetScreenState extends State<BudgetScreen>
     await batch.commit();
 
     final targetAmount = (goalDoc.data()?['targetAmount'] ?? 0).toDouble();
-    if (newAmount >= targetAmount) {
-      await _triggerGoalCompletion(
-        goalId: goalId,
-        goalName: goalDoc.data()?['name'] ?? 'Goal',
-        targetAmount: targetAmount,
-      );
-    } else {
+
+    print("====== AUTO SAVE ======");
+    print("Current: $currentAmount");
+    print("Added  : $amount");
+    print("New    : $newAmount");
+    print("Target : $targetAmount");
+
+    await GoalCompletionChecker.check(
+      goalId: goalId,
+      newAmount: newAmount,
+      onGoalCompleted: _triggerGoalCompletion,
+    );
+
+    if (newAmount < targetAmount) {
+      print("📩 Sending Monthly Notification");
+
       await NotificationService.showNotification(
         title: 'Monthly Savings Saved!',
-        body: '\$${amount.toStringAsFixed(0)} from "$budgetName" saved to "${goalDoc.data()?['name']}"!',
+        body:
+        '$symbol${amount.toStringAsFixed(0)} from "$budgetName" saved to "${goalDoc.data()?['name']}"!',
       );
     }
   }
@@ -1118,6 +914,8 @@ class _BudgetScreenState extends State<BudgetScreen>
     required String goalName,
     required double targetAmount,
   }) async {
+    print("🔥 _triggerGoalCompletion START");
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -1131,10 +929,17 @@ class _BudgetScreenState extends State<BudgetScreen>
       'completedAt': Timestamp.now(),
     });
 
+    print("🔥 Sending Goal Notification");
+
+    final symbol = _currencySymbol;
+
     await NotificationService.showNotification(
       title: 'Goal Achieved! 🎉',
-      body: 'You\'ve reached \$${targetAmount.toStringAsFixed(0)} for "$goalName"!',
+      body:
+      'You\'ve reached $symbol${targetAmount.toStringAsFixed(0)} for "$goalName"!',
     );
+
+    print("🔥 Goal Notification Sent");
   }
 
   @override
@@ -1189,9 +994,6 @@ class _BudgetScreenState extends State<BudgetScreen>
         .snapshots();
   }
 
-  // ─────────────────────────────────────────────
-  // AI: Now based on INCOME vs EXPENSES - WITH FIX
-  // ─────────────────────────────────────────────
   Future<void> _generateAiData() async {
     setState(() => _loadingAi = true);
 
@@ -1314,7 +1116,13 @@ class _BudgetScreenState extends State<BudgetScreen>
       _generateAiData().then((_) {
         if (!mounted) return;
         if (_aiResult != null) {
-          _showPlanTypeDialog();
+          AskAIBottomSheet.show(
+            context,
+            aiResult: _aiResult!,
+            onPlanSelected: (planType) {
+              _generateAndShowPlan(planType);
+            },
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1334,83 +1142,12 @@ class _BudgetScreenState extends State<BudgetScreen>
       });
       return;
     }
-    _showPlanTypeDialog();
-  }
-
-  void _showPlanTypeDialog() {
-    if (!mounted) return;
-
-    if (_aiResult == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No financial data available. Add a budget first!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40.w,
-              height: 4.h,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2.r),
-              ),
-            ),
-            SizedBox(height: 24.h),
-            Text(
-              'Choose Your AI Plan',
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Total Budget: \$${_aiResult?['totalIncome']?.toStringAsFixed(0) ?? '0'}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14.sp),
-            ),
-            Text(
-              'Available Budget: \$${_aiResult?['remaining']?.toStringAsFixed(0) ?? '0'}',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: 24.h),
-            _buildPlanOption(
-              icon: Icons.calendar_month,
-              title: 'Monthly Saving Plan',
-              subtitle: 'Based on your income & expenses',
-              color: Colors.deepPurple,
-              onTap: () => _generateAndShowPlan('monthly'),
-            ),
-            SizedBox(height: 12.h),
-            _buildPlanOption(
-              icon: Icons.calendar_today,
-              title: 'Yearly Wealth Plan',
-              subtitle: 'Long-term strategy with goals',
-              color: Colors.teal,
-              onTap: () => _generateAndShowPlan('yearly'),
-            ),
-            SizedBox(height: 16.h),
-          ],
-        ),
-      ),
+    AskAIBottomSheet.show(
+      context,
+      aiResult: _aiResult!,
+      onPlanSelected: (planType) {
+        _generateAndShowPlan(planType);
+      },
     );
   }
 
@@ -1449,8 +1186,6 @@ class _BudgetScreenState extends State<BudgetScreen>
 
   Future<void> _generateAndShowPlan(String planType) async {
     try {
-      if (mounted) Navigator.of(context).pop();
-      await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
 
       showDialog(
@@ -1485,12 +1220,12 @@ class _BudgetScreenState extends State<BudgetScreen>
 
       final navigator = Navigator.of(context, rootNavigator: true);
       if (navigator.canPop()) navigator.pop();
-      await Future.delayed(const Duration(milliseconds: 200));
-      if (!mounted) return;
 
       if (plan.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('AI returned empty plan')),
+          const SnackBar(
+            content: Text('AI returned empty plan'),
+          ),
         );
         return;
       }
@@ -1504,13 +1239,20 @@ class _BudgetScreenState extends State<BudgetScreen>
           'onSaveToGoal': _setupAutoSave,
         },
       );
-    } catch (e, stack) {
+    } catch (e) {
       debugPrint('AI ERROR: $e');
+
       if (!mounted) return;
+
       final navigator = Navigator.of(context, rootNavigator: true);
-      if (navigator.canPop()) navigator.pop();
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+        ),
       );
     }
   }
@@ -1544,129 +1286,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     }
   }
 
-  // ─────────────────────────────────────────────
-  // FAB - Column with Scroll (No extra dependency needed)
-  // ─────────────────────────────────────────────
-  Widget? _buildFloatingActionButton() {
-    if (_tabController.index == 0) {
-      return SingleChildScrollView(
-        reverse: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            FloatingActionButton.extended(
-              heroTag: "ai_btn",
-              onPressed: _loadingAi ? null : _showAskAIDialog,
-              backgroundColor: Colors.orange.shade600,
-              icon: _loadingAi
-                  ? SizedBox(
-                width: 20.w,
-                height: 20.h,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.w,
-                  color: Colors.white,
-                ),
-              )
-                  : const Icon(Icons.auto_awesome, color: Colors.white),
-              label: Text(
-                'Ask AI',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            FloatingActionButton.extended(
-              heroTag: "add_savings_btn",
-              onPressed: () => AddSavingsDialog.show(context),
-              backgroundColor: Colors.teal,
-              icon: const Icon(Icons.savings, color: Colors.white),
-              label: Text(
-                'Add Savings',
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            FloatingActionButton.extended(
-              onPressed: (){
-                AddIncomeDialog.show(context);
-              }, label:const Text("Add Income"),
-
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_tabController.index == 1) {
-      return FloatingActionButton.extended(
-        heroTag: "add_goal_btn",
-        onPressed: () => _showAddGoalDialog(context),
-        backgroundColor: Colors.amber,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Add Goal',
-          style: TextStyle(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      );
-    }
-
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        title: Center(
-          child: Text(
-            'Budget & Goals',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 25.sp,
-              color: Colors.white,
-            ),
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Income', icon: Icon(Icons.account_balance_wallet)),
-            Tab(text: 'Goals', icon: Icon(Icons.flag)),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildIncomeTab(),
-          _buildGoalsTab(),
-        ],
-      ),
-      floatingActionButton: _buildFloatingActionButton(),
-    );
-  }
-
-
-  // ─────────────────────────────────────────────
-  // INCOME TAB - WITH PULL TO REFRESH & NO BUILD ALERTS
-  // ─────────────────────────────────────────────
   Widget _buildIncomeTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: getBudgets(),
@@ -1686,9 +1305,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                   'Error loading income',
                   style: TextStyle(fontSize: 16.sp, color: Colors.red[400]),
                 ),
-
                 SizedBox(height: 16.h),
-
                 ElevatedButton(
                   onPressed: () => setState(() {}),
                   child: const Text('Retry'),
@@ -1697,7 +1314,6 @@ class _BudgetScreenState extends State<BudgetScreen>
             ),
           );
         }
-
 
         final budgets = snapshot.data?.docs ?? [];
 
@@ -1723,15 +1339,14 @@ class _BudgetScreenState extends State<BudgetScreen>
           );
         }
 
-        // FIXED: Added RefreshIndicator for pull-to-refresh
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {}); // Trigger rebuild to refresh streams
+            setState(() {});
             await _checkBudgetAlerts();
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            physics: const AlwaysScrollableScrollPhysics(), // Required for RefreshIndicator
+            physics: const AlwaysScrollableScrollPhysics(),
             itemCount: budgets.length,
             itemBuilder: (context, index) {
               final budget = budgets[index].data() as Map<String, dynamic>;
@@ -1759,8 +1374,6 @@ class _BudgetScreenState extends State<BudgetScreen>
               final linkedGoalName = budget['goalName'];
               final isAutoSaved = budget['autoSaved'] ?? false;
 
-              // REMOVED: Alert logic from build - now handled in _checkBudgetAlerts()
-
               return Card(
                 margin: EdgeInsets.only(bottom: 12.h),
                 elevation: 2,
@@ -1780,21 +1393,21 @@ class _BudgetScreenState extends State<BudgetScreen>
                       children: [
                         Row(
                           children: [
-                    Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isSavings
-                          ? Colors.teal.withOpacity(0.1)
-                          : AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: IncomeCategoryIcon(
-                      category: category,
-                      isSavings: isSavings,
-                      color: isSavings ? Colors.teal : AppColors.primary,
-                      size: 24.sp,
-                    ),
-                  ),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSavings
+                                    ? Colors.teal.withOpacity(0.1)
+                                    : AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              child: IncomeCategoryIcon(
+                                category: category,
+                                isSavings: isSavings,
+                                color: isSavings ? Colors.teal : AppColors.primary,
+                                size: 24.sp,
+                              ),
+                            ),
                             SizedBox(width: 12.w),
                             Expanded(
                               child: Column(
@@ -1897,18 +1510,12 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   ),
                                 ),
                               ),
-
                             PopupMenuButton<String>(
                               onSelected: (value) {
                                 switch (value) {
                                   case 'edit':
-                                    _showEditIncomeDialog(
-                                      context,
-                                      docId,
-                                      budget,
-                                    );
+                                    _showEditIncomeDialog(context, docId, budget);
                                     break;
-
                                   case 'add_expense':
                                     AddExpenseDialog.show(
                                       context,
@@ -1916,12 +1523,8 @@ class _BudgetScreenState extends State<BudgetScreen>
                                       budgetName: budgetName,
                                     );
                                     break;
-
                                   case 'delete':
-                                    DeleteBudget.show(
-                                      context,
-                                      docId: docId,
-                                    );
+                                    DeleteBudget.show(context, docId: docId);
                                     break;
                                 }
                               },
@@ -1961,7 +1564,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ],
                         ),
                         SizedBox(height: 16.h),
-
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
@@ -1975,19 +1577,22 @@ class _BudgetScreenState extends State<BudgetScreen>
                         ),
                         SizedBox(height: 12.h),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '\$${used.toStringAsFixed(0)} used',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                color: Colors.grey[600],
+                            Expanded(
+                              child: Text(
+                                '${_currencySymbol}${used.toStringAsFixed(0)} used',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               isOver
-                                  ? 'Over by \$${(-remaining).toStringAsFixed(0)}!'
-                                  : '\$${remaining.toStringAsFixed(0)} left',
+                                  ? 'Over by ${_currencySymbol}${(-remaining).toStringAsFixed(0)}!'
+                                  : '${_currencySymbol}${remaining.toStringAsFixed(0)} left',
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w600,
@@ -2026,7 +1631,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                                     SizedBox(width: 8.w),
                                     Expanded(
                                       child: Text(
-                                        '\$${remaining.toStringAsFixed(0)} will auto-save when period ends',
+                                        '${_currencySymbol}${remaining.toStringAsFixed(0)} will auto-save when period ends',
                                         style: TextStyle(
                                           fontSize: 12.sp,
                                           color: Colors.green[700],
@@ -2057,9 +1662,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ),
                         ],
                         if (isAutoSaved && budget['parentBudgetName'] != null) ...[
-
                           SizedBox(height: 8.h),
-
                           Container(
                             padding: EdgeInsets.all(12.w),
                             decoration: BoxDecoration(
@@ -2075,11 +1678,10 @@ class _BudgetScreenState extends State<BudgetScreen>
                                 SizedBox(width: 8.w),
                                 Expanded(
                                   child: Text(
-                                    'Auto-saved from "${budget['parentBudgetName']}"',
+                                    'Auto-saved from: ${budget['parentBudgetName']}',
                                     style: TextStyle(
                                       fontSize: 12.sp,
                                       color: Colors.purple[700],
-                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -2091,7 +1693,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                     ),
                   ),
                 ),
-                );
+              );
             },
           ),
         );
@@ -2099,9 +1701,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // GOALS TAB - WITH PULL TO REFRESH
-  // ─────────────────────────────────────────────
   Widget _buildGoalsTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: getGoals(),
@@ -2130,7 +1729,7 @@ class _BudgetScreenState extends State<BudgetScreen>
                 ),
                 SizedBox(height: 24.h),
                 ElevatedButton.icon(
-                  onPressed: () => _showAddGoalDialog(context),
+                  onPressed: () => AddGoalBottomSheet.show(context),
                   icon: const Icon(Icons.add),
                   label: const Text('Add Your First Goal'),
                   style: ElevatedButton.styleFrom(
@@ -2143,7 +1742,6 @@ class _BudgetScreenState extends State<BudgetScreen>
             ),
           );
         }
-
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -2211,9 +1809,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   ),
                                   if (deadline != null)
                                     Text(
-                                      'Target: ${DateFormat('MMM dd, yyyy').format(deadline.toDate())}',
+                                      "Target: ${DateFormat('MMM dd, yyyy').format(deadline.toDate())}",
                                       style: TextStyle(
-                                        fontSize: 12.sp,
+                                        fontSize: 11.sp,
                                         color: Colors.grey[600],
                                       ),
                                     ),
@@ -2238,13 +1836,18 @@ class _BudgetScreenState extends State<BudgetScreen>
                                 ),
                               ),
                             PopupMenuButton<String>(
-                              onSelected: (value) {
+                              onSelected: (value) async {
+                                await Future.delayed(const Duration(milliseconds: 150));
+
+                                if (!context.mounted) return;
+
                                 if (value == 'delete') {
-                                  DeleteGoal.show(
+                                  await DeleteGoal.show(
                                     context,
                                     docId: docId,
                                   );
                                 }
+
                                 if (value == 'edit') {
                                   _showEditGoalDialog(
                                     context,
@@ -2279,7 +1882,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ],
                         ),
                         SizedBox(height: 16.h),
-
                         LinearProgressIndicator(
                           value: percent,
                           backgroundColor: Colors.grey[200],
@@ -2288,22 +1890,23 @@ class _BudgetScreenState extends State<BudgetScreen>
                           ),
                           minHeight: 8.h,
                         ),
-
                         SizedBox(height: 12.h),
-
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '\$${currentAmount.toStringAsFixed(0)} saved',
-                              style: TextStyle(color: Colors.grey[600]),
+                            Expanded(
+                              child: Text(
+                                '${_currencySymbol}${currentAmount.toStringAsFixed(0)} saved',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
-                              '\$${targetAmount.toStringAsFixed(0)} target',
+                              '${_currencySymbol}${targetAmount.toStringAsFixed(0)} target',
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ],
-                        ),
+                        )
                       ],
                     ),
                   ),
@@ -2316,12 +1919,43 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // DELETE OPERATIONS
-  // ─────────────────────────────────────────────
-
-
-  // ─────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Budget'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.account_balance_wallet), text: 'Budgets'),
+            Tab(icon: Icon(Icons.flag), text: 'Goals'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildIncomeTab(),
+          _buildGoalsTab(),
+        ],
+      ),
+      floatingActionButton: _tabController.index == 0
+          ? SingleChildScrollView(
+        reverse: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomFabMenu(
+              onAskAI: _showAskAIDialog,
+              onAddSavings: () => AddSavingsDialog.show(context),
+              onAddIncome: () => AddIncomeDialog.show(context),
+            ),
+          ],
+        ),
+      )
+          : AddGoalFab(
+        onPressed: () => AddGoalBottomSheet.show(context),
+      ),
+    );
+  }
 }

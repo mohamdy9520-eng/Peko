@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../routes/app_router.dart';
+
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
 
@@ -25,7 +27,7 @@ class LanguageScreen extends StatelessWidget {
     );
 
     if (context.mounted) {
-      context.go('/login');
+      context.go(AppRoutes.login);
     }
   }
 

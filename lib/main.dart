@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:ai_expense_tracker/peko.dart';
+import 'package:ai_expense_tracker/providers/currency_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart'; // ⬅️ NEW
 
 import 'config/env.dart';
 import 'core/di/injection.dart';
@@ -35,6 +37,11 @@ void main() async {
   // ✅ Notifications AFTER Firebase
   await NotificationService.initialize();
 
+  await NotificationService.showNotification(
+    title: 'Test Notification',
+    body: 'App Started Successfully',
+  );
+
   // ✅ Request permission for Android 12+ exact alarms
   if (Platform.isAndroid) {
     final status = await Permission.scheduleExactAlarm.request();
@@ -58,7 +65,12 @@ void main() async {
       supportedLocales: const [Locale('en'), Locale('ar')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
-      child: const MyApp(), // أو whatever your root widget is
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }
