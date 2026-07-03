@@ -30,7 +30,7 @@ class AppRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const language = '/language';
-  static const currency = '/currency'; // ⬅️ NEW
+  static const currency = '/currency';
 
   static const login = '/login';
   static const signup = '/signup';
@@ -83,7 +83,7 @@ class AppRouter {
         AppRoutes.signup,
         AppRoutes.verifyEmail,
         AppRoutes.language,
-        AppRoutes.currency, // ⬅️ Currency is public (can access before auth)
+        AppRoutes.currency,
         AppRoutes.forgotPassword,
         AppRoutes.verifyOtp,
         AppRoutes.resetPassword,

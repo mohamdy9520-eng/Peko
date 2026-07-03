@@ -27,6 +27,18 @@ class _EditTransactionScreenState
   String _type = 'expense';
   String _category = 'other';
 
+  // ✅ القائمة المعتمدة
+  static const List<String> _validCategories = [
+    'food',
+    'shopping',
+    'transport',
+    'bills',
+    'health',
+    'entertainment',
+    'work',
+    'other',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +59,11 @@ class _EditTransactionScreenState
       _category = categoryData.first.toString();
     } else {
       _category = categoryData?.toString() ?? 'other';
+    }
+
+    // ✅ التحقق: إذا الفئة مش في القائمة، خليها 'other'
+    if (!_validCategories.contains(_category)) {
+      _category = 'other';
     }
   }
 
@@ -86,12 +103,10 @@ class _EditTransactionScreenState
     setState(() => _isSaving = true);
 
     try {
-      // ⚡️ جلب البيانات القديمة
       final oldAmount = (widget.data['amount'] ?? 0).toDouble();
       final oldType = widget.data['type']?.toString() ?? 'expense';
       final newAmount = amount;
 
-      // 1. تحديث الـ transaction
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -105,7 +120,6 @@ class _EditTransactionScreenState
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. ⚡️ لو فيه تغيير في المبلغ أو النوع، حدث الـ user document
       if (oldAmount != newAmount || oldType != _type) {
         final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
         final userDoc = await userDocRef.get();
@@ -115,7 +129,6 @@ class _EditTransactionScreenState
         double currentIncome = (userData['totalIncome'] ?? 0).toDouble();
         double currentExpense = (userData['totalExpense'] ?? 0).toDouble();
 
-        // ارجع القديم
         if (oldType == 'income') {
           currentBalance -= oldAmount;
           currentIncome -= oldAmount;
@@ -124,7 +137,6 @@ class _EditTransactionScreenState
           currentExpense -= oldAmount;
         }
 
-        // ضيف الجديد
         if (_type == 'income') {
           currentBalance += newAmount;
           currentIncome += newAmount;
@@ -227,40 +239,14 @@ class _EditTransactionScreenState
                 labelText: 'Category',
                 border: OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'food',
-                  child: Text('Food'),
-                ),
-                DropdownMenuItem(
-                  value: 'shopping',
-                  child: Text('Shopping'),
-                ),
-                DropdownMenuItem(
-                  value: 'transport',
-                  child: Text('Transport'),
-                ),
-                DropdownMenuItem(
-                  value: 'bills',
-                  child: Text('Bills'),
-                ),
-                DropdownMenuItem(
-                  value: 'health',
-                  child: Text('Health'),
-                ),
-                DropdownMenuItem(
-                  value: 'entertainment',
-                  child: Text('Entertainment'),
-                ),
-                DropdownMenuItem(
-                  value: 'work',
-                  child: Text('Work'),
-                ),
-                DropdownMenuItem(
-                  value: 'other',
-                  child: Text('Other'),
-                ),
-              ],
+              items: _validCategories.map((cat) {
+                return DropdownMenuItem(
+                  value: cat,
+                  child: Text(
+                    cat[0].toUpperCase() + cat.substring(1),
+                  ),
+                );
+              }).toList(),
               onChanged: (value) {
                 if (value != null) {
                   setState(() => _category = value);

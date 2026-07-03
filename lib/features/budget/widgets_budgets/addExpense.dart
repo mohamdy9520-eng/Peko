@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:path/path.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/currency_provider.dart';
 
 class AddExpenseDialog {
   static Future<void> show(
@@ -15,8 +15,14 @@ class AddExpenseDialog {
     final descController = TextEditingController();
 
     final List<String> expenseCategories = [
-      'food', 'shopping', 'transport', 'bills',
-      'entertainment', 'health', 'education', 'other'
+      'food',
+      'shopping',
+      'transport',
+      'bills',
+      'entertainment',
+      'health',
+      'education',
+      'other'
     ];
 
     String selectedCategory = 'food';
@@ -27,6 +33,8 @@ class AddExpenseDialog {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          final currencyProvider = context.watch<CurrencyProvider>();
+
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -55,7 +63,7 @@ class AddExpenseDialog {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Amount',
-                        prefixText: '\$ ',
+                        prefixText: '${currencyProvider.symbol} ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
@@ -75,7 +83,10 @@ class AddExpenseDialog {
                     SizedBox(height: 16.h),
                     Text(
                       'Category',
-                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     Wrap(
@@ -132,10 +143,9 @@ class AddExpenseDialog {
                           final newUsed = currentUsed + amount;
                           final newRemaining = budgetAmount - newUsed;
 
-                          // CRITICAL FIX: Update BOTH used AND remaining
                           batch.update(budgetRef, {
                             'used': newUsed,
-                            'remaining': newRemaining, // WAS MISSING!
+                            'remaining': newRemaining,
                           });
 
                           final transRef = FirebaseFirestore.instance
@@ -161,7 +171,9 @@ class AddExpenseDialog {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('-\$${amount.toStringAsFixed(0)} from $budgetName'),
+                                content: Text(
+                                  '-${currencyProvider.formatAmountCompact(amount)} from $budgetName',
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );

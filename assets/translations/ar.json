@@ -3,6 +3,101 @@
     "name": "Pēco",
     "tagline": "دردش بذكاء"
   },
+
+  "Home": {
+    "add": "إضافة",
+    "add_contact": "إضافة جهة اتصال",
+    "add_expenses": "إضافة مصروفات",
+    "add_income": "إضافة دخل",
+    "add_your_first_contact": "أضف جهة اتصالك الأولى",
+    "amount": "المبلغ",
+    "cancel": "إلغاء",
+    "choose_contact": "اختر جهة اتصال",
+    "delete": "حذف",
+    "email_or_phone": "البريد الإلكتروني أو الهاتف",
+    "enter_valid_amount": "أدخل مبلغاً صالحاً",
+    "error_message": "خطأ: {error}",
+    "food_shopping_bills": "طعام، تسوق، فواتير...",
+    "insufficient_balance": "رصيد غير كافٍ: {balance}",
+    "invalid_amount": "مبلغ غير صالح",
+    "name": "الاسم",
+    "no_contacts_found": "لم يتم العثور على جهات اتصال",
+    "no_transactions_yet": "لا توجد معاملات بعد",
+    "quickly_add_transaction": "أضف معاملتك بسرعة",
+    "salary_gift_refund": "راتب، هدية، استرداد...",
+    "save": "حفظ",
+    "save_new_contact": "حفظ جهة اتصال جديدة",
+    "see_all": "عرض الكل",
+    "select_contact": "اختر جهة اتصال",
+    "send": "إرسال",
+    "send_money_to_contact": "إرسال الأموال لجهة اتصال",
+    "transfer": "تحويل",
+    "transfer_money": "تحويل الأموال",
+    "transfer_to": "تحويل إلى {name}",
+    "transferred_amount_to": "تم تحويل {amount} إلى {name}",
+    "user_not_found": "المستخدم غير موجود",
+    "what_did_you_do": "ماذا فعلت؟",
+    "type": "النوع",
+    "category": "الفئة",
+    "date": "التاريخ",
+    "income": "دخل",
+    "expense": "مصروف",
+    "unknown": "غير معروف",
+    "deleted_message": "تم حذف {type} بقيمة {amount}",
+    "categories": {
+      "work": "عمل",
+      "payment": "دفع",
+      "food": "طعام",
+      "shopping": "تسوق",
+      "multiple": "متعدد",
+      "other": "أخرى",
+
+    "add": "إضافة",
+    "add_contact": "إضافة جهة اتصال",
+    "add_expenses": "إضافة مصروفات",
+    "add_income": "إضافة دخل",
+    "add_your_first_contact": "أضف جهة اتصالك الأولى",
+    "amount": "المبلغ",
+    "cancel": "إلغاء",
+    "choose_contact": "اختر جهة اتصال",
+    "delete": "حذف",
+    "email_or_phone": "البريد الإلكتروني أو الهاتف",
+    "enter_valid_amount": "أدخل مبلغاً صالحاً",
+    "error_message": "خطأ: {error}",
+    "food_shopping_bills": "طعام، تسوق، فواتير...",
+    "insufficient_balance": "رصيد غير كافٍ: {balance}",
+    "invalid_amount": "مبلغ غير صالح",
+    "name": "الاسم",
+    "no_transactions_yet": "لا توجد معاملات بعد",
+    "quickly_add_transaction": "أضف معاملتك بسرعة",
+    "salary_gift_refund": "راتب، هدية، استرداد...",
+    "save": "حفظ",
+    "save_new_contact": "حفظ جهة اتصال جديدة",
+    "see_all": "عرض الكل",
+    "select_contact": "اختر جهة اتصال",
+    "send": "إرسال",
+    "send_money_to_contact": "إرسال الأموال لجهة اتصال",
+    "transfer_money": "تحويل الأموال",
+    "transfer_to": "تحويل إلى {name}",
+    "transferred_amount_to": "تم تحويل {amount} إلى {name}",
+    "user_not_found": "المستخدم غير موجود",
+    "what_did_you_do": "ماذا فعلت؟",
+
+    "type": "النوع",
+    "category": "الفئة",
+    "income": "دخل",
+    "unknown": "غير معروف",
+    "deleted_message": "تم حذف {type} بقيمة {amount}",
+
+    "categories": {
+      "work": "عمل",
+      "transfer": "تحويل",
+      "payment": "دفع",
+      "food": "طعام",
+      "shopping": "تسوق",
+      "multiple": "متعدد",
+      "other": "أخرى"
+  },
   "auth": {
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",
@@ -375,6 +470,8 @@
     "goal_achieved": "تم تحقيق الهدف!",
     "congratulations": "تهانينا!",
     "offline_plan": "خطة بدون اتصال",
+    "Contacts": "جهات الاتصال",
+    "transactions_history": "سجل المعاملات",
 
 
     "transactions": {
@@ -384,7 +481,8 @@
       "transaction_deleted": "تم حذف العملية بنجاح",
       "no_transactions_yet": "لا توجد معاملات حتى الآن\nاضغط + لإضافة معاملة!",
       "all_transactions": "جميع المعاملات",
-      "you_spent_most_on": "أنفقت معظم أموالك على {category} بقيمة {amount} دولار"
+      "you_spent_most_on": "أنفقت معظم أموالك على {category} بقيمة {amount} دولار",
+      "Home_categories_other": "فئات اخرى"
     }
   },
   "transaction": {
@@ -395,4 +493,6 @@
   "welcome_back": "مرحباً بعودتك",
   "add_first": "أضف جهة اتصال أولاً",
   "no_contacts_found": "لم يتم العثور على جهات اتصال"
+    }
+  }
 }

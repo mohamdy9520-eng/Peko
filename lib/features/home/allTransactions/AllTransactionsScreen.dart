@@ -1,4 +1,3 @@
-import 'package:ai_expense_tracker/generated/codegen_loader.g.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -124,7 +123,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          LocaleKeys.transactions_all_transactions.tr(),
+          LocaleKeys.Home_categories_transactions_all_transactions.tr(),
           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
@@ -441,10 +440,8 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     final double amount = (data['amount'] ?? 0).toDouble();
     final bool isIncome = data['type'] == 'income';
 
-    // ⚡️ حذف الـ transaction
     await transaction.reference.delete();
 
-    // ⚡️ تحديث الـ user document عشان الـ HomeScreen يتحدث
     final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final userDoc = await userDocRef.get();
     final userData = userDoc.data() ?? {};

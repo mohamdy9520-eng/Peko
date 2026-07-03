@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:go_router/go_router.dart';
 import 'package:pdf/pdf.dart';
-import 'package:ai_expense_tracker/core/di/services/groqService.dart';
+import 'package:ai_expense_tracker/core/di/services/ai_insight_service.dart.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -68,10 +68,10 @@ class _StatisticScreenState extends State<StatisticScreen> {
   void initState() {
     super.initState();
     _filters = [
-      LocaleKeys.date_day.tr(),
-      LocaleKeys.date_week.tr(),
-      LocaleKeys.date_month.tr(),
-      LocaleKeys.date_year.tr(),
+      LocaleKeys.Home_categories_date_day.tr(),
+      LocaleKeys.Home_categories_date_week.tr(),
+      LocaleKeys.Home_categories_date_month.tr(),
+      LocaleKeys.Home_categories_date_year.tr(),
     ];
     _loadCachedAdvice();
   }
@@ -228,7 +228,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
         appBar: AppBar(
           title: Center(
             child: Text(
-              LocaleKeys.analytics_statistics.tr(),
+              LocaleKeys.Home_categories_analytics_statistics.tr(),
               style: TextStyle(color: AppColors.textPrimary, fontSize: 25.sp, fontWeight: FontWeight.bold),
             ),
           ),
@@ -489,7 +489,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          LocaleKeys.expense_summary.tr(),
+          LocaleKeys.Home_categories_expense_summary.tr(),
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
@@ -502,28 +502,28 @@ class _StatisticScreenState extends State<StatisticScreen> {
           child: Row(
             children: [
               _buildStatCard(
-                LocaleKeys.expense_total_expense.tr(),
+                LocaleKeys.Home_categories_expense_total_expense.tr(),
                 currency.formatAmountCompact(totalExpense),
                 AppColors.expense,
                 Icons.arrow_upward,
               ),
               SizedBox(width: 12.w),
               _buildStatCard(
-                LocaleKeys.expense_total_income.tr(),
+                LocaleKeys.Home_categories_expense_total_income.tr(),
                 currency.formatAmountCompact(totalIncome),
                 AppColors.income,
                 Icons.arrow_downward,
               ),
               SizedBox(width: 12.w),
               _buildStatCard(
-                LocaleKeys.expense_net.tr(),
+                LocaleKeys.Home_categories_expense_net.tr(),
                 currency.formatAmountCompact(net),
                 net >= 0 ? AppColors.income : AppColors.expense,
                 net >= 0 ? Icons.trending_up : Icons.trending_down,
               ),
               SizedBox(width: 12.w),
               _buildStatCard(
-                LocaleKeys.expense_count.tr(),
+                LocaleKeys.Home_categories_expense_count.tr(),
                 '$count',
                 Colors.blue,
                 Icons.receipt_long,
@@ -629,7 +629,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     getTitlesWidget: (value, meta) {
                       final currency = context.read<CurrencyProvider>();
                       return Text(
-                        '${currency.symbol}${value.toInt()}',
+                        currency.formatAmountCompact(value),
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 10.sp,
@@ -692,7 +692,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
     if (categoryData.isEmpty) {
       return _buildChartPlaceholder(
-        LocaleKeys.expense_distribution.tr(),
+        LocaleKeys.Home_categories_expense_distribution.tr(),
         'No data for category distribution',
       );
     }
@@ -703,7 +703,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          LocaleKeys.expense_distribution.tr(),
+          LocaleKeys.Home_categories_expense_distribution.tr(),
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
@@ -769,7 +769,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
     if (categoryData.isEmpty) {
       return _buildChartPlaceholder(
-        LocaleKeys.expense_by_category.tr(),
+        LocaleKeys.Home_categories_expense_by_category.tr(),
         'No data for category breakdown',
       );
     }
@@ -782,7 +782,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          LocaleKeys.expense_by_category.tr(),
+          LocaleKeys.Home_categories_expense_by_category.tr(),
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
@@ -822,8 +822,11 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     getTitlesWidget: (value, meta) {
                       final currency = context.read<CurrencyProvider>();
                       return Text(
-                        '${currency.symbol}${value.toInt()}',
-                        style: TextStyle(fontSize: 10.sp),
+                        currency.formatAmountCompact(value),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 10.sp,
+                        ),
                       );
                     },
                   ),
@@ -909,7 +912,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              LocaleKeys.transactions_top_transactions.tr(),
+              LocaleKeys.Home_categories_transactions_top_transactions.tr(),
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
@@ -956,10 +959,13 @@ class _StatisticScreenState extends State<StatisticScreen> {
     _lastFilterIndex = currentFilter;
     _lastTransactionCount = currentCount;
 
-    final language = context.locale.languageCode;
-
-    _adviceFuture = GroqService(apiKey: Env.groqkey)
-        .getExpenseInsight(transactions, language: language);
+    _adviceFuture = AIInsightService(
+        apiKey: Env.openRouterApiKey,
+    )
+        .getExpenseInsight(
+      transactions,
+      context: context,
+    );
 
     return _adviceFuture!;
   }
@@ -985,12 +991,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
           bool showCached = false;
 
           if (error is SocketException || error.toString().contains('SocketException')) {
-            errorMessage = LocaleKeys.errors_no_internet.tr();
+            errorMessage = LocaleKeys.Home_categories_errors_no_internet.tr();
             showCached = true;
           } else if (error is HttpException) {
-            errorMessage = LocaleKeys.errors_server_error.tr();
+            errorMessage = LocaleKeys.Home_categories_errors_server_error.tr();
           } else {
-            errorMessage = LocaleKeys.errors_unexpected_error.tr();
+            errorMessage = LocaleKeys.Home_categories_errors_unexpected_error.tr();
           }
 
           if (showCached && _cachedAdvice != null) {
@@ -1003,7 +1009,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
           return _buildErrorInsightCard(errorMessage);
         }
 
-        final advice = snapshot.data ?? LocaleKeys.errors_no_internet.tr();
+        final advice = snapshot.data ?? LocaleKeys.Home_categories_errors_no_internet.tr();
         _saveCachedAdvice(advice);
 
         return _buildInsightCard(advice);
@@ -1051,7 +1057,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
                 Row(
                   children: [
                     Text(
-                      LocaleKeys.analytics_insight.tr(),
+                      LocaleKeys.Home_categories_analytics_insight.tr(),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.amber,
@@ -1066,7 +1072,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
                           borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
-                          LocaleKeys.errors_no_internet.tr(),
+                          LocaleKeys.Home_categories_errors_no_internet.tr(),
                           style: TextStyle(
                             fontSize: 10.sp,
                             color: Colors.grey[700],
@@ -1124,7 +1130,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              LocaleKeys.analytics_insight.tr(),
+              LocaleKeys.Home_categories_analytics_insight.tr(),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.amber,
@@ -1160,7 +1166,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LocaleKeys.alert.tr(),
+                  LocaleKeys.Home_categories_expense_alert.tr(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.red[700],
@@ -1190,7 +1196,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
           Icon(Icons.bar_chart, size: 80, color: Colors.grey[300]),
           SizedBox(height: 16.h),
           Text(
-            '${LocaleKeys.analytics_no_data_for.tr()} ${_filters[_selectedFilterIndex]}',
+            '${LocaleKeys.Home_categories_analytics_no_data_for.tr()} ${_filters[_selectedFilterIndex]}',
             style: TextStyle(
               fontSize: 16.sp,
               color: Colors.grey[500],
@@ -1404,12 +1410,12 @@ class _StatisticScreenState extends State<StatisticScreen> {
               border: pw.TableBorder.all(),
               children: [
                 _buildPdfTableRow(
-                    balanceLabel, '${currency.symbol}${balance.toStringAsFixed(currency.decimalDigits)}', isArabic),
-                _buildPdfTableRow(incomeLabel, '+${currency.symbol}${income.toStringAsFixed(currency.decimalDigits)}',
+                    balanceLabel, currency.formatAmount(balance), isArabic),
+                _buildPdfTableRow(incomeLabel, '+${currency.formatAmountCompact(income)}',
                     isArabic,
                     textColor: PdfColors.green),
                 _buildPdfTableRow(expenseLabel,
-                    '-${currency.symbol}${expense.toStringAsFixed(currency.decimalDigits)}', isArabic,
+                    '-${currency.formatAmountCompact(expense)}', isArabic,
                     textColor: PdfColors.red),
               ],
             ),
@@ -1616,8 +1622,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   final isIncome = item['type'] == 'income';
                   final amount = (item['amount'] ?? 0).toDouble();
                   final amountStr = isIncome
-                      ? '+${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}'
-                      : '-${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}';
+                      ? '+${currency.formatAmountCompact(amount)}'
+                      : '-${currency.formatAmountCompact(amount)}';
                   final amountColor = isIncome ? PdfColors.green : PdfColors.red;
                   final typeStr = isIncome
                       ? (isArabic ? 'دخل' : 'Income')

@@ -50,48 +50,47 @@ class _CustomFabMenuState extends State<CustomFabMenu>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Ask AI
-        _buildMenuItem(
-          label: 'Ask AI',
-          icon: Icons.auto_awesome,
-          color: Colors.orange,
-          onTap: widget.onAskAI,
-          delay: 0,
-        ),
-        SizedBox(height: 12.h),
-        // Add Savings
-        _buildMenuItem(
-          label: 'Add Savings',
-          icon: Icons.savings,
-          color: Colors.teal,
-          onTap: widget.onAddSavings,
-          delay: 1,
-        ),
-        SizedBox(height: 12.h),
-        // Add Income
-        _buildMenuItem(
-          label: 'Add Income',
-          icon: Icons.add,
-          color: Colors.green,
-          onTap: widget.onAddIncome,
-          delay: 2,
-        ),
-        SizedBox(height: 12.h),
-        // Main FAB
-        FloatingActionButton(
-          onPressed: _toggle,
-          backgroundColor: Colors.deepPurple,
-          child: AnimatedIcon(
-            icon: AnimatedIcons.menu_close,
-            progress: _controller,
-            color: Colors.white,
+    return Directionality(
+      textDirection: TextDirection.ltr, // ⬅️ الإضافة دي بس
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _buildMenuItem(
+            label: 'Ask AI',
+            icon: Icons.auto_awesome,
+            color: Colors.orange,
+            onTap: widget.onAskAI,
+            delay: 0,
           ),
-        ),
-      ],
+          SizedBox(height: 12.h),
+          _buildMenuItem(
+            label: 'Add Savings',
+            icon: Icons.savings,
+            color: Colors.teal,
+            onTap: widget.onAddSavings,
+            delay: 1,
+          ),
+          SizedBox(height: 12.h),
+          _buildMenuItem(
+            label: 'Add Income',
+            icon: Icons.add,
+            color: Colors.green,
+            onTap: widget.onAddIncome,
+            delay: 2,
+          ),
+          SizedBox(height: 12.h),
+          FloatingActionButton(
+            onPressed: _toggle,
+            backgroundColor: Colors.deepPurple,
+            child: AnimatedIcon(
+              icon: AnimatedIcons.menu_close,
+              progress: _controller,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

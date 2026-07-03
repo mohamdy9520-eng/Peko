@@ -8,7 +8,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart'; // ⬅️ NEW
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/env.dart';
 import 'core/di/injection.dart';
@@ -17,13 +18,14 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Env & Localization FIRST
   await Env.load();
-  print('OPENROUTER = ${Env.openRouterApiKey}');
-  print('GROQ= ${Env.groqkey}');
+  debugPrint('Environment loaded successfully');
 
   await EasyLocalization.ensureInitialized();
 
-  // ✅ Firebase FIRST
+  // ✅ Firebase BEFORE notifications (عشان Firestore notifications تحتاج Firebase)
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -34,13 +36,8 @@ void main() async {
     debugPrint('Firebase already initialized: $e');
   }
 
-  // ✅ Notifications AFTER Firebase
+  // ✅ Initialize Notifications ONCE
   await NotificationService.initialize();
-
-  await NotificationService.showNotification(
-    title: 'Test Notification',
-    body: 'App Started Successfully',
-  );
 
   // ✅ Request permission for Android 12+ exact alarms
   if (Platform.isAndroid) {
@@ -49,8 +46,11 @@ void main() async {
       await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
     } else {
       debugPrint('Exact alarm permission denied');
+      // ✅ لو ماخدش permission، نبعت notification عادية (inexact)
+      await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
     }
   } else {
+    // iOS — مش محتاج exact alarm permission
     await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
   }
 

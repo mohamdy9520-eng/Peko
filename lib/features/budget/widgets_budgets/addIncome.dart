@@ -1,40 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/di/constants/app_lists.dart';
 import '../../../theme/app_colors.dart';
+import '../../../providers/currency_provider.dart';
 
 class AddIncomeDialog {
-  static final NumberFormat _currencyFormatter = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
-
-  static final NumberFormat _compactFormatter = NumberFormat.compactCurrency(
-    symbol: '\$',
-    decimalDigits: 1,
-  );
-
-  /// Format amount with currency symbol (e.g., "$1,234.56")
-  static String formatCurrency(double amount) {
-    return _currencyFormatter.format(amount);
-  }
-
-  /// Format amount compact (e.g., "$1.2K")
-  static String formatCompact(double amount) {
-    return _compactFormatter.format(amount);
-  }
-
-  /// Format amount without symbol (e.g., "1,234.56")
-  static String formatNoSymbol(double amount) {
-    return NumberFormat.decimalPattern().format(amount);
-  }
-
   static Future<void> show(BuildContext context) async {
     final nameController = TextEditingController();
     final amountController = TextEditingController();
@@ -50,6 +26,9 @@ class AddIncomeDialog {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          // ✅ جلب الـ CurrencyProvider
+          final currencyProvider = context.watch<CurrencyProvider>();
+
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -80,7 +59,7 @@ class AddIncomeDialog {
                       'Add Income',
                       style: TextStyle(
                         fontSize: 22.sp,
-                        fontWeight: FontWeight.bold
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     SizedBox(height: 24.h),
@@ -104,7 +83,8 @@ class AddIncomeDialog {
                       decoration: InputDecoration(
                         labelText: 'Amount',
                         hintText: '0.00',
-                        prefixText: r'$ ',
+                        // ✅ استخدمنا symbol من الـ Provider
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixIcon: const Icon(Icons.attach_money),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
@@ -261,7 +241,10 @@ class AddIncomeDialog {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Income added! ' + formatCurrency(amount)),
+                                  // ✅ استخدمنا formatAmount من الـ Provider
+                                  content: Text(
+                                    'Income added! ${currencyProvider.formatAmount(amount)}',
+                                  ),
                                   backgroundColor: Colors.green,
                                 ),
                               );

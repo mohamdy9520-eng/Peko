@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,7 +11,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
 class NotificationService {
-  // ✅ late بدل final
   static late FlutterLocalNotificationsPlugin _notifications;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
@@ -23,27 +24,20 @@ class NotificationService {
 
   static bool _initialized = false;
 
-  /// Stream للـ Navigation
   static final _notificationStreamController =
   StreamController<Map<String, dynamic>>.broadcast();
 
   static Stream<Map<String, dynamic>> get onNotificationTap =>
       _notificationStreamController.stream;
 
-  /// تهيئة النظام — بتتنادى مرة واحدة في main()
   static Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
 
-    // ✅ Initialize here
     _notifications = FlutterLocalNotificationsPlugin();
-
     tz_data.initializeTimeZones();
 
-    // Android Settings
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    // iOS Settings
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -61,26 +55,111 @@ class NotificationService {
       onDidReceiveBackgroundNotificationResponse: _onBackgroundTap,
     );
 
-    // Create Android Channel
     final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(_channel);
 
-    // Request permission for iOS
     await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // Handle FCM when app is in foreground
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // Handle FCM when app is opened from terminated state
     FirebaseMessaging.instance.getInitialMessage().then(_handleInitialMessage);
   }
 
-  /// لما المستخدم يضغط على Notification
+  static Future<void> _saveToFirestore({
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .add({
+      'title': title,
+      'body': body,
+      'type': type,
+      'read': false,
+      'data': data,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static Stream<int> getUnreadCount() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(0);
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .where('read', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  static Stream<QuerySnapshot> getNotifications() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Stream.empty();
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  static Future<void> markAsRead(String notificationId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notificationId)
+        .update({'read': true});
+  }
+
+  static Future<void> markAllAsRead() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .where('read', isEqualTo: false)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'read': true});
+    }
+
+    await batch.commit();
+  }
+
+  static Future<void> deleteNotification(String notificationId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notificationId)
+        .delete();
+  }
+
   static void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null) return;
@@ -97,12 +176,12 @@ class NotificationService {
     _onNotificationTap(response);
   }
 
-  /// إرسال Notification فوري
   static Future<void> showNotification({
     required String title,
     required String body,
     String? type,
     Map<String, dynamic>? data,
+    bool saveToFirestore = true,
   }) async {
     final payload = jsonEncode({
       'type': type ?? 'general',
@@ -135,9 +214,17 @@ class NotificationService {
       ),
       payload: payload,
     );
+
+    if (saveToFirestore) {
+      await _saveToFirestore(
+        title: title,
+        body: body,
+        type: type ?? 'general',
+        data: data,
+      );
+    }
   }
 
-  /// إرسال Notification مجدول
   static Future<void> scheduleNotification({
     required String title,
     required String body,
@@ -172,12 +259,59 @@ class NotificationService {
     );
   }
 
-  /// إلغاء كل الـ Notifications
+  static Future<void> scheduleDailyReminder({
+    required int hour,
+    required int minute,
+  }) async {
+    await _notifications.zonedSchedule(
+      99999,
+      '📝 Daily Check-in',
+      'Don\'t forget to track your expenses and income today!',
+      _nextInstanceOfTime(hour, minute),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          '${_channel.id}_daily',
+          'Daily Reminders',
+          channelDescription: 'Daily reminder to log expenses',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: jsonEncode({'type': 'reminder', 'screen': '/home'}),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  static Future<void> cancelDailyReminder() async {
+    await _notifications.cancel(99999);
+  }
+
+  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    return scheduled;
+  }
+
   static Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }
 
-  /// Handle FCM Foreground
   static void _handleForegroundMessage(RemoteMessage message) {
     showNotification(
       title: message.notification?.title ?? 'New Notification',
@@ -191,17 +325,16 @@ class NotificationService {
     if (message == null) return;
   }
 
-  /// Budget Alert
   static Future<void> sendBudgetAlert({
     required String budgetName,
     required double remaining,
     required double total,
   }) async {
-    final percent = (remaining / total * 100).toStringAsFixed(0);
+    final percent = ((total - remaining) / total * 100).toStringAsFixed(0);
 
     await showNotification(
       title: '⚠️ Budget Alert',
-      body: '"$budgetName" is $percent% used. \$${remaining.toStringAsFixed(0)} remaining.',
+      body: '"$budgetName" is at $percent%! Only \$${remaining.toStringAsFixed(0)} remaining.',
       type: 'budget',
       data: {
         'screen': '/budget',
@@ -210,23 +343,27 @@ class NotificationService {
     );
   }
 
-  /// Goal Achieved
   static Future<void> sendGoalAchieved({
     required String goalName,
     required double targetAmount,
+    required String currencySymbol,
   }) async {
+    final formattedAmount = '$currencySymbol${targetAmount.toStringAsFixed(0)}';
+
     await showNotification(
       title: '🎉 Goal Achieved!',
-      body: 'You\'ve reached \$${targetAmount.toStringAsFixed(0)} for "$goalName"!',
+      body: 'You\'ve reached $formattedAmount for "$goalName"! Amazing work! 🎯',
       type: 'goal',
       data: {
         'screen': '/budget',
         'tab': 'goals',
+        'goalName': goalName,
       },
+      saveToFirestore: true,
     );
   }
 
-  /// Weekly Summary
+  /// ✅ Weekly Summary
   static Future<void> sendWeeklySummary({
     required double totalSpent,
     required double totalIncome,
@@ -236,28 +373,10 @@ class NotificationService {
 
     await showNotification(
       title: '$emoji Weekly Summary',
-      body: 'Spent: \$${totalSpent.toStringAsFixed(0)} | Income: \$${totalIncome.toStringAsFixed(0)} | Net: \$${net.toStringAsFixed(0)}',
+      body:
+      'Spent: \$${totalSpent.toStringAsFixed(0)} | Income: \$${totalIncome.toStringAsFixed(0)} | Net: \$${net.toStringAsFixed(0)}',
       type: 'summary',
-      data: {
-        'screen': '/stats',
-      },
-    );
-  }
-
-  /// Daily Reminder
-  static Future<void> scheduleDailyReminder({required int hour, required int minute}) async {
-    final now = DateTime.now();
-    var scheduled = DateTime(now.year, now.month, now.day, hour, minute);
-
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
-
-    await scheduleNotification(
-      title: '📝 Daily Check-in',
-      body: 'Don\'t forget to track your expenses today!',
-      scheduledDate: scheduled,
-      type: 'reminder',
+      data: {'screen': '/stats'},
     );
   }
 }

@@ -24,6 +24,8 @@ class AIService {
     required double savings,
     List<Map<String, dynamic>>? goals,
     List<Map<String, dynamic>>? budgets,
+    required String languageCode, // 'ar' or 'en'
+    required String currencySymbol,
   }) async {
     if (_openRouterKey.isEmpty) {
       throw Exception(
@@ -31,20 +33,31 @@ class AIService {
       );
     }
 
-    final goalsContext = _buildGoalsContext(goals);
-    final budgetsContext = _buildBudgetsContext(budgets);
+    final goalsContext = _buildGoalsContext(goals, currencySymbol);
+    final budgetsContext = _buildBudgetsContext(budgets, currencySymbol);
     final categoriesText = categories.entries
-        .map((e) => '${e.key}: \$${e.value.toStringAsFixed(2)}')
+        .map((e) => '${e.key}: $currencySymbol${e.value.toStringAsFixed(2)}')
         .join('\n');
+    final isArabic = languageCode == 'ar';
+
+    final languageInstruction = isArabic
+        ? '⚠️ مهم جدًا جدًا: يجب أن يكون الرد بالكامل باللغة العربية الفصحى فقط. لا تستخدم أي كلمة إنجليزية إطلاقًا، حتى في العناوين. حافظ على الأرقام والرموز (\$, %) كما هي.'
+        : '⚠️ VERY IMPORTANT: The entire response must be written in English only.';
+
+    final systemLanguageInstruction = isArabic
+        ? 'You must respond ONLY in Modern Standard Arabic (العربية الفصحى). Do not use any English words. Keep numbers, currency symbols and percentages as-is.'
+        : 'You must respond ONLY in English.';
 
     final planPrompt = """
+$languageInstruction
+
 💰 SMART FINANCIAL ANALYSIS: BUDGET • SAVINGS • GOALS
 
 📊 Financial Overview:
 ━━━━━━━━━━━━━━━━━━━━━
-💵 Total Budget: \$${income.toStringAsFixed(2)}
-📉 Total Expenses: \$${expense.toStringAsFixed(2)}
-💰 Available Budget: \$${savings.toStringAsFixed(2)}
+💵 Total Budget: $currencySymbol${income.toStringAsFixed(2)}
+📉 Total Expenses: $currencySymbol${expense.toStringAsFixed(2)}
+💰 Available Budget: $currencySymbol${savings.toStringAsFixed(2)}
 📈 Savings Potential: ${income > 0 ? ((savings / income) * 100).toStringAsFixed(1) : 0}%
 
 💵 Active Budgets:
@@ -67,7 +80,7 @@ Requirements:
    - Timeline: "At this rate, you'll reach [Goal] by [Date]"
 3. **SAVINGS STRATEGY**:
    - Apply 50/30/20 rule to Available Budget
-   - Emergency fund priority (3-6 months expenses = \$${(expense * 3).toStringAsFixed(0)} - \$${(expense * 6).toStringAsFixed(0)})
+Emergency fund priority (3-6 months expenses = $currencySymbol${(expense * 3).toStringAsFixed(0)} - $currencySymbol${(expense * 6).toStringAsFixed(0)})
    - Balance multiple goals with available resources
 4. **FEASIBILITY CHECK**:
    - If goals exceed Available Budget, rank by urgency & suggest adjustments
@@ -80,13 +93,15 @@ Requirements:
 7. Be encouraging but realistic about timeline
 
 Example format:
-"🚗 Buy a Car (\$250,000)
-   Current: \$5,000 (2%) | Remaining: \$245,000
+"🚗 Buy a Car ($currencySymbol 250,000)
+   Current: $currencySymbol 5,000 (2%) | Remaining: $currencySymbol 245,000
    📅 Deadline: Dec 2027 (18 months left)
-   ⭐ NEED: \$13,611/month from Available Budget
-   💡 SOURCE: Allocate 40% of Salary Budget (\$20,000/mo)
+   ⭐ NEED: $currencySymbol 13,611/month from Available Budget
+   💡 SOURCE: Allocate 40% of Salary Budget ($currencySymbol 20,000/mo)
    ✅ PROJECTED: Reach goal by Nov 2027 (1 month early!)
    🔄 AUTO-SAVE: Set 40% auto-save from 'Monthly Salary' budget"
+
+$languageInstruction
 """;
 
     final response = await http.post(
@@ -95,7 +110,7 @@ Example format:
         'Authorization': 'Bearer $_openRouterKey',
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://virello.app',
-        'X-Title': 'Virello Budget AI',
+        'X-Title': 'Peko Budget AI',
       },
       body: jsonEncode({
         "model": "google/gemini-2.5-flash",
@@ -103,7 +118,7 @@ Example format:
           {
             "role": "system",
             "content":
-            "You are an expert financial advisor specializing in income-based savings planning and goal achievement. Provide detailed, actionable advice with exact calculations. Focus on allocating income sources to goals, not limiting spending."
+            "You are an expert financial advisor working inside 'Peko: AI Expense Tracker' app, specializing in income-based savings planning and goal achievement. Provide detailed, actionable advice with exact calculations. Focus on allocating income sources to goals, not limiting spending. $systemLanguageInstruction"
           },
           {
             "role": "user",
@@ -111,7 +126,7 @@ Example format:
           }
         ],
         "temperature": 0.7,
-        "max_tokens": 2048,
+        "max_tokens": 1800,
       }),
     );
 
@@ -137,7 +152,7 @@ Example format:
   // ─────────────────────────────────────────────
   // BUILD GOALS CONTEXT FOR AI
   // ─────────────────────────────────────────────
-  static String _buildGoalsContext(List<Map<String, dynamic>>? goals) {
+  static String _buildGoalsContext(List<Map<String, dynamic>>? goals, String currencySymbol) {
     if (goals == null || goals.isEmpty) {
       return '\n🎯 Active Goals: None set yet. Consider adding a goal first!\n';
     }
@@ -154,7 +169,7 @@ Example format:
 
       if (completed) {
         buffer.writeln(
-            '✅ $name - COMPLETED! (\$${current.toStringAsFixed(0)} / \$${target.toStringAsFixed(0)})');
+            '✅ $name - COMPLETED! ($currencySymbol${current.toStringAsFixed(0)} / $currencySymbol${target.toStringAsFixed(0)})');
         continue;
       }
 
@@ -163,8 +178,8 @@ Example format:
 
       buffer.write('🚩 $name\n');
       buffer.write(
-          '   Current: \$${current.toStringAsFixed(0)} / \$${target.toStringAsFixed(0)} (${progress.toStringAsFixed(1)}%)\n');
-      buffer.write('   Remaining: \$${remaining.toStringAsFixed(0)}\n');
+          '   Current: $currencySymbol${current.toStringAsFixed(0)} / $currencySymbol${target.toStringAsFixed(0)} (${progress.toStringAsFixed(1)}%)\n');
+      buffer.write('   Remaining: $currencySymbol${remaining.toStringAsFixed(0)}\n');
 
       if (deadline != null) {
         final targetDate = deadline.toDate();
@@ -172,26 +187,22 @@ Example format:
         final monthsLeft = _calculateMonthsLeft(now, targetDate);
         final daysLeft = targetDate.difference(now).inDays;
 
-        buffer.write(
-            '   Deadline: ${DateFormat('MMM dd, yyyy').format(targetDate)}\n');
+        buffer.write('   Deadline: ${DateFormat('MMM dd, yyyy').format(targetDate)}\n');
         buffer.write('   Time Left: $monthsLeft months ($daysLeft days)\n');
 
         if (monthsLeft > 0) {
           final monthlyNeeded = remaining / monthsLeft;
-          buffer.write(
-              '   ⭐ REQUIRED: \$${monthlyNeeded.toStringAsFixed(0)}/month to reach this goal\n');
+          buffer.write('   ⭐ REQUIRED: $currencySymbol${monthlyNeeded.toStringAsFixed(0)}/month to reach this goal\n');
         } else if (daysLeft > 0) {
           final dailyNeeded = remaining / daysLeft;
-          buffer.write(
-              '   ⚠️ URGENT: \$${dailyNeeded.toStringAsFixed(0)}/day needed!\n');
+          buffer.write('   ⚠️ URGENT: $currencySymbol${dailyNeeded.toStringAsFixed(0)}/day needed!\n');
         } else {
           buffer.write('   ❌ DEADLINE PASSED - Goal overdue!\n');
         }
       }
 
       if (monthlySavings > 0) {
-        buffer.write(
-            '   💰 Auto-saving: \$${monthlySavings.toStringAsFixed(0)}/month\n');
+        buffer.write('   💰 Auto-saving: $currencySymbol${monthlySavings.toStringAsFixed(0)}/month\n');
       }
 
       buffer.writeln('');
@@ -200,10 +211,12 @@ Example format:
     return buffer.toString();
   }
 
+
+
   // ─────────────────────────────────────────────
   // BUILD BUDGETS/INCOME CONTEXT FOR AI
   // ─────────────────────────────────────────────
-  static String _buildBudgetsContext(List<Map<String, dynamic>>? budgets) {
+  static String _buildBudgetsContext(List<Map<String, dynamic>>? budgets, String currencySymbol) {
     if (budgets == null || budgets.isEmpty) {
       return 'No active income sources. Add your salary or other income first!\n';
     }
@@ -226,22 +239,22 @@ Example format:
       totalUsed += used;
 
       buffer.write(
-          '- 💵 $name: \$${amount.toStringAsFixed(0)} [$category/$period]\n');
+          '- 💵 $name: $currencySymbol${amount.toStringAsFixed(0)} [$category/$period]\n');
       if (source.isNotEmpty) {
         buffer.write('  Source: $source\n');
       }
       buffer.write(
-          '  Used: \$${used.toStringAsFixed(0)} | Left: \$${remaining.toStringAsFixed(0)}\n');
+          '  Used: $currencySymbol${used.toStringAsFixed(0)} | Left: $currencySymbol${remaining.toStringAsFixed(0)}\n');
       if (autoSave) {
         final goalName = b['savingsGoalName'] ?? 'Goal';
         buffer.write(
-            '  🔄 Auto-save: \$${remaining.toStringAsFixed(0)} to "$goalName" when period ends\n');
+            '  🔄 Auto-save: $currencySymbol${remaining.toStringAsFixed(0)} to "$goalName" when period ends\n');
       }
       buffer.write('\n');
     }
 
     buffer.write(
-        '━━━━━━━━━━━━━━━━━━━━━\nTotal Income: \$${totalIncome.toStringAsFixed(0)} | Total Used: \$${totalUsed.toStringAsFixed(0)} | Available: \$${(totalIncome - totalUsed).toStringAsFixed(0)}\n');
+        '━━━━━━━━━━━━━━━━━━━━━\nTotal Income: $currencySymbol${totalIncome.toStringAsFixed(0)} | Total Used: $currencySymbol${totalUsed.toStringAsFixed(0)} | Available: $currencySymbol${(totalIncome - totalUsed).toStringAsFixed(0)}\n');
 
     return buffer.toString();
   }

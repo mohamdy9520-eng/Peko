@@ -1,33 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../../../providers/currency_provider.dart';
 
 class AddSavingsDialog {
-  // ═══════════════════════════════════════════════════════════════
-  // CURRENCY FORMATTER using intl NumberFormat
-  // ═══════════════════════════════════════════════════════════════
-
-  static final NumberFormat _currencyFormatter = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 0,
-  );
-
-  static final NumberFormat _currencyDecimal = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
-  );
-
-  /// Format amount with currency symbol (e.g., "$1,234")
-  static String formatCurrency(double amount, {bool decimal = false}) {
-    if (decimal) {
-      return _currencyDecimal.format(amount);
-    }
-    return _currencyFormatter.format(amount);
-  }
-
   static Future<void> show(BuildContext context) async {
     final nameController = TextEditingController(text: 'My Savings');
     final amountController = TextEditingController();
@@ -40,6 +19,8 @@ class AddSavingsDialog {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
+          // ✅ جلب الـ CurrencyProvider
+          final currencyProvider = context.watch<CurrencyProvider>();
           final user = FirebaseAuth.instance.currentUser;
 
           return Padding(
@@ -98,7 +79,8 @@ class AddSavingsDialog {
                       decoration: InputDecoration(
                         labelText: 'Amount',
                         hintText: '0.00',
-                        prefixText: r'$ ',
+                        // ✅ استخدمنا symbol من الـ Provider
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixIcon: const Icon(Icons.attach_money),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
@@ -297,9 +279,10 @@ class AddSavingsDialog {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
+                                  // ✅ استخدمنا formatAmount من الـ Provider
                                   content: Text(
                                     selectedGoalId != null
-                                        ? formatCurrency(amount) + ' added to "' + (selectedGoalName ?? 'Goal') + '"!'
+                                        ? '${currencyProvider.formatAmount(amount)} added to "${selectedGoalName ?? 'Goal'}"!'
                                         : 'Savings added successfully!',
                                   ),
                                   backgroundColor: Colors.green,

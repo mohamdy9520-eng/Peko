@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:http/http.dart';
 import '../../../../generated/locale_keys.g.dart';
 import '../../../../providers/currency_provider.dart';
 import '../../../../theme/app_colors.dart';
@@ -42,12 +41,12 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_home', // ← ADDED: unique heroTag to fix Hero animation conflict
+        heroTag: 'fab_home',
         onPressed: () => _showAddOptionsBottomSheet(context),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          LocaleKeys.expense_actions_add.tr(),
+          LocaleKeys.Home_add.tr(),
           style: const TextStyle(color: Colors.white),
         ),
       ),
@@ -66,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 24.h),
 
                     _buildSectionHeader(
-                      LocaleKeys.transactions_history.tr(),
+                      LocaleKeys.Transactions_History.tr(),
                       onSeeAll: () => context.push('/transactions'),
                     ),
                     SizedBox(height: 16.h),
@@ -74,7 +73,7 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 24.h),
 
                     _buildSectionHeader(
-                      LocaleKeys.contacts_title.tr(),
+                      LocaleKeys.Contacts.tr(),
                       onSeeAll: () => context.push('/contacts'),
                     ),
                     SizedBox(height: 16.h),
@@ -95,6 +94,7 @@ class HomeScreen extends StatelessWidget {
   // ═══════════════════════════════════════════
   Widget _buildHeader(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
+    final language = context.locale.languageCode;
 
     return StreamBuilder<DocumentSnapshot>(
       stream: getUserData(),
@@ -138,7 +138,6 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome + Notification Icon
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -147,7 +146,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          LocaleKeys.welcome_back.tr(),
+                          LocaleKeys.Home_categories_welcome_back.tr(),
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14.sp,
@@ -174,7 +173,7 @@ class HomeScreen extends StatelessWidget {
               SizedBox(height: 24.h),
 
               Text(
-                LocaleKeys.expense_total_balance.tr(),
+                LocaleKeys.Home_categories_expense_total_balance.tr(),
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 16.sp,
@@ -185,7 +184,7 @@ class HomeScreen extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  currency.formatAmount(totalBalance),
+                  currency.formatAmount(totalBalance, language: language),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 36.sp,
@@ -201,21 +200,23 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildIncomeExpenseCard(
-                      title: LocaleKeys.common_income.tr(),
+                      title: LocaleKeys.Home_categories_common_income.tr(),
                       amount: totalIncome,
                       icon: Icons.arrow_downward,
                       color: AppColors.income,
                       currency: currency,
+                      language: language,
                     ),
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: _buildIncomeExpenseCard(
-                      title: LocaleKeys.expense_title.tr(),
+                      title: LocaleKeys.Home_categories_expense_title.tr(),
                       amount: totalExpense,
                       icon: Icons.arrow_upward,
                       color: AppColors.expense,
                       currency: currency,
+                      language: language,
                     ),
                   ),
                 ],
@@ -233,6 +234,7 @@ class HomeScreen extends StatelessWidget {
     required IconData icon,
     required Color color,
     required CurrencyProvider currency,
+    required String language,
   }) {
     return Container(
       padding: EdgeInsets.all(12.w),
@@ -264,7 +266,7 @@ class HomeScreen extends StatelessWidget {
                 SizedBox(height: 2.h),
 
                 Text(
-                  currency.formatAmountCompact(amount),
+                  currency.formatAmountCompact(amount, language: language),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14.sp,
@@ -334,7 +336,7 @@ class HomeScreen extends StatelessWidget {
         ),
         TextButton(
           onPressed: onSeeAll,
-          child: const Text('See All'),
+          child: Text(LocaleKeys.Home_see_all.tr()),
         ),
       ],
     );
@@ -367,7 +369,7 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 24.h),
               Text(
-                'What did you do?',
+                LocaleKeys.Home_what_did_you_do.tr(),
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
@@ -375,7 +377,7 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 8.h),
               Text(
-                'Quickly add your transaction',
+                LocaleKeys.Home_quickly_add_transaction.tr(),
                 style: TextStyle(
                   fontSize: 14.sp,
                   color: Colors.grey[600],
@@ -388,8 +390,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.arrow_upward,
                 iconColor: Colors.red,
-                title: 'I spent money',
-                subtitle: 'Food, shopping, bills...',
+                title: LocaleKeys.Home_add_expenses.tr(),
+                subtitle: LocaleKeys.Home_food_shopping_bills.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/add-expense');
@@ -402,8 +404,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.arrow_downward,
                 iconColor: Colors.green,
-                title: 'I received money',
-                subtitle: 'Salary, gift, refund...',
+                title: LocaleKeys.Home_add_income.tr(),
+                subtitle: LocaleKeys.Home_salary_gift_refund.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/add-income');
@@ -416,8 +418,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.swap_horiz,
                 iconColor: Colors.purple,
-                title: 'Transfer',
-                subtitle: 'Send money to contact',
+                title: LocaleKeys.Home_transfer.tr(),
+                subtitle: LocaleKeys.Home_send_money_to_contact.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   _showTransferBottomSheet(context);
@@ -430,8 +432,8 @@ class HomeScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.person_add,
                 iconColor: Colors.blue,
-                title: 'Add Contact',
-                subtitle: 'Save a new contact',
+                title: LocaleKeys.Home_add_contact.tr(),
+                subtitle: LocaleKeys.Home_save_new_contact.tr(),
                 onTap: () {
                   Navigator.pop(context);
                   _showAddContactDialog(context);
@@ -485,11 +487,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+
   // ═══════════════════════════════════════════
   // TRANSACTIONS LIST
   // ═══════════════════════════════════════════
   Widget _buildTransactionList(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
+    final language = context.locale.languageCode;
 
     return StreamBuilder<QuerySnapshot>(
       stream: getTransactions(),
@@ -514,7 +518,7 @@ class HomeScreen extends StatelessWidget {
                 Icon(Icons.receipt_long, size: 64.sp, color: Colors.grey[300]),
                 SizedBox(height: 12.h),
                 Text(
-                  'No transactions yet',
+                  LocaleKeys.Home_no_transactions_yet.tr(),
                   style: TextStyle(color: Colors.grey, fontSize: 14.sp),
                 ),
               ],
@@ -540,17 +544,25 @@ class HomeScreen extends StatelessWidget {
               final doc = snapshot.data!.docs[index];
               final data = doc.data() as Map<String, dynamic>;
 
+              // ✅ تأمين الـ category extraction
               final raw = data['category'];
-              List<String> categories;
+              List<String> categories = [];
+
               if (raw is List) {
-                categories = List<String>.from(raw);
-              } else if (raw is String) {
+                // تأكد إن كل item String
+                categories = raw
+                    .whereType<String>()
+                    .where((s) => s.isNotEmpty)
+                    .toList();
+              } else if (raw is String && raw.isNotEmpty) {
                 categories = [raw];
-              } else {
-                categories = [];
               }
 
               final displayCategory = categories.isEmpty ? 'other' : categories.first;
+
+              final String subtitleText = categories.isEmpty
+                  ? LocaleKeys.Home_categories_other.tr()
+                  : categories.join(', ');
 
               return InkWell(
                 onTap: () => _showTransactionDetails(context, doc.id, data),
@@ -565,11 +577,13 @@ class HomeScreen extends StatelessWidget {
                   child: TransactionItem(
                     icon: _getIconForCategory(displayCategory),
                     iconBackgroundColor: _getColorForCategory(displayCategory),
-                    title: data['title'] ?? 'Unknown',
-                    subtitle: categories.join(', '),
+                    title: data['title'] ?? LocaleKeys.Home_unknown.tr(),
+                    subtitle: subtitleText, // ✅ String آمن
                     amount: (data['amount'] ?? 0).toDouble(),
                     isIncome: data['type'] == 'income',
-                    currencySymbol: currency.symbol,
+                    // ✅ تصحيح: كان currency.symbol (ثابت مش متأثر باللغة)
+                    // دلوقتي بيستخدم الرمز الـ localized حسب اللغة الحالية
+                    currencySymbol: currency.getSymbol(language),
                   ),
                 ),
               );
@@ -585,8 +599,9 @@ class HomeScreen extends StatelessWidget {
   // ═══════════════════════════════════════════
   void _showTransactionDetails(BuildContext context, String docId, Map<String, dynamic> data) {
     final currency = context.read<CurrencyProvider>();
+    final language = context.locale.languageCode;
     final bool isIncome = data['type'] == 'income';
-    final String title = data['title'] ?? 'Unknown';
+    final String title = data['title'] ?? LocaleKeys.Home_unknown.tr();
     final double amount = (data['amount'] ?? 0).toDouble();
     final String category = data['category'] ?? 'other';
     final Timestamp? date = data['date'];
@@ -595,93 +610,94 @@ class HomeScreen extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.7,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            padding: EdgeInsets.all(24.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-                SizedBox(height: 24.h),
+      builder: (bottomSheetContext) {
+        final currencyProvider = bottomSheetContext.watch<CurrencyProvider>();
 
-                // Amount
-                Container(
-                  padding: EdgeInsets.all(20.w),
-                  decoration: BoxDecoration(
-                    color: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                    color: isIncome ? Colors.green : Colors.red,
-                    size: 40.sp,
-                  ),
-                ),
-                SizedBox(height: 16.h),
-
-                Text(
-                  '${isIncome ? '+' : '-'}${currency.symbol}${amount.toStringAsFixed(currency.decimalDigits)}',
-                  style: TextStyle(
-                    fontSize: 36.sp,
-                    fontWeight: FontWeight.bold,
-                    color: isIncome ? Colors.green : Colors.red,
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 24.h),
-
-                // Details
-                _buildDetailRow('Type', isIncome ? 'Income' : 'Expense'),
-                Divider(height: 16.h),
-                _buildDetailRow('Category', category.toUpperCase()),
-                Divider(height: 16.h),
-                _buildDetailRow('Date', date != null ? _formatDate(date) : 'Unknown'),
-
-                SizedBox(height: 24.h),
-
-                // Delete
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _deleteTransaction(context, docId, amount, isIncome),
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: const Text('Delete', style: TextStyle(color: Colors.red)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.7,
+          expand: false,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.all(24.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2.r),
                     ),
                   ),
-                ),
-                SizedBox(height: 16.h),
-              ],
+                  SizedBox(height: 24.h),
+
+                  Container(
+                    padding: EdgeInsets.all(20.w),
+                    decoration: BoxDecoration(
+                      color: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                      color: isIncome ? Colors.green : Colors.red,
+                      size: 40.sp,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
+                  Text(
+                    '${isIncome ? '+' : '-'}${currencyProvider.formatAmount(amount, language: language)}',
+                    style: TextStyle(
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.bold,
+                      color: isIncome ? Colors.green : Colors.red,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+
+                  _buildDetailRow(LocaleKeys.Home_type.tr(), isIncome ? LocaleKeys.Home_income.tr() : LocaleKeys.Home_expense.tr()),
+                  Divider(height: 16.h),
+                  _buildDetailRow(LocaleKeys.Home_category.tr(), category.toUpperCase()),
+                  Divider(height: 16.h),
+                  _buildDetailRow(LocaleKeys.Home_date.tr(), date != null ? _formatDate(date) : LocaleKeys.Home_unknown.tr()),
+
+                  SizedBox(height: 24.h),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _deleteTransaction(context, docId, amount, isIncome),
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      label: Text(LocaleKeys.Home_delete.tr(), style: const TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -742,12 +758,27 @@ class HomeScreen extends StatelessWidget {
       }
 
       Navigator.pop(context);
+
+      final currencyProvider = context.read<CurrencyProvider>();
+      final language = context.locale.languageCode;
+      final formattedAmount = currencyProvider.formatAmount(amount, language: language);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction deleted')),
+        SnackBar(
+          content: Text(
+            LocaleKeys.Home_deleted_message.tr(namedArgs: {
+              'type': isIncome ? LocaleKeys.Home_income.tr() : LocaleKeys.Home_expense.tr(),
+              'amount': formattedAmount,
+            }),
+          ),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(LocaleKeys.Home_error_message.tr(namedArgs: {'error': e.toString()})),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -807,7 +838,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(
                           width: 70.w,
                           child: Text(
-                            'Add',
+                            LocaleKeys.Home_add.tr(),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12.sp,
@@ -888,6 +919,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, setModalState) {
           final user = FirebaseAuth.instance.currentUser;
           final currency = context.read<CurrencyProvider>();
+          final language = context.locale.languageCode;
 
           return Padding(
             padding: EdgeInsets.only(
@@ -919,7 +951,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 24.h),
                     Text(
-                      'Transfer Money',
+                      LocaleKeys.Home_transfer_money.tr(),
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
@@ -959,7 +991,7 @@ class HomeScreen extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'No contacts found',
+                                        LocaleKeys.Home_no_contacts_found.tr(),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14.sp,
@@ -967,7 +999,7 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                       SizedBox(height: 4.h),
                                       Text(
-                                        'Add your first contact',
+                                        LocaleKeys.Home_add_your_first_contact.tr(),
                                         style: TextStyle(
                                           fontSize: 12.sp,
                                           color: Colors.grey[600],
@@ -987,14 +1019,14 @@ class HomeScreen extends StatelessWidget {
                           value: selectedContactId,
                           isExpanded: true,
                           decoration: InputDecoration(
-                            labelText: 'Select Contact',
+                            labelText: LocaleKeys.Home_select_contact.tr(),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12.r),
                             ),
                             filled: true,
                             fillColor: Colors.grey[50],
                           ),
-                          hint: const Text('Choose a contact'),
+                          hint: Text(LocaleKeys.Home_choose_contact.tr()),
                           items: contacts.map((doc) {
                             final data = doc.data() as Map<String, dynamic>;
                             final name = data['name'] ?? 'Unknown';
@@ -1042,8 +1074,8 @@ class HomeScreen extends StatelessWidget {
                       controller: amountController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Amount',
-                        prefixText: '${currency.symbol} ',
+                        labelText: LocaleKeys.Home_amount.tr(),
+                        prefixText: '${currency.getSymbol(language)} ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
@@ -1065,8 +1097,8 @@ class HomeScreen extends StatelessWidget {
                           final amount = double.tryParse(amountController.text) ?? 0;
                           if (amount <= 0) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Enter valid amount'),
+                              SnackBar(
+                                content: Text(LocaleKeys.Home_enter_valid_amount.tr()),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -1089,7 +1121,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'Send',
+                          LocaleKeys.Home_send.tr(),
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
@@ -1118,23 +1150,24 @@ class HomeScreen extends StatelessWidget {
       }) {
     final amountController = TextEditingController();
     final currency = context.read<CurrencyProvider>();
+    final language = context.locale.languageCode;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Transfer to $contactName'),
+        title: Text(LocaleKeys.Home_transfer_to.tr(namedArgs: {'name': contactName})),
         content: TextField(
           controller: amountController,
           decoration: InputDecoration(
-            labelText: 'Amount',
-            prefixText: '${currency.symbol} ',
+            labelText: LocaleKeys.Home_amount.tr(),
+            prefixText: '${currency.getSymbol(language)} ',
           ),
           keyboardType: TextInputType.number,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(LocaleKeys.Home_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1147,7 +1180,7 @@ class HomeScreen extends StatelessWidget {
                 amount: double.tryParse(amountController.text.trim()) ?? 0,
               );
             },
-            child: const Text('Send'),
+            child: Text(LocaleKeys.Home_send.tr()),
           ),
         ],
       ),
@@ -1170,8 +1203,8 @@ class HomeScreen extends StatelessWidget {
 
       if (!userDoc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User not found'),
+          SnackBar(
+            content: Text(LocaleKeys.Home_user_not_found.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -1184,8 +1217,8 @@ class HomeScreen extends StatelessWidget {
 
       if (amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid amount'),
+          SnackBar(
+            content: Text(LocaleKeys.Home_invalid_amount.tr()),
             backgroundColor: Colors.red,
           ),
         );
@@ -1193,9 +1226,15 @@ class HomeScreen extends StatelessWidget {
       }
 
       if (amount > balance) {
+        final currency = context.read<CurrencyProvider>();
+        final language = context.locale.languageCode;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Insufficient balance: ${context.read<CurrencyProvider>().formatAmount(balance)}'),
+            content: Text(
+              LocaleKeys.Home_insufficient_balance.tr(namedArgs: {
+                'balance': currency.formatAmount(balance, language: language),
+              }),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1206,7 +1245,7 @@ class HomeScreen extends StatelessWidget {
 
       final transactionRef = userRef.collection('transactions').doc();
       batch.set(transactionRef, {
-        'title': 'Transfer to $contactName',
+        'title': LocaleKeys.Home_transfer_to.tr(namedArgs: {'name': contactName}),
         'amount': amount,
         'type': 'expense',
         'category': 'transfer',
@@ -1238,9 +1277,17 @@ class HomeScreen extends StatelessWidget {
 
       if (context.mounted) {
         final currency = context.read<CurrencyProvider>();
+        final language = context.locale.languageCode;
+        final formattedAmount = currency.formatAmount(amount, language: language);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Transferred ${currency.formatAmount(amount)} to $contactName'),
+            content: Text(
+              LocaleKeys.Home_transferred_amount_to.tr(namedArgs: {
+                'amount': formattedAmount,
+                'name': contactName,
+              }),
+            ),
           ),
         );
       }
@@ -1248,7 +1295,7 @@ class HomeScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(LocaleKeys.Home_error_message.tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red,
           ),
         );
@@ -1263,24 +1310,24 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Add Contact'),
+        title: Text(LocaleKeys.Home_add_contact.tr()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: LocaleKeys.Home_name.tr()),
             ),
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email or Phone'),
+              decoration: InputDecoration(labelText: LocaleKeys.Home_email_or_phone.tr()),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(LocaleKeys.Home_cancel.tr()),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1302,7 +1349,7 @@ class HomeScreen extends StatelessWidget {
                 debugPrint('Error saving contact: $e');
               }
             },
-            child: const Text('Save'),
+            child: Text(LocaleKeys.Home_save.tr()),
           ),
         ],
       ),
@@ -1337,7 +1384,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   String _formatDate(dynamic date) {
-    if (date == null) return 'Unknown';
+    if (date == null) return LocaleKeys.Home_unknown.tr();
     if (date is Timestamp) {
       final dt = date.toDate();
       return '${dt.day}/${dt.month}/${dt.year}';

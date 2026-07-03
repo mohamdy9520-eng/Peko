@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/currency_provider.dart';
 
 class AddGoalBottomSheet {
   static Future<void> show(BuildContext context) async {
@@ -18,6 +20,8 @@ class AddGoalBottomSheet {
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (statefulContext, setModalState) {
+            final currencyProvider = statefulContext.watch<CurrencyProvider>();
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(statefulContext).viewInsets.bottom,
@@ -80,7 +84,7 @@ class AddGoalBottomSheet {
                         decoration: InputDecoration(
                           labelText: 'Target Amount',
                           hintText: '0.00',
-                          prefixText: '\$ ',
+                          prefixText: '${currencyProvider.symbol} ',
                           prefixIcon: const Icon(Icons.attach_money),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r),
@@ -211,9 +215,9 @@ class AddGoalBottomSheet {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Goal added successfully!',
+                                      'Goal ${currencyProvider.formatAmountCompact(target)} added successfully!',
                                     ),
                                     backgroundColor: Colors.green,
                                   ),

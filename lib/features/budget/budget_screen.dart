@@ -10,8 +10,9 @@ import 'package:ai_expense_tracker/features/budget/widgets_budgets/deleteGoal.da
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/goal_check.dart';
 import 'package:ai_expense_tracker/features/budget/widgets_budgets/income_icon.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +20,7 @@ import 'package:provider/provider.dart';
 import '../../core/di/services/ai_service.dart';
 import '../../core/di/notifications/notification_service.dart';
 import '../../theme/app_colors.dart';
-import '../../providers/currency_provider.dart'; // <-- أضف ده
+import '../../providers/currency_provider.dart';
 import 'dart:async';
 
 class BudgetScreen extends StatefulWidget {
@@ -627,9 +628,9 @@ class _BudgetScreenState extends State<BudgetScreen>
                     .collection('goals')
                     .doc(goalId);
 
-                final newAmount = currentAmount + amount;
+                // ✅ استخدم FieldValue.increment عشان الـ update يكون atomic
                 batch.update(goalRef, {
-                  'currentAmount': newAmount,
+                  'currentAmount': FieldValue.increment(amount),
                   'updatedAt': Timestamp.now(),
                 });
 
@@ -671,28 +672,26 @@ class _BudgetScreenState extends State<BudgetScreen>
                   'createdAt': Timestamp.now(),
                 });
 
+                // ✅ 1. Commit الأول
                 await batch.commit();
+
+                // ✅ 2. اقرأ القيمة الفعلية من Firestore بعد الـ commit
                 final goalSnapshot = await goalRef.get();
                 final goalData = goalSnapshot.data();
-
+                final actualCurrentAmount = (goalData?['currentAmount'] ?? 0).toDouble();
                 final targetAmount = (goalData?['targetAmount'] ?? 0).toDouble();
+
+                print("🔥 AFTER COMMIT — actualCurrent: $actualCurrentAmount, target: $targetAmount");
+
+                // ✅ 3. نادي الـ callback بالقيمة الجديدة
+                onAmountAdded(actualCurrentAmount);
+
+                // ✅ 4. Check Goal Completion بالقيمة الفعلية من Firestore
                 await GoalCompletionChecker.check(
                   goalId: goalId,
-                  newAmount: newAmount,
+                  newAmount: actualCurrentAmount,
                   onGoalCompleted: _triggerGoalCompletion,
                 );
-                onAmountAdded(newAmount);
-
-                if (newAmount >= targetAmount &&
-                    (goalData?['completed'] ?? false) == false) {
-                  await _triggerGoalCompletion(
-                    goalId: goalId,
-                    goalName: goalName,
-                    targetAmount: targetAmount,
-                  );
-                }
-
-                onAmountAdded(newAmount);
 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -844,11 +843,9 @@ class _BudgetScreenState extends State<BudgetScreen>
     final goalDoc = await goalRef.get();
     if (!goalDoc.exists) return;
 
-    final currentAmount = (goalDoc.data()?['currentAmount'] ?? 0).toDouble();
-    final newAmount = currentAmount + amount;
-
+    // ✅ استخدم FieldValue.increment عشان الـ update يكون atomic
     batch.update(goalRef, {
-      'currentAmount': newAmount,
+      'currentAmount': FieldValue.increment(amount),
       'lastSavingsDate': Timestamp.now(),
       'updatedAt': Timestamp.now(),
     });
@@ -884,21 +881,19 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     await batch.commit();
 
-    final targetAmount = (goalDoc.data()?['targetAmount'] ?? 0).toDouble();
+    final freshGoalDoc = await goalRef.get();
+    final actualAmount = (freshGoalDoc.data()?['currentAmount'] ?? 0).toDouble();
+    final targetAmount = (freshGoalDoc.data()?['targetAmount'] ?? 0).toDouble();
 
-    print("====== AUTO SAVE ======");
-    print("Current: $currentAmount");
-    print("Added  : $amount");
-    print("New    : $newAmount");
-    print("Target : $targetAmount");
+    print("🔥 AUTO SAVE — actualCurrent: $actualAmount, target: $targetAmount");
 
     await GoalCompletionChecker.check(
       goalId: goalId,
-      newAmount: newAmount,
+      newAmount: actualAmount,
       onGoalCompleted: _triggerGoalCompletion,
     );
 
-    if (newAmount < targetAmount) {
+    if (actualAmount < targetAmount) {
       print("📩 Sending Monthly Notification");
 
       await NotificationService.showNotification(
@@ -931,12 +926,11 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     print("🔥 Sending Goal Notification");
 
-    final symbol = _currencySymbol;
-
-    await NotificationService.showNotification(
-      title: 'Goal Achieved! 🎉',
-      body:
-      'You\'ve reached $symbol${targetAmount.toStringAsFixed(0)} for "$goalName"!',
+    // ✅ بعت Notification في التطبيق (Firestore) + على الموبايل (Local Notification)
+    await NotificationService.sendGoalAchieved(
+      goalName: goalName,
+      targetAmount: targetAmount,
+      currencySymbol: _currencySymbol,
     );
 
     print("🔥 Goal Notification Sent");
@@ -1214,6 +1208,8 @@ class _BudgetScreenState extends State<BudgetScreen>
         savings: _aiResult!['savingsPotential'],
         goals: _aiResult!['goals'],
         budgets: _aiResult!['budgets'],
+        languageCode: context.locale.languageCode,
+        currencySymbol: _currencyProvider.getSymbol(context.locale.languageCode), // ⬅️ جديد
       );
 
       if (!mounted) return;
@@ -1345,7 +1341,7 @@ class _BudgetScreenState extends State<BudgetScreen>
             await _checkBudgetAlerts();
           },
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 100.h),
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: budgets.length,
             itemBuilder: (context, index) {
@@ -1510,7 +1506,10 @@ class _BudgetScreenState extends State<BudgetScreen>
                                   ),
                                 ),
                               ),
+
                             PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                              padding: EdgeInsets.zero,
                               onSelected: (value) {
                                 switch (value) {
                                   case 'edit':
@@ -1748,7 +1747,7 @@ class _BudgetScreenState extends State<BudgetScreen>
             setState(() {});
           },
           child: ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 100.h),
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: goals.length,
             itemBuilder: (context, index) {
@@ -1772,143 +1771,166 @@ class _BudgetScreenState extends State<BudgetScreen>
                       ? const BorderSide(color: Colors.green, width: 2)
                       : BorderSide.none,
                 ),
-                child: InkWell(
-                  onTap: () => _showEditGoalDialog(context, docId, goal),
-                  borderRadius: BorderRadius.circular(16.r),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: completed
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.amber.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              child: Icon(
-                                completed ? Icons.check_circle : Icons.flag,
-                                color: completed ? Colors.green : Colors.amber,
-                              ),
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Column(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _showEditGoalDialog(context, docId, goal),
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    goalName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16.sp,
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: completed
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.amber.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      completed ? Icons.check_circle : Icons.flag,
+                                      color: completed ? Colors.green : Colors.amber,
                                     ),
                                   ),
-                                  if (deadline != null)
-                                    Text(
-                                      "Target: ${DateFormat('MMM dd, yyyy').format(deadline.toDate())}",
-                                      style: TextStyle(
-                                        fontSize: 11.sp,
-                                        color: Colors.grey[600],
-                                      ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          goalName,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16.sp,
+                                          ),
+                                        ),
+                                        if (deadline != null)
+                                          Text(
+                                            "Target: ${DateFormat('MMM dd, yyyy').format(deadline.toDate())}",
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                      ],
                                     ),
+                                  ),
                                 ],
                               ),
                             ),
-                            if (completed)
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                                child: Text(
-                                  'COMPLETED',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            PopupMenuButton<String>(
-                              onSelected: (value) async {
-                                await Future.delayed(const Duration(milliseconds: 150));
-
-                                if (!context.mounted) return;
-
-                                if (value == 'delete') {
-                                  await DeleteGoal.show(
-                                    context,
-                                    docId: docId,
-                                  );
-                                }
-
-                                if (value == 'edit') {
-                                  _showEditGoalDialog(
-                                    context,
-                                    docId,
-                                    goal,
-                                  );
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.edit, color: Colors.blue),
-                                      SizedBox(width: 8.w),
-                                      const Text('Edit'),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.delete, color: Colors.red),
-                                      SizedBox(width: 8.w),
-                                      const Text('Delete'),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16.h),
-                        LinearProgressIndicator(
-                          value: percent,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation(
-                            completed ? Colors.green : Colors.amber,
                           ),
-                          minHeight: 8.h,
-                        ),
-                        SizedBox(height: 12.h),
-                        Row(
-                          children: [
-                            Expanded(
+
+                          SizedBox(width: 8.w),
+
+                          if (completed)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
                               child: Text(
-                                '${_currencySymbol}${currentAmount.toStringAsFixed(0)} saved',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.grey[600]),
+                                'COMPLETED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${_currencySymbol}${targetAmount.toStringAsFixed(0)} target',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+
+                          SizedBox(width: 8.w),
+
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onSelected: (value) async {
+                              await Future.delayed(const Duration(milliseconds: 150));
+
+                              if (!context.mounted) return;
+
+                              if (value == 'delete') {
+                                await DeleteGoal.show(
+                                  context,
+                                  docId: docId,
+                                );
+                              }
+
+                              if (value == 'edit') {
+                                _showEditGoalDialog(
+                                  context,
+                                  docId,
+                                  goal,
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.edit, color: Colors.blue),
+                                    SizedBox(width: 8.w),
+                                    const Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.delete, color: Colors.red),
+                                    SizedBox(width: 8.w),
+                                    const Text('Delete'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 16.h),
+
+                      // شريط التقدم
+                      LinearProgressIndicator(
+                        value: percent,
+                        backgroundColor: Colors.grey[200],
+                        valueColor: AlwaysStoppedAnimation(
+                          completed ? Colors.green : Colors.amber,
+                        ),
+                        minHeight: 8.h,
+                      ),
+
+                      SizedBox(height: 12.h),
+
+                      // المبالغ
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${_currencySymbol}${currentAmount.toStringAsFixed(0)} saved',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
-                          ],
-                        )
-                      ],
-                    ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_currencySymbol}${targetAmount.toStringAsFixed(0)} target',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                 ),
               );
@@ -1932,29 +1954,34 @@ class _BudgetScreenState extends State<BudgetScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          _buildIncomeTab(),
-          _buildGoalsTab(),
-        ],
-      ),
-      floatingActionButton: _tabController.index == 0
-          ? SingleChildScrollView(
-        reverse: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CustomFabMenu(
-              onAskAI: _showAskAIDialog,
-              onAddSavings: () => AddSavingsDialog.show(context),
-              onAddIncome: () => AddIncomeDialog.show(context),
+          TabBarView(
+            controller: _tabController,
+            children: [
+              _buildIncomeTab(),
+              _buildGoalsTab(),
+            ],
+          ),
+          Positioned(
+            right: 16.w,
+            bottom: 16.h,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: _tabController.index == 0
+                  ? CustomFabMenu(
+                key: const ValueKey('budget_fab'),
+                onAskAI: _showAskAIDialog,
+                onAddSavings: () => AddSavingsDialog.show(context),
+                onAddIncome: () => AddIncomeDialog.show(context),
+              )
+                  : AddGoalFab(
+                key: const ValueKey('goal_fab'),
+                onPressed: () => AddGoalBottomSheet.show(context),
+              ),
             ),
-          ],
-        ),
-      )
-          : AddGoalFab(
-        onPressed: () => AddGoalBottomSheet.show(context),
+          ),
+        ],
       ),
     );
   }

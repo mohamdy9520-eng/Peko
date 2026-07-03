@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
 import '../../../../theme/app_colors.dart';
 import '../providers/currency_provider.dart';
-import 'package:provider/provider.dart';
 
 class AddIncomeScreen extends StatefulWidget {
   const AddIncomeScreen({super.key});
@@ -143,18 +143,14 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       await batch.commit();
 
       if (mounted) {
+        // ✅ استخدمنا formatAmount من الـ Provider
         final currencyProvider = context.read<CurrencyProvider>();
-        final currency = currencyProvider.selectedCurrency;
-        final formattedTotal = currency.symbol + total.toStringAsFixed(currency.decimalDigits);
+        final formattedTotal = currencyProvider.formatAmount(total);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Added ' +
-                  titleControllers.length.toString() +
-                  ' incomes (' +
-                  formattedTotal +
-                  ')',
+              'Added ${titleControllers.length} incomes ($formattedTotal)',
             ),
           ),
         );
@@ -186,6 +182,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ جلب الـ CurrencyProvider مرة واحدة في الـ build
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
@@ -203,18 +202,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             child: Column(
               children: [
                 const Text('Total'),
-                Consumer<CurrencyProvider>(
-                  builder: (context, currencyProvider, child) {
-                    final currency = currencyProvider.selectedCurrency;
-                    final formattedTotal = currency.symbol + _totalAmount.toStringAsFixed(currency.decimalDigits);
-                    return Text(
-                      formattedTotal,
-                      style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
+                // ✅ استخدمنا formatAmount مباشرة من الـ Provider
+                Text(
+                  currencyProvider.formatAmount(_totalAmount),
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -242,6 +236,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   }
 
   Widget _buildItem(int i) {
+    // ✅ جلب الـ CurrencyProvider هنا كمان
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       child: Padding(
@@ -256,7 +253,11 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             TextField(
               controller: amountControllers[i],
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount'),
+              // ✅ استخدمنا prefixText مع symbol من الـ Provider
+              decoration: InputDecoration(
+                labelText: 'Amount',
+                prefixText: '${currencyProvider.symbol} ',
+              ),
             ),
             SizedBox(height: 10.h),
             TextField(

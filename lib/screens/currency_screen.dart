@@ -24,15 +24,17 @@ class _CurrencySelectionScreenState extends State<CurrencySelectionScreen> {
   bool _isLoading = false;
 
   static const List<CurrencyModel> _popularCurrencies = [
-    CurrencyModel(code: 'EGP', name: 'Egyptian Pound', symbol: 'E£', flag: '🇪🇬', decimalDigits: 2),
+    CurrencyModel(code: 'EGP', name: 'Egyptian Pound', symbol: 'E£', arabicSymbol: 'ج.م', flag: '🇪🇬', decimalDigits: 2),
     CurrencyModel(code: 'USD', name: 'US Dollar', symbol: '\$', flag: '🇺🇸', decimalDigits: 2),
     CurrencyModel(code: 'EUR', name: 'Euro', symbol: '€', flag: '🇪🇺', decimalDigits: 2),
     CurrencyModel(code: 'GBP', name: 'British Pound', symbol: '£', flag: '🇬🇧', decimalDigits: 2),
-    CurrencyModel(code: 'SAR', name: 'Saudi Riyal', symbol: '﷼', flag: '🇸🇦', decimalDigits: 2),
-    CurrencyModel(code: 'AED', name: 'UAE Dirham', symbol: 'د.إ', flag: '🇦🇪', decimalDigits: 2),
-    CurrencyModel(code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك', flag: '🇰🇼', decimalDigits: 3),
-    CurrencyModel(code: 'QAR', name: 'Qatari Riyal', symbol: '﷼', flag: '🇶🇦', decimalDigits: 2),
-    CurrencyModel(code: 'JOD', name: 'Jordanian Dinar', symbol: 'د.ا', flag: '🇯🇴', decimalDigits: 3),
+    CurrencyModel(code: 'SAR', name: 'Saudi Riyal', symbol: 'SAR', arabicSymbol: '﷼', flag: '🇸🇦', decimalDigits: 2),
+    CurrencyModel(code: 'AED', name: 'UAE Dirham', symbol: 'AED', arabicSymbol: 'د.إ', flag: '🇦🇪', decimalDigits: 2),
+    CurrencyModel(code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'KWD', arabicSymbol: 'د.ك', flag: '🇰🇼', decimalDigits: 3),
+    CurrencyModel(code: 'QAR', name: 'Qatari Riyal', symbol: 'QAR', arabicSymbol: '﷼', flag: '🇶🇦', decimalDigits: 2),
+    CurrencyModel(code: 'JOD', name: 'Jordanian Dinar', symbol: 'JOD', arabicSymbol: 'د.ا', flag: '🇯🇴', decimalDigits: 3),
+    CurrencyModel(code: 'BHD', name: 'Bahraini Dinar', symbol: 'BHD', arabicSymbol: 'د.ب', flag: '🇧🇭', decimalDigits: 3),
+    CurrencyModel(code: 'OMR', name: 'Omani Rial', symbol: 'OMR', arabicSymbol: 'ر.ع', flag: '🇴🇲', decimalDigits: 3),
     CurrencyModel(code: 'TRY', name: 'Turkish Lira', symbol: '₺', flag: '🇹🇷', decimalDigits: 2),
     CurrencyModel(code: 'JPY', name: 'Japanese Yen', symbol: '¥', flag: '🇯🇵', decimalDigits: 0),
     CurrencyModel(code: 'CNY', name: 'Chinese Yuan', symbol: '¥', flag: '🇨🇳', decimalDigits: 2),
@@ -45,7 +47,6 @@ class _CurrencySelectionScreenState extends State<CurrencySelectionScreen> {
     CurrencyModel(code: 'BRL', name: 'Brazilian Real', symbol: 'R\$', flag: '🇧🇷', decimalDigits: 2),
     CurrencyModel(code: 'ZAR', name: 'South African Rand', symbol: 'R', flag: '🇿🇦', decimalDigits: 2),
   ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

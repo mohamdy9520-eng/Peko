@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
+import '../providers/currency_provider.dart';
 
 class TransactionDetailsScreen extends StatelessWidget {
   const TransactionDetailsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final currencyProvider = context.watch<CurrencyProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
@@ -73,8 +77,9 @@ class TransactionDetailsScreen extends StatelessWidget {
                     child: const Text('Income', style: TextStyle(color: AppColors.income, fontWeight: FontWeight.w600)),
                   ),
                   SizedBox(height: 16.h),
+
                   Text(
-                    '\$ 850.00',
+                    currencyProvider.formatAmount(850.00),
                     style: TextStyle(fontSize: 32.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   SizedBox(height: 32.h),
@@ -90,13 +95,26 @@ class TransactionDetailsScreen extends StatelessWidget {
                   SizedBox(height: 24.h),
                   const Divider(),
                   SizedBox(height: 24.h),
-                  _buildDetailRow('Earnings', value: '\$ 870.00'),
+
+                  _buildDetailRow(
+                    'Earnings',
+                    value: currencyProvider.formatAmount(870.00),
+                  ),
                   SizedBox(height: 12.h),
-                  _buildDetailRow('Fee', value: '- \$ 20.00'),
+
+                  _buildDetailRow(
+                    'Fee',
+                    value: '- ${currencyProvider.formatAmount(20.00)}',
+                  ),
                   SizedBox(height: 24.h),
                   const Divider(),
                   SizedBox(height: 24.h),
-                  _buildDetailRow('Total', value: '\$ 850.00', isBold: true),
+
+                  _buildDetailRow(
+                    'Total',
+                    value: currencyProvider.formatAmount(850.00),
+                    isBold: true,
+                  ),
                   SizedBox(height: 32.h),
                   OutlinedButton(
                     onPressed: () {},
@@ -105,7 +123,14 @@ class TransactionDetailsScreen extends StatelessWidget {
                       side: const BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
                     ),
-                    child: Text('Download Receipt', style: TextStyle(color: AppColors.primary, fontSize: 16.sp, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'Download Receipt',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -116,12 +141,25 @@ class TransactionDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, {String? value, Color? valueColor, bool isHeader = false, bool isBold = false}) {
+  Widget _buildDetailRow(
+      String label, {
+        String? value,
+        Color? valueColor,
+        bool isHeader = false,
+        bool isBold = false,
+      }) {
     if (isHeader) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.textPrimary)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const Icon(Icons.keyboard_arrow_up, color: AppColors.textSecondary),
         ],
       );
@@ -129,7 +167,13 @@ class TransactionDetailsScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp)),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14.sp,
+          ),
+        ),
         Text(
           value ?? '',
           style: TextStyle(

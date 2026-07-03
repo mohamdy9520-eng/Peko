@@ -1,3 +1,4 @@
+// providers/currency_provider.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/currency_model.dart';
@@ -9,7 +10,10 @@ class CurrencyProvider extends ChangeNotifier {
   CurrencyModel get selectedCurrency => _selectedCurrency;
   bool get isLoading => _isLoading;
 
-  // ⬅️ NEW: Getters للوصول السريع
+  // Getters للوصول السريع
+  // ⚠️ ملاحظة: symbol هنا بيرجع الرمز الافتراضي فقط (مش localized حسب اللغة)
+  // استخدم getSymbol(language) بدل ما تستخدم symbol مباشرة في أي مكان
+  // بيتأثر بتغيير اللغة (زي عرض المعاملات، الرصيد... إلخ)
   String get symbol => _selectedCurrency.symbol;
   String get flag => _selectedCurrency.flag;
   String get code => _selectedCurrency.code;
@@ -25,10 +29,15 @@ class CurrencyProvider extends ChangeNotifier {
     final savedCode = prefs.getString('selected_currency_code');
 
     if (savedCode != null) {
+      // ✅ تعديل: لو القيمة المخزنة فاضية، نرجعها null بدل ''
+      final savedArabicSymbol = prefs.getString('selected_currency_arabicSymbol');
       _selectedCurrency = CurrencyModel(
         code: savedCode,
         name: prefs.getString('selected_currency_name') ?? savedCode,
         symbol: prefs.getString('selected_currency_symbol') ?? '',
+        arabicSymbol: (savedArabicSymbol == null || savedArabicSymbol.trim().isEmpty)
+            ? null
+            : savedArabicSymbol,
         flag: prefs.getString('selected_currency_flag') ?? '',
         decimalDigits: prefs.getInt('selected_currency_digits') ?? 2,
       );
@@ -43,6 +52,7 @@ class CurrencyProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_currency_code', currency.code);
     await prefs.setString('selected_currency_symbol', currency.symbol);
+    await prefs.setString('selected_currency_arabicSymbol', currency.arabicSymbol ?? ''); // ✅ جديد
     await prefs.setString('selected_currency_name', currency.name);
     await prefs.setString('selected_currency_flag', currency.flag);
     await prefs.setInt('selected_currency_digits', currency.decimalDigits);
@@ -50,18 +60,27 @@ class CurrencyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Format amount with currency symbol (e.g., "£ 150.50")
-  String formatAmount(double amount) {
-    return '${_selectedCurrency.symbol} ${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
+  /// ✅ جديد: بيرجع الرمز المناسب حسب اللغة مباشرة من الـ Provider
+  /// استخدمها في أي مكان محتاج يعرض الرمز بس (زي TransactionItem)
+  String getSymbol(String language) {
+    return _selectedCurrency.getLocalizedSymbol(language);
   }
 
-  /// Format amount with flag (e.g., "🇪🇬 £ 150.50")
-  String formatAmountWithFlag(double amount) {
-    return '${_selectedCurrency.flag} ${_selectedCurrency.symbol} ${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
+  /// ✅ Format amount with localized symbol
+  String formatAmount(double amount, {String language = 'en'}) {
+    final symbol = _selectedCurrency.getLocalizedSymbol(language);
+    return '$symbol ${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
   }
 
-  /// Format amount compact (e.g., "£150.50" without space)
-  String formatAmountCompact(double amount) {
-    return '${_selectedCurrency.symbol}${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
+  /// ✅ Format amount compact with localized symbol
+  String formatAmountCompact(double amount, {String language = 'en'}) {
+    final symbol = _selectedCurrency.getLocalizedSymbol(language);
+    return '$symbol${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
+  }
+
+  /// ✅ Format amount with flag
+  String formatAmountWithFlag(double amount, {String language = 'en'}) {
+    final symbol = _selectedCurrency.getLocalizedSymbol(language);
+    return '${_selectedCurrency.flag} $symbol ${amount.toStringAsFixed(_selectedCurrency.decimalDigits)}';
   }
 }

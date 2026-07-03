@@ -39,11 +39,11 @@ class MainNavigationScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_outlined, Icons.home,LocaleKeys.main_navigation_home.tr(), 0),
-            _buildNavItem(Icons.bar_chart_outlined, Icons.bar_chart,LocaleKeys.main_navigation_stats.tr(), 1),
+            _buildNavItem(Icons.home_outlined, Icons.home,LocaleKeys.Home_categories_main_navigation_home.tr(), 0),
+            _buildNavItem(Icons.bar_chart_outlined, Icons.bar_chart,LocaleKeys.Home_categories_main_navigation_stats.tr(), 1),
             const SizedBox(width: 48),
-            _buildNavItem(Icons.account_balance_wallet_outlined, Icons.account_balance_wallet,LocaleKeys.budget.tr(), 2),
-            _buildNavItem(Icons.person_outline, Icons.person,LocaleKeys.main_navigation_profile.tr(), 3),
+            _buildNavItem(Icons.account_balance_wallet_outlined, Icons.account_balance_wallet,LocaleKeys.Home_categories_main_navigation_budget.tr(), 2),
+            _buildNavItem(Icons.person_outline, Icons.person,LocaleKeys.Home_categories_main_navigation_profile.tr(), 3),
           ],
         ),
       ),
