@@ -17,8 +17,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../core/di/services/ai_access_service.dart';
 import '../../core/di/services/ai_service.dart';
 import '../../core/di/notifications/notification_service.dart';
+import '../../screens/paywall_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/currency_provider.dart';
 import 'dart:async';
@@ -37,6 +39,10 @@ class _BudgetScreenState extends State<BudgetScreen>
   bool _loadingAi = false;
   List<Map<String, dynamic>> _goalsList = [];
 
+  // ✅ ADDED: Store AI access info at class level so all methods can use it
+  AiTier _currentAiTier = AiTier.free;
+  int _remainingFreeUses = 0;
+
   final List<String> _incomeCategories = [
     'salary',
     'freelance',
@@ -47,7 +53,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     'other',
   ];
 
-  // Helper method للوصول للعملة بسهولة
   CurrencyProvider get _currencyProvider => context.read<CurrencyProvider>();
   String get _currencySymbol => _currencyProvider.selectedCurrency.symbol;
 
@@ -628,7 +633,6 @@ class _BudgetScreenState extends State<BudgetScreen>
                     .collection('goals')
                     .doc(goalId);
 
-                // ✅ استخدم FieldValue.increment عشان الـ update يكون atomic
                 batch.update(goalRef, {
                   'currentAmount': FieldValue.increment(amount),
                   'updatedAt': Timestamp.now(),
@@ -672,21 +676,15 @@ class _BudgetScreenState extends State<BudgetScreen>
                   'createdAt': Timestamp.now(),
                 });
 
-                // ✅ 1. Commit الأول
                 await batch.commit();
 
-                // ✅ 2. اقرأ القيمة الفعلية من Firestore بعد الـ commit
                 final goalSnapshot = await goalRef.get();
                 final goalData = goalSnapshot.data();
                 final actualCurrentAmount = (goalData?['currentAmount'] ?? 0).toDouble();
                 final targetAmount = (goalData?['targetAmount'] ?? 0).toDouble();
 
-                print("🔥 AFTER COMMIT — actualCurrent: $actualCurrentAmount, target: $targetAmount");
-
-                // ✅ 3. نادي الـ callback بالقيمة الجديدة
                 onAmountAdded(actualCurrentAmount);
 
-                // ✅ 4. Check Goal Completion بالقيمة الفعلية من Firestore
                 await GoalCompletionChecker.check(
                   goalId: goalId,
                   newAmount: actualCurrentAmount,
@@ -843,7 +841,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     final goalDoc = await goalRef.get();
     if (!goalDoc.exists) return;
 
-    // ✅ استخدم FieldValue.increment عشان الـ update يكون atomic
     batch.update(goalRef, {
       'currentAmount': FieldValue.increment(amount),
       'lastSavingsDate': Timestamp.now(),
@@ -885,8 +882,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     final actualAmount = (freshGoalDoc.data()?['currentAmount'] ?? 0).toDouble();
     final targetAmount = (freshGoalDoc.data()?['targetAmount'] ?? 0).toDouble();
 
-    print("🔥 AUTO SAVE — actualCurrent: $actualAmount, target: $targetAmount");
-
     await GoalCompletionChecker.check(
       goalId: goalId,
       newAmount: actualAmount,
@@ -894,8 +889,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
 
     if (actualAmount < targetAmount) {
-      print("📩 Sending Monthly Notification");
-
       await NotificationService.showNotification(
         title: 'Monthly Savings Saved!',
         body:
@@ -909,8 +902,6 @@ class _BudgetScreenState extends State<BudgetScreen>
     required String goalName,
     required double targetAmount,
   }) async {
-    print("🔥 _triggerGoalCompletion START");
-
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -924,16 +915,11 @@ class _BudgetScreenState extends State<BudgetScreen>
       'completedAt': Timestamp.now(),
     });
 
-    print("🔥 Sending Goal Notification");
-
-    // ✅ بعت Notification في التطبيق (Firestore) + على الموبايل (Local Notification)
     await NotificationService.sendGoalAchieved(
       goalName: goalName,
       targetAmount: targetAmount,
       currencySymbol: _currencySymbol,
     );
-
-    print("🔥 Goal Notification Sent");
   }
 
   @override
@@ -993,7 +979,7 @@ class _BudgetScreenState extends State<BudgetScreen>
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      setState(() => _loadingAi = false);
+      if (mounted) setState(() => _loadingAi = false);
       return;
     }
 
@@ -1020,10 +1006,9 @@ class _BudgetScreenState extends State<BudgetScreen>
 
       for (var doc in budgetsSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>? ?? {};
-        final isSavings = data['isSavings'] == true;
         final isAutoSaved = data['autoSaved'] == true;
 
-        if (!isSavings && !isAutoSaved) {
+        if (!isAutoSaved) {
           totalIncome += (data['amount'] ?? 0).toDouble();
           totalUsed += (data['used'] ?? 0).toDouble();
         }
@@ -1105,37 +1090,114 @@ class _BudgetScreenState extends State<BudgetScreen>
     }
   }
 
-  void _showAskAIDialog() {
-    if (_aiResult == null) {
-      _generateAiData().then((_) {
-        if (!mounted) return;
-        if (_aiResult != null) {
-          AskAIBottomSheet.show(
-            context,
-            aiResult: _aiResult!,
-            onPlanSelected: (planType) {
-              _generateAndShowPlan(planType);
-            },
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to load financial data. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }).catchError((e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+  // ✅ FIXED: reserves/consumes access with proper timing, uses the result,
+  // and routes to the Paywall with the real reason.
+  Future<void> _showAskAIDialog() async {
+    final access = await AIAccessService.peekAccess(); // للعرض بس (Badge/Snackbar)
+
+    if (access.isBlocked) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaywallScreen(reason: access.reason),
           ),
         );
-      });
+      }
       return;
     }
+
+    _currentAiTier = access.tier;
+    _remainingFreeUses = access.remainingFreeUses;
+
+    final currentContext = context;
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (dialogCtx) => const Center(child: CircularProgressIndicator()),
+    );
+
+    await _generateAiData();
+
+    if (mounted && Navigator.of(currentContext, rootNavigator: true).canPop()) {
+      Navigator.of(currentContext, rootNavigator: true).pop();
+    }
+    if (!mounted) return;
+
+    final totalIncome = (_aiResult?['totalIncome'] ?? 0).toDouble();
+    if (totalIncome <= 0) {
+      _showNoIncomeDialog();
+      return;
+    }
+
+    // ✅ Show remaining free uses if applicable
+    if (_currentAiTier == AiTier.free && _remainingFreeUses > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_remainingFreeUses free AI uses remaining'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    _openAskAIBottomSheet();
+  }
+
+  void _showNoIncomeDialog() {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
+          children: [
+            Icon(Icons.account_balance_wallet, color: AppColors.primary),
+            SizedBox(width: 12.w),
+            const Text('No Income Found'),
+          ],
+        ),
+        content: const Text(
+          'Add your salary or income sources first so the AI can create a personalized plan for you!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (Navigator.canPop(dialogCtx)) {
+                Navigator.pop(dialogCtx);
+              }
+            },
+            child: const Text('Later'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              if (Navigator.canPop(dialogCtx)) {
+                Navigator.pop(dialogCtx);
+              }
+              // ✅ Use WidgetsBinding to schedule after frame
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  AddIncomeDialog.show(context);
+                }
+              });
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add Income'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ FIXED: Now uses class-level variables instead of parameters
+  void _openAskAIBottomSheet() {
+    if (!mounted) return;
+
     AskAIBottomSheet.show(
       context,
       aiResult: _aiResult!,
@@ -1145,62 +1207,52 @@ class _BudgetScreenState extends State<BudgetScreen>
     );
   }
 
-  Widget _buildPlanOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16.sp),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
-      ),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16.sp),
-    );
-  }
-
+  // ✅ FIXED: reserves the free-use slot BEFORE the paid AI call, refunds it
+  // if generation fails, and always routes blocked users to the Paywall
+  // with the correct reason.
   Future<void> _generateAndShowPlan(String planType) async {
-    try {
-      if (!mounted) return;
+    if (!mounted) return;
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        useRootNavigator: true,
-        builder: (_) => const AlertDialog(
+    // ✅ نحجز المحاولة الأول قبل أي API call مكلف
+    final reserved = await AIAccessService.reserveUse();
+    if (reserved.isBlocked) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PaywallScreen(reason: reserved.reason)),
+        );
+      }
+      return;
+    }
+    _currentAiTier = reserved.tier;
+    _remainingFreeUses = reserved.remainingFreeUses;
+
+    BuildContext? dialogContext;
+    bool dialogPopped = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (ctx) {
+        dialogContext = ctx;
+        return const AlertDialog(
           content: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 16),
-              Expanded(
-                child: Text('AI is analyzing your finances...'),
-              ),
+              Expanded(child: Text('AI is analyzing your finances...')),
             ],
           ),
-        ),
-      );
+        );
+      },
+    );
 
+    try {
+      // ✅ Uses class-level _currentAiTier — determines the model inside AIService
       final plan = await AIService.generatePlan(
+        tier: _currentAiTier,
         income: _aiResult!['totalIncome'],
         expense: _aiResult!['totalExpense'],
         categories: _aiResult!['expenseCategories'],
@@ -1209,23 +1261,27 @@ class _BudgetScreenState extends State<BudgetScreen>
         goals: _aiResult!['goals'],
         budgets: _aiResult!['budgets'],
         languageCode: context.locale.languageCode,
-        currencySymbol: _currencyProvider.getSymbol(context.locale.languageCode), // ⬅️ جديد
+        currencySymbol: _currencyProvider.getSymbol(context.locale.languageCode),
       );
+
+      // ✅ Pop dialog FIRST before any navigation
+      if (!dialogPopped && dialogContext != null && Navigator.of(dialogContext!).canPop()) {
+        Navigator.of(dialogContext!).pop();
+        dialogPopped = true;
+      }
 
       if (!mounted) return;
 
-      final navigator = Navigator.of(context, rootNavigator: true);
-      if (navigator.canPop()) navigator.pop();
-
       if (plan.trim().isEmpty) {
+        // ✅ رجّع المحاولة، المستخدم مأخدش حاجة
+        if (_currentAiTier == AiTier.free) await AIAccessService.refundUse();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI returned empty plan'),
-          ),
+          const SnackBar(content: Text('AI returned empty plan')),
         );
         return;
       }
 
+      // ✅ Navigation AFTER dialog is closed
       context.push(
         '/ai-result',
         extra: {
@@ -1238,20 +1294,26 @@ class _BudgetScreenState extends State<BudgetScreen>
     } catch (e) {
       debugPrint('AI ERROR: $e');
 
-      if (!mounted) return;
-
-      final navigator = Navigator.of(context, rootNavigator: true);
-      if (navigator.canPop()) {
-        navigator.pop();
+      // ✅ فشل التوليد → رجّع المحاولة اللي اتحجزت
+      if (_currentAiTier == AiTier.free) {
+        await AIAccessService.refundUse();
       }
 
+      // ✅ Pop dialog in catch too (once only)
+      if (!dialogPopped && dialogContext != null && Navigator.of(dialogContext!).canPop()) {
+        Navigator.of(dialogContext!).pop();
+        dialogPopped = true;
+      }
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-        ),
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }
+
+
 
   Future<void> _setupAutoSave({
     required String budgetId,
@@ -1901,7 +1963,6 @@ class _BudgetScreenState extends State<BudgetScreen>
 
                       SizedBox(height: 16.h),
 
-                      // شريط التقدم
                       LinearProgressIndicator(
                         value: percent,
                         backgroundColor: Colors.grey[200],
@@ -1913,7 +1974,6 @@ class _BudgetScreenState extends State<BudgetScreen>
 
                       SizedBox(height: 12.h),
 
-                      // المبالغ
                       Row(
                         children: [
                           Expanded(

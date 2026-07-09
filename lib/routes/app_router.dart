@@ -20,6 +20,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../income/add_income_screen.dart';
 import '../main_navigation_screen/main_navScreen.dart';
+import '../profile/screens_profile/change_Currency.dart';
 import '../screens/bill_payment_screen.dart';
 import '../screens/currency_screen.dart';
 import '../screens/language_screen.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const onboarding = '/onboarding';
   static const language = '/language';
   static const currency = '/currency';
+  static const changeCurrency = '/change-currency';
 
   static const login = '/login';
   static const signup = '/signup';
@@ -57,6 +59,12 @@ class AppRoutes {
 class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
   GlobalKey<NavigatorState>();
+
+  // ✅ STATIC keys for StatefulShellBranch navigators
+  static final GlobalKey<NavigatorState> _homeNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _statsNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _budgetNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _profileNavKey = GlobalKey<NavigatorState>();
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -91,13 +99,9 @@ class AppRouter {
 
       if (publicRoutes.contains(location)) return null;
 
-      // Not logged in → login
       if (user == null) return AppRoutes.login;
-
-      // Email not verified
       if (!user.emailVerified) return AppRoutes.verifyEmail;
 
-      // ⬅️ Check currency selection (AFTER auth)
       final prefs = await SharedPreferences.getInstance();
       final hasSelectedCurrency = prefs.getBool('has_selected_currency') ?? false;
 
@@ -109,56 +113,39 @@ class AppRouter {
     },
 
     routes: [
-      /// Splash
       GoRoute(
         path: AppRoutes.splash,
         builder: (_, __) => const SplashScreen(),
       ),
-
-      /// Onboarding
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (_, __) => const OnboardingScreen(),
       ),
-
-      /// Login
       GoRoute(
         path: AppRoutes.login,
         builder: (_, __) => const LoginScreen(),
       ),
-
-      /// Signup
       GoRoute(
         path: AppRoutes.signup,
         builder: (_, __) => const SignUpScreen(),
       ),
-
-      /// Notifications
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
       ),
-
-      /// Contacts
       GoRoute(
         path: AppRoutes.contacts,
         parentNavigatorKey: AppRouter.rootNavigatorKey,
         builder: (_, __) => const ContactsScreen(),
       ),
-
-      /// Verify
       GoRoute(
         path: AppRoutes.verifyEmail,
         builder: (_, __) => const VerifyEmailScreen(),
       ),
-
-      /// Language Screen
       GoRoute(
         path: AppRoutes.language,
         builder: (_, __) => const LanguageScreen(),
       ),
-
-      /// ⬅️ NEW: Currency Selection Screen
       GoRoute(
         path: AppRoutes.currency,
         builder: (context, state) {
@@ -168,14 +155,16 @@ class AppRouter {
           );
         },
       ),
-
-      /// Forgot Password Screens
+      GoRoute(
+        path: AppRoutes.changeCurrency,
+        builder: (_, __) => const ChangeCurrencyScreen(),
+      ),
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (_, __) => const ForgotPasswordScreen(),
       ),
 
-      /// Main Shell (Bottom Navigation)
+      // ✅ Main Shell with STATIC navigator keys
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainNavigationScreen(
@@ -184,7 +173,7 @@ class AppRouter {
         },
         branches: [
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(),
+            navigatorKey: _homeNavKey,
             routes: [
               GoRoute(
                 path: AppRoutes.home,
@@ -193,7 +182,7 @@ class AppRouter {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(),
+            navigatorKey: _statsNavKey,
             routes: [
               GoRoute(
                 path: AppRoutes.statistic,
@@ -202,7 +191,7 @@ class AppRouter {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(),
+            navigatorKey: _budgetNavKey,
             routes: [
               GoRoute(
                 path: AppRoutes.budget,
@@ -211,7 +200,7 @@ class AppRouter {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: GlobalKey<NavigatorState>(),
+            navigatorKey: _profileNavKey,
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
@@ -222,40 +211,29 @@ class AppRouter {
         ],
       ),
 
-      /// Add Expense
       GoRoute(
         path: AppRoutes.addExpense,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const AddExpenseScreen(),
       ),
-
-      /// Add Income
       GoRoute(
         path: '/add-income',
         builder: (context, state) => const AddIncomeScreen(),
       ),
-
-      /// Transaction Details
       GoRoute(
         path: AppRoutes.transactionDetails,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const TransactionDetailsScreen(),
       ),
-
-      /// Bill Payment
       GoRoute(
         path: AppRoutes.billPayment,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const BillPaymentScreen(),
       ),
-
-      /// Statistic (duplicate route - for direct access)
       GoRoute(
         path: '/statisticScreen',
         builder: (context, state) => const StatisticScreen(),
       ),
-
-      /// Edit Transaction
       GoRoute(
         path: '/edit-transaction',
         builder: (context, state) {
@@ -266,15 +244,11 @@ class AppRouter {
           );
         },
       ),
-
-      /// All Transactions
       GoRoute(
         path: AppRoutes.transactions,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const AllTransactionsScreen(),
       ),
-
-      /// AI Result
       GoRoute(
         path: AppRoutes.aiResult,
         parentNavigatorKey: rootNavigatorKey,
@@ -291,8 +265,6 @@ class AppRouter {
           );
         },
       ),
-
-      /// Main redirect
       GoRoute(
         path: AppRoutes.main,
         redirect: (_, __) => AppRoutes.home,

@@ -80,13 +80,7 @@ class AskAIBottomSheet {
                 title: 'Monthly Saving Plan',
                 subtitle: 'Based on your income & expenses',
                 color: Colors.deepPurple,
-                onTap: () async {
-                  Navigator.of(context).pop();
-
-                  await Future.delayed(const Duration(milliseconds: 150));
-
-                  onPlanSelected('monthly');
-                },
+                onTap: () => _selectPlan(bottomSheetContext, onPlanSelected, 'monthly'),
               ),
 
               SizedBox(height: 12.h),
@@ -96,13 +90,7 @@ class AskAIBottomSheet {
                 title: 'Yearly Wealth Plan',
                 subtitle: 'Long-term strategy with goals',
                 color: Colors.teal,
-                onTap: () async {
-                  Navigator.of(context).pop();
-
-                  await Future.delayed(const Duration(milliseconds: 150));
-
-                  onPlanSelected('yearly');
-                },
+                onTap: () => _selectPlan(bottomSheetContext, onPlanSelected, 'yearly'),
               ),
 
               SizedBox(height: 16.h),
@@ -111,5 +99,10 @@ class AskAIBottomSheet {
         );
       },
     );
+  }
+
+  static void _selectPlan(BuildContext context, ValueChanged<String> onPlanSelected, String planType) {
+    Navigator.of(context).pop();
+    onPlanSelected(planType);
   }
 }

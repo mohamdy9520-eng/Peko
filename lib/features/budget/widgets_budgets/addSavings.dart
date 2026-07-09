@@ -19,7 +19,6 @@ class AddSavingsDialog {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          // ✅ جلب الـ CurrencyProvider
           final currencyProvider = context.watch<CurrencyProvider>();
           final user = FirebaseAuth.instance.currentUser;
 
@@ -79,7 +78,6 @@ class AddSavingsDialog {
                       decoration: InputDecoration(
                         labelText: 'Amount',
                         hintText: '0.00',
-                        // ✅ استخدمنا symbol من الـ Provider
                         prefixText: '${currencyProvider.symbol} ',
                         prefixIcon: const Icon(Icons.attach_money),
                         border: OutlineInputBorder(
@@ -171,6 +169,7 @@ class AddSavingsDialog {
                     ),
                     SizedBox(height: 24.h),
 
+                    // ✅ زرار Add Savings
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -191,7 +190,6 @@ class AddSavingsDialog {
                           try {
                             final batch = FirebaseFirestore.instance.batch();
 
-                            // 1. Create savings budget
                             final savingsRef = FirebaseFirestore.instance
                                 .collection('users')
                                 .doc(user.uid)
@@ -214,7 +212,6 @@ class AddSavingsDialog {
                               'createdAt': Timestamp.now(),
                             });
 
-                            // 2. If linked to goal, update goal currentAmount
                             if (selectedGoalId != null) {
                               final goalRef = FirebaseFirestore.instance
                                   .collection('users')
@@ -224,7 +221,6 @@ class AddSavingsDialog {
 
                               final goalDoc = await goalRef.get();
 
-                              // FIXED: Check if goal exists before proceeding
                               if (!goalDoc.exists) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -247,7 +243,6 @@ class AddSavingsDialog {
                                 'updatedAt': Timestamp.now(),
                               });
 
-                              // Check if goal completed
                               if (newAmount >= targetAmount) {
                                 batch.update(goalRef, {
                                   'completed': true,
@@ -255,7 +250,6 @@ class AddSavingsDialog {
                                 });
                               }
 
-                              // Create savings record
                               final savingsRecordRef = FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(user.uid)
@@ -276,10 +270,10 @@ class AddSavingsDialog {
                             await batch.commit();
 
                             if (context.mounted) {
+                              final messenger = ScaffoldMessenger.of(context); // ← خزنه قبل pop
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(
-                                  // ✅ استخدمنا formatAmount من الـ Provider
                                   content: Text(
                                     selectedGoalId != null
                                         ? '${currencyProvider.formatAmount(amount)} added to "${selectedGoalName ?? 'Goal'}"!'
@@ -315,6 +309,31 @@ class AddSavingsDialog {
                         ),
                       ),
                     ),
+
+                    SizedBox(height: 12.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        label: Text(
+                          'Close',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          side: BorderSide(color: Colors.grey[400]!),
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                      ),
+                    ),
+
                     SizedBox(height: 16.h),
                   ],
                 ),

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ Added missing import
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,11 +8,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/di/services/ai_access_service.dart';
 import 'google_auth/google_auth.dart';
 import '../bloc/auth_bloc.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final String? inviteCode;
+
+  const SignUpScreen({this.inviteCode, super.key});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -26,6 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   final usernameController = TextEditingController();
+  final inviteCodeController = TextEditingController();
 
   final GoogleAuthService _googleAuth = GoogleAuthService();
 
@@ -36,19 +40,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  @override
+  void initState() {
+    super.initState();
+    // لو جاي من رابط دعوة، حط الكود في الـ field
+    if (widget.inviteCode != null) {
+      inviteCodeController.text = widget.inviteCode!;
+    }
+  }
+
   Future<void> pickImage(ImageSource source) async {
     final picked = await ImagePicker().pickImage(source: source);
     if (picked != null) {
       setState(() => imageFile = File(picked.path));
 
-      // ✅ Fixed: Check if user is signed in before accessing currentUser
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .set({
-          'name': nameController.text.trim(), // ✅ Fixed: use nameController instead of undefined 'name'
+          'name': nameController.text.trim(),
           'email': user.email,
         });
       }
@@ -62,6 +74,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     usernameController.dispose();
+    inviteCodeController.dispose();
     super.dispose();
   }
 
@@ -80,6 +93,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     return 'Error: $error';
+  }
+
+  // ─── VERIFY INVITE & REWARD ───
+  Future<void> _verifyInviteAndReward(String newUserId) async {
+    final inviteCode = inviteCodeController.text.trim().toUpperCase();
+    if (inviteCode.isEmpty) return;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. دور على الدعوة
+      final inviteQuery = await firestore
+          .collectionGroup('friends')
+          .where('inviteCode', isEqualTo: inviteCode)
+          .where('friendRegistered', isEqualTo: false)
+          .limit(1)
+          .get();
+
+      if (inviteQuery.docs.isEmpty) return;
+
+      final inviteDoc = inviteQuery.docs.first;
+      final inviteData = inviteDoc.data();
+      final inviterId = inviteData['invitedBy'] as String?;
+
+      if (inviterId == null || inviterId == newUserId) return;
+
+      // 2. علّم إن الصديق سجل
+      await inviteDoc.reference.update({
+        'friendRegistered': true,
+        'friendUserId': newUserId,
+        'registeredAt': FieldValue.serverTimestamp(),
+      });
+
+      // 3. أعطِ المكافئة للي بعت الدعوة
+      await AIAccessService.grantInviteReward(userId: inviterId);
+
+      // 4. علّم إنه اخد المكافئة
+      await inviteDoc.reference.update({'rewarded': true});
+
+    } catch (e) {
+      debugPrint('Invite verification error: $e');
+    }
   }
 
   @override
@@ -101,6 +156,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }
 
         if (state is AuthSuccess) {
+          // ✅ بعد التسجيل الناجح، تحقق من الدعوة واعطِ المكافئة
+          final userId = FirebaseAuth.instance.currentUser?.uid;
+          if (userId != null) {
+            _verifyInviteAndReward(userId);
+          }
           context.go('/main');
         }
 
@@ -196,14 +256,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       SizedBox(height: 10.h),
 
-                      // ✅ Fixed: Added .r to BorderRadius for consistency
                       TextFormField(
                         controller: passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r), // ✅ Fixed: was 12 without .r
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -260,6 +319,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           }
                           return null;
                         },
+                      ),
+
+                      SizedBox(height: 10.h),
+
+                      // ─── Invite Code Field ───
+                      TextFormField(
+                        controller: inviteCodeController,
+                        decoration: InputDecoration(
+                          labelText: "Invite Code (Optional)",
+                          hintText: "Enter invite code if you have one",
+                          prefixIcon: const Icon(Icons.card_giftcard, color: Color(0xFF2E8B7B)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        textCapitalization: TextCapitalization.characters,
                       ),
 
                       SizedBox(height: 20.h),
@@ -333,6 +408,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           final userCred =
                           await _googleAuth.signInWithGoogle();
                           if (userCred != null && context.mounted) {
+                            // ✅ تحقق من الدعوة بعد Google Sign In
+                            final userId = FirebaseAuth.instance.currentUser?.uid;
+                            if (userId != null) {
+                              _verifyInviteAndReward(userId);
+                            }
                             context.go('/main');
                           }
                         },

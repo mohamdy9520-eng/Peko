@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ai_expense_tracker/core/di/services/ai_access_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,9 +10,12 @@ import '../notifications/notification_service.dart';
 
 class AIService {
   static String get _openRouterKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
-
   static const String _openRouterUrl =
       'https://openrouter.ai/api/v1/chat/completions';
+
+  static const String _premiumModel = 'anthropic/claude-haiku-4.5';
+  static const String _freeModel = 'deepseek/deepseek-chat-v3.1:free';
+  static const String _freeFallbackModel = 'deepseek/deepseek-chat';
 
   // ─────────────────────────────────────────────
   // GENERATE AI PLAN (Income-Based)
@@ -24,14 +28,19 @@ class AIService {
     required double savings,
     List<Map<String, dynamic>>? goals,
     List<Map<String, dynamic>>? budgets,
-    required String languageCode, // 'ar' or 'en'
+    required String languageCode,
     required String currencySymbol,
+    required AiTier tier,
   }) async {
     if (_openRouterKey.isEmpty) {
       throw Exception(
         'OpenRouter API Key is missing. Add OPENROUTER_API_KEY to .env file',
       );
     }
+
+    final isPremium = tier == AiTier.premium;
+    final model = isPremium ? _premiumModel : _freeModel;
+    final maxTokens = isPremium ? 1800 : 900;
 
     final goalsContext = _buildGoalsContext(goals, currencySymbol);
     final budgetsContext = _buildBudgetsContext(budgets, currencySymbol);
@@ -41,34 +50,33 @@ class AIService {
     final isArabic = languageCode == 'ar';
 
     final languageInstruction = isArabic
-        ? '⚠️ مهم جدًا جدًا: يجب أن يكون الرد بالكامل باللغة العربية الفصحى فقط. لا تستخدم أي كلمة إنجليزية إطلاقًا، حتى في العناوين. حافظ على الأرقام والرموز (\$, %) كما هي.'
+        ? '⚠️ مهم جدًا جدًا: يجب أن يكون الرد بالكامل باللغة العربية الفصحى فقط. لا تستخدم أي كلمة إنجليزية إطلاقًا، حتى في العناوين. حافظ على الأرقام والرموز (\$ %) كما هي.'
         : '⚠️ VERY IMPORTANT: The entire response must be written in English only.';
-
     final systemLanguageInstruction = isArabic
         ? 'You must respond ONLY in Modern Standard Arabic (العربية الفصحى). Do not use any English words. Keep numbers, currency symbols and percentages as-is.'
         : 'You must respond ONLY in English.';
 
+    // FIX: Changed from `const` to `final` so variable interpolation works
     final planPrompt = """
 $languageInstruction
 
-💰 SMART FINANCIAL ANALYSIS: BUDGET • SAVINGS • GOALS
+ SMART FINANCIAL ANALYSIS: BUDGET • SAVINGS • GOALS
 
-📊 Financial Overview:
+ Financial Overview:
 ━━━━━━━━━━━━━━━━━━━━━
-💵 Total Budget: $currencySymbol${income.toStringAsFixed(2)}
-📉 Total Expenses: $currencySymbol${expense.toStringAsFixed(2)}
-💰 Available Budget: $currencySymbol${savings.toStringAsFixed(2)}
-📈 Savings Potential: ${income > 0 ? ((savings / income) * 100).toStringAsFixed(1) : 0}%
+ Total Budget: $currencySymbol${income.toStringAsFixed(2)}
+ Total Expenses: $currencySymbol${expense.toStringAsFixed(2)}
+ Available Budget: $currencySymbol${savings.toStringAsFixed(2)}
+ Savings Potential: ${income > 0 ? ((savings / income) * 100).toStringAsFixed(1) : 0}%
 
-💵 Active Budgets:
+ Active Budgets:
 $budgetsContext
 
-📂 Expense Breakdown:
+ Expense Breakdown:
 $categoriesText
 
 $goalsContext
 
-🎯 INSTRUCTIONS:
 Create a comprehensive ${planType.toUpperCase()} financial plan that CONNECTS Available Budget, Savings & Goals.
 
 Requirements:
@@ -80,7 +88,7 @@ Requirements:
    - Timeline: "At this rate, you'll reach [Goal] by [Date]"
 3. **SAVINGS STRATEGY**:
    - Apply 50/30/20 rule to Available Budget
-Emergency fund priority (3-6 months expenses = $currencySymbol${(expense * 3).toStringAsFixed(0)} - $currencySymbol${(expense * 6).toStringAsFixed(0)})
+   - Emergency fund priority (3-6 months expenses = $currencySymbol${(expense * 3).toStringAsFixed(0)} - $currencySymbol${(expense * 6).toStringAsFixed(0)})
    - Balance multiple goals with available resources
 4. **FEASIBILITY CHECK**:
    - If goals exceed Available Budget, rank by urgency & suggest adjustments
@@ -93,60 +101,99 @@ Emergency fund priority (3-6 months expenses = $currencySymbol${(expense * 3).to
 7. Be encouraging but realistic about timeline
 
 Example format:
-"🚗 Buy a Car ($currencySymbol 250,000)
+"Buy a Car ($currencySymbol 250,000)
    Current: $currencySymbol 5,000 (2%) | Remaining: $currencySymbol 245,000
-   📅 Deadline: Dec 2027 (18 months left)
-   ⭐ NEED: $currencySymbol 13,611/month from Available Budget
-   💡 SOURCE: Allocate 40% of Salary Budget ($currencySymbol 20,000/mo)
-   ✅ PROJECTED: Reach goal by Nov 2027 (1 month early!)
-   🔄 AUTO-SAVE: Set 40% auto-save from 'Monthly Salary' budget"
+    Deadline: Dec 2027 (18 months left)
+    NEED: $currencySymbol 13,611/month from Available Budget
+    SOURCE: Allocate 40% of Salary Budget ($currencySymbol 20,000/mo)
+    PROJECTED: Reach goal by Nov 2027 (1 month early!)
+    AUTO-SAVE: Set 40% auto-save from 'Monthly Salary' budget"
 
 $languageInstruction
 """;
 
-    final response = await http.post(
-      Uri.parse(_openRouterUrl),
-      headers: {
-        'Authorization': 'Bearer $_openRouterKey',
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://virello.app',
-        'X-Title': 'Peko Budget AI',
-      },
-      body: jsonEncode({
-        "model": "google/gemini-2.5-flash",
-        "messages": [
-          {
-            "role": "system",
-            "content":
-            "You are an expert financial advisor working inside 'Peko: AI Expense Tracker' app, specializing in income-based savings planning and goal achievement. Provide detailed, actionable advice with exact calculations. Focus on allocating income sources to goals, not limiting spending. $systemLanguageInstruction"
-          },
-          {
-            "role": "user",
-            "content": planPrompt
-          }
-        ],
-        "temperature": 0.7,
-        "max_tokens": 1800,
-      }),
-    );
+    try {
+      final response = await _callOpenRouter(
+        model: model,
+        maxTokens: maxTokens,
+        systemPrompt:
+        "You are an expert financial advisor working inside 'Peko: AI Expense Tracker' app, specializing in income-based savings planning and goal achievement. Provide detailed, actionable advice with exact calculations. Focus on allocating income sources to goals, not limiting spending. $systemLanguageInstruction",
+        userPrompt: planPrompt,
+      );
 
-    debugPrint('========== OPENROUTER ==========');
-    debugPrint('STATUS: ${response.statusCode}');
-    debugPrint('BODY: ${response.body}');
+      return response;
+    } catch (e) {
+      debugPrint('AI ERROR: $e');
+      String friendlyMessage;
+      if (e.toString().contains('402')) {
+        friendlyMessage = isArabic
+            ? 'خدمة الذكاء الاصطناعي غير متاحة حاليًا، برجاء المحاولة لاحقًا.'
+            : 'AI service is temporarily unavailable. Please try again later.';
+      } else if (e.toString().contains('429')) {
+        friendlyMessage = isArabic
+            ? 'في ضغط كبير على السيرفر حاليًا، جرب تاني بعد شوية.'
+            : 'Too many requests right now. Please try again in a moment.';
+      } else if (e.toString().contains('Empty response')) {
+        friendlyMessage = isArabic
+            ? 'الرد فارغ، برجاء المحاولة مرة أخرى.'
+            : 'Empty response received. Please try again.';
+      } else {
+        friendlyMessage = isArabic
+            ? 'حصل خطأ أثناء إنشاء الخطة، برجاء المحاولة مرة أخرى.'
+            : 'Something went wrong while generating your plan. Please try again.';
+      }
+      throw Exception(friendlyMessage);
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 🌐 UNIFIED OPENROUTER API CALL
+  // ─────────────────────────────────────────────
+  static Future<String> _callOpenRouter({
+    required String model,
+    required int maxTokens,
+    required String systemPrompt,
+    required String userPrompt,
+  }) async {
+    Future<http.Response> send(String modelToUse) {
+      return http.post(
+        Uri.parse(_openRouterUrl),
+        headers: {
+          'Authorization': 'Bearer $_openRouterKey',
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://virello.app',
+          'X-Title': 'Peko Budget AI',
+        },
+        body: jsonEncode({
+          "model": modelToUse,
+          "messages": [
+            {"role": "system", "content": systemPrompt},
+            {"role": "user", "content": userPrompt},
+          ],
+          "temperature": 0.7,
+          "max_tokens": maxTokens,
+        }),
+      );
+    }
+
+    var response = await send(model);
+
+    if (response.statusCode == 429 && model.endsWith(':free')) {
+      response = await send(_freeFallbackModel);
+    }
 
     if (response.statusCode != 200) {
-      throw Exception('AI Error: ${response.statusCode}\n${response.body}');
+      throw Exception(
+          'AI request failed (${response.statusCode}): ${response.body}');
     }
 
-    final data = jsonDecode(response.body);
-
-    if (data['choices'] != null &&
-        data['choices'].isNotEmpty &&
-        data['choices'][0]['message'] != null) {
-      return data['choices'][0]['message']['content'] ?? '';
+    final responseBody = jsonDecode(response.body);
+    final content =
+    responseBody['choices']?[0]?['message']?['content'] as String?;
+    if (content == null || content.isEmpty) {
+      throw Exception('Empty response received. Please try again.');
     }
-
-    throw Exception('Invalid AI response format\n${response.body}');
+    return content;
   }
 
   // ─────────────────────────────────────────────
@@ -154,10 +201,10 @@ $languageInstruction
   // ─────────────────────────────────────────────
   static String _buildGoalsContext(List<Map<String, dynamic>>? goals, String currencySymbol) {
     if (goals == null || goals.isEmpty) {
-      return '\n🎯 Active Goals: None set yet. Consider adding a goal first!\n';
+      return '\nActive Goals: None set yet. Consider adding a goal first!\n';
     }
 
-    final buffer = StringBuffer('\n🎯 Active Goals:\n━━━━━━━━━━━━━━━━━━━━━\n');
+    final buffer = StringBuffer('\nActive Goals:\n━━━━━━━━━━━━━━━━━━━━━\n');
 
     for (var goal in goals) {
       final name = goal['name'] ?? 'Unnamed Goal';
@@ -169,14 +216,14 @@ $languageInstruction
 
       if (completed) {
         buffer.writeln(
-            '✅ $name - COMPLETED! ($currencySymbol${current.toStringAsFixed(0)} / $currencySymbol${target.toStringAsFixed(0)})');
+            '$name - COMPLETED! ($currencySymbol${current.toStringAsFixed(0)} / $currencySymbol${target.toStringAsFixed(0)})');
         continue;
       }
 
       final remaining = target - current;
       final progress = target > 0 ? (current / target * 100) : 0;
 
-      buffer.write('🚩 $name\n');
+      buffer.write('$name\n');
       buffer.write(
           '   Current: $currencySymbol${current.toStringAsFixed(0)} / $currencySymbol${target.toStringAsFixed(0)} (${progress.toStringAsFixed(1)}%)\n');
       buffer.write('   Remaining: $currencySymbol${remaining.toStringAsFixed(0)}\n');
@@ -192,17 +239,17 @@ $languageInstruction
 
         if (monthsLeft > 0) {
           final monthlyNeeded = remaining / monthsLeft;
-          buffer.write('   ⭐ REQUIRED: $currencySymbol${monthlyNeeded.toStringAsFixed(0)}/month to reach this goal\n');
+          buffer.write('REQUIRED: $currencySymbol${monthlyNeeded.toStringAsFixed(0)}/month to reach this goal\n');
         } else if (daysLeft > 0) {
           final dailyNeeded = remaining / daysLeft;
-          buffer.write('   ⚠️ URGENT: $currencySymbol${dailyNeeded.toStringAsFixed(0)}/day needed!\n');
+          buffer.write('URGENT: $currencySymbol${dailyNeeded.toStringAsFixed(0)}/day needed!\n');
         } else {
-          buffer.write('   ❌ DEADLINE PASSED - Goal overdue!\n');
+          buffer.write('DEADLINE PASSED - Goal overdue!\n');
         }
       }
 
       if (monthlySavings > 0) {
-        buffer.write('   💰 Auto-saving: $currencySymbol${monthlySavings.toStringAsFixed(0)}/month\n');
+        buffer.write('Auto-saving: $currencySymbol${monthlySavings.toStringAsFixed(0)}/month\n');
       }
 
       buffer.writeln('');
@@ -210,8 +257,6 @@ $languageInstruction
 
     return buffer.toString();
   }
-
-
 
   // ─────────────────────────────────────────────
   // BUILD BUDGETS/INCOME CONTEXT FOR AI
@@ -399,7 +444,8 @@ $languageInstruction
     await _saveAndNotify(
       userId: userId,
       title: '🎉 Goal Achieved! 🏆',
-      body: 'Amazing! You\'ve saved \$${targetAmount.toStringAsFixed(0)} for "${goalData['name']}"! Time to celebrate! 🎊',
+      body:
+      'Amazing! You\'ve saved \$${targetAmount.toStringAsFixed(0)} for "${goalData['name']}"! Time to celebrate! 🎊',
       type: 'goal_completion',
       data: {
         'goalId': goalId,
@@ -435,13 +481,15 @@ $languageInstruction
       'createdAt': Timestamp.now(),
     });
 
-    // 2. Show system notification (payload for deep linking)
+
+
     await NotificationService.showNotification(
       title: title,
       body: body,
       type: type,
       data: data,
     );
+
   }
 
   // ─────────────────────────────────────────────

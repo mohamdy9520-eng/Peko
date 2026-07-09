@@ -10,7 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'config/env.dart';
 import 'core/di/injection.dart';
 import 'core/di/notifications/notification_service.dart';
@@ -25,12 +25,17 @@ void main() async {
 
   await EasyLocalization.ensureInitialized();
 
-  // ✅ Firebase BEFORE notifications (عشان Firestore notifications تحتاج Firebase)
+  // ✅ Initialize RevenueCat AFTER Env (لو الـ API Key في .env)
+  await initializeRevenueCat();
+
+  // ✅ Firebase BEFORE notifications
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      await NotificationService.initialize();
+
     }
   } catch (e) {
     debugPrint('Firebase already initialized: $e');
@@ -46,11 +51,9 @@ void main() async {
       await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
     } else {
       debugPrint('Exact alarm permission denied');
-      // ✅ لو ماخدش permission، نبعت notification عادية (inexact)
       await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
     }
   } else {
-    // iOS — مش محتاج exact alarm permission
     await NotificationService.scheduleDailyReminder(hour: 20, minute: 0);
   }
 
@@ -73,4 +76,18 @@ void main() async {
       ),
     ),
   );
+}
+
+Future<void> initializeRevenueCat() async {
+  String apiKey;
+
+  if (Platform.isIOS) {
+    apiKey = 'test_LjLMrcZugNzKsjZAHLvtvfvekbl';
+  } else if (Platform.isAndroid) {
+    apiKey = 'test_LjLMrcZugNzKsjZAHLvtvfvekbl';
+  } else {
+    throw UnsupportedError('Platform not supported');
+  }
+
+  await Purchases.configure(PurchasesConfiguration(apiKey));
 }
