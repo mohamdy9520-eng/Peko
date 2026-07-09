@@ -9,6 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/di/services/ai_access_service.dart';
+import '../../../../profile/fireBase_service/fireBase_service.dart';
 import 'google_auth/google_auth.dart';
 import '../bloc/auth_bloc.dart';
 
@@ -32,6 +33,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final inviteCodeController = TextEditingController();
 
   final GoogleAuthService _googleAuth = GoogleAuthService();
+  final FirebaseService _firebaseService = FirebaseService();
 
   File? imageFile;
 
@@ -43,7 +45,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void initState() {
     super.initState();
-    // لو جاي من رابط دعوة، حط الكود في الـ field
     if (widget.inviteCode != null) {
       inviteCodeController.text = widget.inviteCode!;
     }
@@ -119,12 +120,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (inviterId == null || inviterId == newUserId) return;
 
-      // 2. علّم إن الصديق سجل
       await inviteDoc.reference.update({
         'friendRegistered': true,
         'friendUserId': newUserId,
         'registeredAt': FieldValue.serverTimestamp(),
       });
+
 
       // 3. أعطِ المكافئة للي بعت الدعوة
       await AIAccessService.grantInviteReward(userId: inviterId);
@@ -140,7 +141,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         debugPrint('AuthState changed: ${state.runtimeType}');
 
         setState(() => _isLoading = state is AuthLoading);
@@ -159,6 +160,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           // ✅ بعد التسجيل الناجح، تحقق من الدعوة واعطِ المكافئة
           final userId = FirebaseAuth.instance.currentUser?.uid;
           if (userId != null) {
+            final redeemed = await _firebaseService.redeemInviteCode(inviteCodeController.text);
             _verifyInviteAndReward(userId);
           }
           context.go('/main');
@@ -411,6 +413,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             // ✅ تحقق من الدعوة بعد Google Sign In
                             final userId = FirebaseAuth.instance.currentUser?.uid;
                             if (userId != null) {
+                              final redeemed = await _firebaseService.redeemInviteCode(inviteCodeController.text);
                               _verifyInviteAndReward(userId);
                             }
                             context.go('/main');

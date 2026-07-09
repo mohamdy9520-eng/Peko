@@ -36,6 +36,7 @@ class FirebaseService {
   final FirebaseStorage _storage;
   final ImagePicker _picker;
 
+  // ✅ مستخدمين دلوقتي
   UserModel? _cachedUser;
   DateTime? _lastUserFetch;
   static const _cacheDuration = Duration(minutes: 2);
@@ -57,6 +58,7 @@ class FirebaseService {
 
   Future<void> signOut() async {
     try {
+      // ✅ امسح الـ cache لما تعمل sign out
       _cachedUser = null;
       _lastUserFetch = null;
       await _auth.signOut();
@@ -72,6 +74,16 @@ class FirebaseService {
     if (userId == null) {
       return Stream.error(AuthException('User not authenticated'));
     }
+
+    // ✅ استخدم الـ cache لو لسه صالح (أقل من 2 دقيقة)
+    final now = DateTime.now();
+    if (_cachedUser != null &&
+        _lastUserFetch != null &&
+        now.difference(_lastUserFetch!) < _cacheDuration) {
+      debugPrint('Returning cached user');
+      return Stream.value(_cachedUser!);
+    }
+
     return _firestore.collection('users').doc(userId).snapshots().handleError((error) {
       debugPrint('Firestore user stream error: $error');
       if (error is FirebaseException) {
@@ -83,8 +95,11 @@ class FirebaseService {
         throw AuthException('User profile not found');
       }
       final user = UserModel.fromMap(doc.data()!, documentId: doc.id);
+
+      // ✅ حدّث الـ cache
       _cachedUser = user;
       _lastUserFetch = DateTime.now();
+
       return user;
     });
   }
@@ -111,7 +126,11 @@ class FirebaseService {
       data.removeWhere((key, value) => value == null);
 
       await _firestore.collection('users').doc(userId).set(data, SetOptions(merge: true));
+
+      // ✅ حدّث الـ cache بعد الـ update
       _cachedUser = user;
+      _lastUserFetch = DateTime.now();
+
     } on FirebaseException catch (e) {
       throw NetworkException('Failed to update profile: ${e.message}');
     }
@@ -127,6 +146,11 @@ class FirebaseService {
     try {
       fields['updatedAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('users').doc(userId).update(fields);
+
+      // ✅ امسح الـ cache عشان يتجيب تاني من Firestore
+      _cachedUser = null;
+      _lastUserFetch = null;
+
     } on FirebaseException catch (e) {
       throw NetworkException('Failed to update fields: ${e.message}');
     }
@@ -217,7 +241,6 @@ class FirebaseService {
     await _firestore.collection('users').doc(userId).collection('friends').doc(friendId).delete();
   }
 
-  // ✅ استخدم 'notifications' مش 'messages' عشان تتوافق مع الباقي
   Stream<QuerySnapshot> getMessages() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
@@ -242,7 +265,78 @@ class FirebaseService {
         .snapshots();
   }
 
-  // ✅ معدّل: استخدم 'notifications' وتحقق من وجود الـ document
+
+  Stream<int> getFriendsCount() {
+    final userId = uid;
+    if (userId == null) return Stream.value(0);
+    return _firestore
+        .collection('users').doc(userId).collection('friends')
+        .where('friendRegistered', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
+  Stream<int> getMessagesCount() {
+    final userId = uid;
+    if (userId == null) return Stream.value(0);
+    return _firestore
+        .collection('users').doc(userId).collection('notifications')
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
+  Stream<int> getRewardsCount() {
+    final userId = uid;
+    if (userId == null) return Stream.value(0);
+    return _firestore
+        .collection('users').doc(userId).collection('friends')
+        .where('rewarded', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
+  Future<bool> redeemInviteCode(String inviteCode) async {
+    final newUserId = uid;
+    if (newUserId == null) throw AuthException('User not authenticated');
+    final code = inviteCode.trim().toUpperCase();
+    if (code.isEmpty) return false;
+
+    final query = await _firestore
+        .collectionGroup('friends')
+        .where('inviteCode', isEqualTo: code)
+        .where('friendRegistered', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) return false;
+
+    final friendDoc = query.docs.first;
+    final inviterId = friendDoc.reference.parent.parent?.id;
+    if (inviterId == null) return false;
+
+    final batch = _firestore.batch();
+
+    batch.update(friendDoc.reference, {
+      'friendRegistered': true,
+      'rewarded': true,
+      'registeredUid': newUserId,
+      'registeredAt': FieldValue.serverTimestamp(),
+    });
+
+    final notifRef = _firestore
+        .collection('users').doc(inviterId)
+        .collection('notifications').doc();
+    batch.set(notifRef, {
+      'title': 'صديق جديد انضم! 🎉',
+      'body': 'صديقك سجّل في التطبيق بكود الدعوة بتاعك، ومبروك عليك المكافأة!',
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+    return true;
+  }
+
   Future<void> markMessageAsRead(String messageId) async {
     final userId = uid;
     if (userId == null) return;
@@ -251,10 +345,9 @@ class FirebaseService {
       final docRef = _firestore
           .collection('users')
           .doc(userId)
-          .collection('notifications')  // ← نفس collection اللي في getMessages
+          .collection('notifications')
           .doc(messageId);
 
-      // ✅ تحقق من وجود الـ document الأول
       final doc = await docRef.get();
       if (!doc.exists) {
         debugPrint('Notification $messageId not found, skipping mark as read');
@@ -267,11 +360,40 @@ class FirebaseService {
       });
     } on FirebaseException catch (e) {
       debugPrint('Failed to mark notification as read: ${e.message}');
-      // مترميش error للـ UI عشان متظهرش للمستخدم
     }
   }
 
-  // ✅ معدّل: استخدم 'notifications' وتحقق من وجود الـ document
+
+  Future<void> markAllMessagesAsRead() async {
+    final userId = uid;
+    if (userId == null) return;
+
+    try {
+      final batch = _firestore.batch();
+
+      final unreadQuery = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      if (unreadQuery.docs.isEmpty) return;
+
+      for (final doc in unreadQuery.docs) {
+        batch.update(doc.reference, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+      debugPrint('Marked ${unreadQuery.docs.length} notifications as read');
+    } on FirebaseException catch (e) {
+      debugPrint('Failed to mark all as read: ${e.message}');
+    }
+  }
+
   Future<void> deleteMessage(String messageId) async {
     final userId = uid;
     if (userId == null) return;
@@ -280,10 +402,9 @@ class FirebaseService {
       final docRef = _firestore
           .collection('users')
           .doc(userId)
-          .collection('notifications')  // ← نفس collection
+          .collection('notifications')
           .doc(messageId);
 
-      // ✅ تحقق من وجود الـ document
       final doc = await docRef.get();
       if (!doc.exists) {
         debugPrint('Notification $messageId not found, skipping delete');
