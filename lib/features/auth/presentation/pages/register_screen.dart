@@ -127,7 +127,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       });
 
 
-      // 3. أعطِ المكافئة للي بعت الدعوة
       await AIAccessService.grantInviteReward(userId: inviterId);
 
       // 4. علّم إنه اخد المكافئة

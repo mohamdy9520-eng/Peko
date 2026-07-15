@@ -1,75 +1,80 @@
-const functions = require("firebase-functions");
-const axios = require("axios");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
 
-exports.generatePlan = functions.https.onRequest(async (req, res) => {
-  // دعم CORS + preflight
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(204).send("");
+exports.redeemInviteCode = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Login required');
   }
 
-  try {
-    const { income, expense, categories, planType, savings } = req.body;
+  const newUserId = context.auth.uid;
+  const inviteCode = data.inviteCode?.toString().trim().toUpperCase();
 
-    if (!income || !expense) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
+  if (!inviteCode || inviteCode.length < 4) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid code');
+  }
+
+  const friendsSnapshot = await admin.firestore()
+    .collectionGroup('friends')
+    .where('inviteCode', '==', inviteCode)
+    .where('friendRegistered', '==', false)
+    .limit(1)
+    .get();
+
+  if (friendsSnapshot.empty) {
+    throw new functions.https.HttpsError('not-found', 'Invalid or used code');
+  }
+
+  const friendDoc = friendsSnapshot.docs[0];
+  const inviterId = friendDoc.ref.parent.parent.id;
+
+  if (inviterId === newUserId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Cannot invite yourself');
+  }
+
+  await admin.firestore().runTransaction(async (transaction) => {
+    const freshDoc = await transaction.get(friendDoc.ref);
+
+    if (!freshDoc.exists || freshDoc.data().friendRegistered === true) {
+      throw new functions.https.HttpsError('already-exists', 'Code used');
     }
 
-    const prompt = `
-You are a professional financial advisor.
-
-Income: ${income}
-Expense: ${expense}
-Savings: ${savings}
-Categories: ${JSON.stringify(categories)}
-
-Create a ${planType} financial plan including:
-- Spending limits
-- Savings strategy
-- Warnings
-- Action steps
-- Table format output
-`;
-
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a strict financial advisor. Always respond in structured format.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.7,
-      },
-      {
-        headers: {
-          Authorization: `Bearer sk-...dAYA`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    return res.json({
-      success: true,
-      data: response.data.choices[0].message.content,
+    transaction.update(friendDoc.ref, {
+      friendRegistered: true,
+      friendUserId: newUserId,
+      friendName: data.userName || 'Friend',
+      redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-  } catch (error) {
-    console.error("Function Error:", error?.response?.data || error.message);
+    const reverseFriendRef = admin.firestore()
+      .doc(`users/${newUserId}/friends/${inviterId}`);
 
-    return res.status(500).json({
-      success: false,
-      error: "AI generation failed",
-      details: error.message,
+    const inviterProfile = await admin.firestore()
+      .doc(`users/${inviterId}`).get();
+
+    transaction.set(reverseFriendRef, {
+      name: inviterProfile.data()?.name || 'Friend',
+      userId: inviterId,
+      addedByInvite: true,
+      inviteCode: inviteCode,
+      addedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-  }
+
+    const notificationRef = admin.firestore()
+      .collection('users')
+      .doc(inviterId)
+      .collection('notifications')
+      .doc();
+
+    transaction.set(notificationRef, {
+      title: '🎉 Friend Joined!',
+      body: `${data.userName || 'Someone'} joined using your invite code!`,
+      type: 'friend_joined',
+      read: false,
+      data: { friendUserId: newUserId, screen: '/friends' },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return { success: true, message: 'Redeemed!', inviterId };
 });

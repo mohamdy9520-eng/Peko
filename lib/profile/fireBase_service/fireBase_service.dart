@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import '../user_model/user_model.dart';
 
-// Custom Exceptions
 class AuthException implements Exception {
   final String message;
   final String? code;
@@ -36,7 +35,6 @@ class FirebaseService {
   final FirebaseStorage _storage;
   final ImagePicker _picker;
 
-  // ✅ مستخدمين دلوقتي
   UserModel? _cachedUser;
   DateTime? _lastUserFetch;
   static const _cacheDuration = Duration(minutes: 2);
@@ -58,7 +56,6 @@ class FirebaseService {
 
   Future<void> signOut() async {
     try {
-      // ✅ امسح الـ cache لما تعمل sign out
       _cachedUser = null;
       _lastUserFetch = null;
       await _auth.signOut();
@@ -69,37 +66,89 @@ class FirebaseService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // DELETE ACCOUNT (NEW)
+  // ═══════════════════════════════════════════════════════════
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) throw AuthException('User not authenticated');
+    final userId = user.uid;
+
+    try {
+      // Delete user data from Firestore
+      final batch = _firestore.batch();
+
+      // Delete user profile
+      final userRef = _firestore.collection('users').doc(userId);
+      batch.delete(userRef);
+
+      // Delete contacts subcollection
+      final contactsSnapshot = await _firestore
+          .collection('users').doc(userId).collection('contacts').get();
+      for (final doc in contactsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Delete notifications subcollection
+      final notificationsSnapshot = await _firestore
+          .collection('users').doc(userId).collection('notifications').get();
+      for (final doc in notificationsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+
+      // Delete user files from Storage
+      try {
+        final storageRef = _storage.ref().child('users/$userId');
+        final listResult = await storageRef.listAll();
+        for (final item in listResult.items) {
+          await item.delete();
+        }
+      } catch (e) {
+        debugPrint('Storage deletion warning: $e');
+      }
+
+      // Delete Firebase Auth account
+      await user.delete();
+
+      _cachedUser = null;
+      _lastUserFetch = null;
+
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code), code: e.code);
+    } on FirebaseException catch (e) {
+      throw NetworkException('Failed to delete account: ${e.message}');
+    } catch (e) {
+      throw AuthException('Failed to delete account: $e');
+    }
+  }
+
   Stream<UserModel> getUser() {
     final userId = uid;
     if (userId == null) {
       return Stream.error(AuthException('User not authenticated'));
     }
 
-    // ✅ استخدم الـ cache لو لسه صالح (أقل من 2 دقيقة)
-    final now = DateTime.now();
-    if (_cachedUser != null &&
-        _lastUserFetch != null &&
-        now.difference(_lastUserFetch!) < _cacheDuration) {
-      debugPrint('Returning cached user');
-      return Stream.value(_cachedUser!);
-    }
-
-    return _firestore.collection('users').doc(userId).snapshots().handleError((error) {
-      debugPrint('Firestore user stream error: $error');
-      if (error is FirebaseException) {
-        throw NetworkException('Failed to load user data: ${error.message}');
-      }
-      throw error;
-    }).map((doc) {
+    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
       if (!doc.exists || doc.data() == null) {
         throw AuthException('User profile not found');
       }
-      final user = UserModel.fromMap(doc.data()!, documentId: doc.id);
 
-      // ✅ حدّث الـ cache
+      final data = doc.data()!;
+
+      final authUser = _auth.currentUser;
+      final isEmailVerified = authUser?.emailVerified ?? false;
+
+      final mergedData = {
+        ...data,
+        'isEmailVerified': isEmailVerified,
+        'uid': userId,
+      };
+
+      final user = UserModel.fromMap(mergedData, documentId: doc.id);
       _cachedUser = user;
       _lastUserFetch = DateTime.now();
-
       return user;
     });
   }
@@ -127,7 +176,6 @@ class FirebaseService {
 
       await _firestore.collection('users').doc(userId).set(data, SetOptions(merge: true));
 
-      // ✅ حدّث الـ cache بعد الـ update
       _cachedUser = user;
       _lastUserFetch = DateTime.now();
 
@@ -147,7 +195,6 @@ class FirebaseService {
       fields['updatedAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('users').doc(userId).update(fields);
 
-      // ✅ امسح الـ cache عشان يتجيب تاني من Firestore
       _cachedUser = null;
       _lastUserFetch = null;
 
@@ -186,37 +233,36 @@ class FirebaseService {
         debugPrint('Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
       });
 
-      await uploadTask;
-      final url = await ref.getDownloadURL();
+      final taskSnapshot = await uploadTask.whenComplete(() => null);
 
-      await _deleteOldProfileImage(userId, timestamp);
-
-      return url;
+      if (taskSnapshot.state == TaskState.success) {
+        final url = await ref.getDownloadURL();
+        debugPrint('Upload successful: $url');
+        return url;
+      } else {
+        throw Exception('Upload failed with state: ${taskSnapshot.state}');
+      }
+    } on FirebaseException catch (e) {
+      throw Exception('Firebase upload failed: ${e.code} - ${e.message}');
     } catch (e) {
       throw Exception('Upload failed: $e');
     }
   }
 
-  Future<void> _deleteOldProfileImage(String userId, int currentTimestamp) async {
-    try {
-      final listResult = await _storage.ref().child('users/$userId').listAll();
-      for (final item in listResult.items) {
-        if (item.name.startsWith('profile_') && !item.name.contains('$currentTimestamp')) {
-          await item.delete();
-        }
-      }
-    } catch (e) {
-      debugPrint('No old images to delete or folder empty: $e');
-    }
-  }
-
+  // ═══════════════════════════════════════════════════════════
+  // GET FRIENDS (contacts)
+  // ═══════════════════════════════════════════════════════════
   Stream<QuerySnapshot> getFriends() {
     final userId = uid;
     if (userId == null) return const Stream.empty();
-    return _firestore.collection('users').doc(userId).collection('friends')
+    return _firestore
+        .collection('users').doc(userId).collection('contacts')
         .orderBy('addedAt', descending: true).snapshots();
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // ADD FRIEND (contacts)
+  // ═══════════════════════════════════════════════════════════
   Future<void> addFriend(Map<String, dynamic> friendData) async {
     final userId = uid;
     if (userId == null) throw AuthException('User not authenticated');
@@ -226,19 +272,98 @@ class FirebaseService {
     if (email.isNotEmpty && !email.contains('@')) throw ValidationException('Invalid email format');
 
     final existing = await _firestore.collection('users').doc(userId)
-        .collection('friends').where('email', isEqualTo: email).limit(1).get();
+        .collection('contacts').where('email', isEqualTo: email).limit(1).get();
     if (existing.docs.isNotEmpty) throw ValidationException('This friend is already in your list');
 
     friendData['addedAt'] = FieldValue.serverTimestamp();
     friendData['name'] = name;
     friendData['email'] = email;
-    await _firestore.collection('users').doc(userId).collection('friends').add(friendData);
+
+    await _firestore.collection('users').doc(userId).collection('contacts').add(friendData);
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // REMOVE FRIEND (contacts)
+  // ═══════════════════════════════════════════════════════════
   Future<void> removeFriend(String friendId) async {
     final userId = uid;
     if (userId == null) return;
-    await _firestore.collection('users').doc(userId).collection('friends').doc(friendId).delete();
+
+    await _firestore.collection('users').doc(userId).collection('contacts').doc(friendId).delete();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // GET FRIENDS COUNT (contacts)
+  // ═══════════════════════════════════════════════════════════
+  Stream<int> getFriendsCount() {
+    final userId = uid;
+    if (userId == null) return Stream.value(0);
+    return _firestore
+        .collection('users').doc(userId).collection('contacts')
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // GET REWARDS COUNT (contacts)
+  // ═══════════════════════════════════════════════════════════
+  Stream<int> getRewardsCount() {
+    final userId = uid;
+    if (userId == null) return Stream.value(0);
+    return _firestore
+        .collection('users').doc(userId).collection('contacts')
+        .snapshots()
+        .map((snap) => snap.docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>?;
+      return data?['rewarded'] == true;
+    }).length);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // REDEEM INVITE CODE (contacts)
+  // ═══════════════════════════════════════════════════════════
+  Future<bool> redeemInviteCode(String inviteCode) async {
+    final newUserId = uid;
+    if (newUserId == null) throw AuthException('User not authenticated');
+
+    final code = inviteCode.trim().toUpperCase();
+    if (code.isEmpty) return false;
+
+    final query = await _firestore
+        .collectionGroup('contacts')
+        .where('inviteCode', isEqualTo: code)
+        .where('friendRegistered', isEqualTo: false)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) return false;
+
+    final friendDoc = query.docs.first;
+    final inviterId = friendDoc.reference.parent.parent?.id;
+    if (inviterId == null) return false;
+
+    final batch = _firestore.batch();
+
+    batch.update(friendDoc.reference, {
+      'friendRegistered': true,
+      'rewarded': true,
+      'registeredUid': newUserId,
+      'registeredAt': FieldValue.serverTimestamp(),
+    });
+
+    final notifRef = _firestore
+        .collection('users').doc(inviterId)
+        .collection('notifications').doc();
+
+    batch.set(notifRef, {
+      'title': 'New Friend Joined! 🎉',
+      'body': 'Your friend joined using your invite code. You earned a reward!',
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+    return true;
   }
 
   Stream<QuerySnapshot> getMessages() {
@@ -265,76 +390,25 @@ class FirebaseService {
         .snapshots();
   }
 
-
-  Stream<int> getFriendsCount() {
-    final userId = uid;
-    if (userId == null) return Stream.value(0);
-    return _firestore
-        .collection('users').doc(userId).collection('friends')
-        .where('friendRegistered', isEqualTo: true)
-        .snapshots()
-        .map((snap) => snap.docs.length);
-  }
-
   Stream<int> getMessagesCount() {
     final userId = uid;
     if (userId == null) return Stream.value(0);
+
     return _firestore
         .collection('users').doc(userId).collection('notifications')
         .snapshots()
         .map((snap) => snap.docs.length);
   }
 
-  Stream<int> getRewardsCount() {
+  Stream<int> getUnreadMessagesCount() {
     final userId = uid;
     if (userId == null) return Stream.value(0);
+
     return _firestore
-        .collection('users').doc(userId).collection('friends')
-        .where('rewarded', isEqualTo: true)
+        .collection('users').doc(userId).collection('notifications')
+        .where('isRead', isEqualTo: false)
         .snapshots()
         .map((snap) => snap.docs.length);
-  }
-
-  Future<bool> redeemInviteCode(String inviteCode) async {
-    final newUserId = uid;
-    if (newUserId == null) throw AuthException('User not authenticated');
-    final code = inviteCode.trim().toUpperCase();
-    if (code.isEmpty) return false;
-
-    final query = await _firestore
-        .collectionGroup('friends')
-        .where('inviteCode', isEqualTo: code)
-        .where('friendRegistered', isEqualTo: false)
-        .limit(1)
-        .get();
-
-    if (query.docs.isEmpty) return false;
-
-    final friendDoc = query.docs.first;
-    final inviterId = friendDoc.reference.parent.parent?.id;
-    if (inviterId == null) return false;
-
-    final batch = _firestore.batch();
-
-    batch.update(friendDoc.reference, {
-      'friendRegistered': true,
-      'rewarded': true,
-      'registeredUid': newUserId,
-      'registeredAt': FieldValue.serverTimestamp(),
-    });
-
-    final notifRef = _firestore
-        .collection('users').doc(inviterId)
-        .collection('notifications').doc();
-    batch.set(notifRef, {
-      'title': 'صديق جديد انضم! 🎉',
-      'body': 'صديقك سجّل في التطبيق بكود الدعوة بتاعك، ومبروك عليك المكافأة!',
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-    return true;
   }
 
   Future<void> markMessageAsRead(String messageId) async {
@@ -362,7 +436,6 @@ class FirebaseService {
       debugPrint('Failed to mark notification as read: ${e.message}');
     }
   }
-
 
   Future<void> markAllMessagesAsRead() async {
     final userId = uid;

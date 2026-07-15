@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Production-ready UserModel with immutability, copyWith, and comprehensive fields.
 class UserModel {
   final String uid;
   final String name;
@@ -15,7 +14,8 @@ class UserModel {
   final bool isPhoneVerified;
   final String? fcmToken;
   final Map<String, dynamic>? preferences;
-  final int version; // For data migration
+  final int version;
+  final String? avatarBase64;
 
   const UserModel({
     required this.uid,
@@ -32,6 +32,7 @@ class UserModel {
     this.fcmToken,
     this.preferences,
     this.version = 1,
+    this.avatarBase64,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, {String? documentId}) {
@@ -52,6 +53,7 @@ class UserModel {
           ? Map<String, dynamic>.from(data['preferences'])
           : null,
       version: data['version'] ?? 1,
+      avatarBase64: data['avatarBase64'],
     );
   }
 
@@ -78,6 +80,7 @@ class UserModel {
       'fcmToken': fcmToken,
       'preferences': preferences,
       'version': version,
+      'avatarBase64': avatarBase64,
     };
   }
 
@@ -96,6 +99,7 @@ class UserModel {
     String? fcmToken,
     Map<String, dynamic>? preferences,
     int? version,
+    String? avatarBase64,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -112,6 +116,7 @@ class UserModel {
       fcmToken: fcmToken ?? this.fcmToken,
       preferences: preferences ?? this.preferences,
       version: version ?? this.version,
+      avatarBase64: avatarBase64 ?? this.avatarBase64,
     );
   }
 
@@ -122,6 +127,7 @@ class UserModel {
 
   bool get isEmpty => uid.isEmpty;
   bool get hasImage => image.isNotEmpty;
+  bool get hasAvatar => avatarBase64 != null && avatarBase64!.isNotEmpty;
   String get displayName => name.isNotEmpty ? name : username;
   String get initials => name.isNotEmpty
       ? name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()

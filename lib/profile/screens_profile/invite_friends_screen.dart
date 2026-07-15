@@ -321,7 +321,6 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
     bool sentAny = false;
     final List<String> errors = [];
 
-    // ─── EMAIL ───
     if (email.isNotEmpty) {
       final emailUri = Uri(
         scheme: 'mailto',
@@ -343,7 +342,6 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       }
     }
 
-    // ─── WHATSAPP ───
     if (phone.isNotEmpty) {
       final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
       final formattedPhone = cleanPhone.startsWith('+') ? cleanPhone : '+$cleanPhone';
@@ -363,7 +361,6 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       }
     }
 
-    // ─── لو مفيش app متاح → Copy to Clipboard ───
     if (!sentAny) {
       await Clipboard.setData(ClipboardData(text: message));
       if (mounted) {
@@ -378,7 +375,9 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       }
     }
 
-    // ─── Save to Firestore (من غير مكافئة) ───
+    // ─────────────────────────────────────────────
+    // ADD FRIEND TO FIRESTORE (contacts collection)
+    // ─────────────────────────────────────────────
     final currentUserId = _firebaseService.uid;
     await _firebaseService.addFriend({
       'name': name,

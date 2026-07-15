@@ -94,6 +94,7 @@ class _MessageCenterScreenState extends State<MessageCenterScreen> {
   Future<void> _markAllAsRead() async {
     HapticFeedback.mediumImpact();
     _showSuccess('All messages marked as read');
+    await _firebaseService.markAllMessagesAsRead();
   }
 
   Future<void> _deleteMessage(String messageId) async {
