@@ -23,7 +23,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final snapshot = await userDoc.get();
 
-    // إعادة إنشاء بيانات المستخدم إذا تم حذفها من Firestore
     if (!snapshot.exists) {
       await userDoc.set({
         'name': user.displayName ?? '',

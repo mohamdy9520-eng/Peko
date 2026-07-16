@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,6 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigated = true;
 
     final prefs = await SharedPreferences.getInstance();
+    final secureStorage = const FlutterSecureStorage();
 
     final languageSelected =
         prefs.getBool('language_selected') ?? false;
@@ -41,12 +43,16 @@ class _SplashScreenState extends State<SplashScreen> {
         prefs.getBool('has_seen_onboarding') ?? false;
 
     final user = FirebaseAuth.instance.currentUser;
+    final isBiometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+    final hasCredentials = await secureStorage.read(key: 'biometric_email') != null;
 
     debugPrint(
       'SPLASH: languageSelected=$languageSelected, '
           'hasSeenOnboarding=$hasSeenOnboarding, '
           'user=${user?.email}, '
-          'emailVerified=${user?.emailVerified}',
+          'emailVerified=${user?.emailVerified}, '
+          'isBiometricEnabled=$isBiometricEnabled, '
+          'hasCredentials=$hasCredentials',
     );
 
     if (!hasSeenOnboarding) {
@@ -58,6 +64,10 @@ class _SplashScreenState extends State<SplashScreen> {
     } else if (!user.emailVerified) {
       debugPrint('GOING TO VERIFY EMAIL');
       context.go('/verify-email');
+    } else if (isBiometricEnabled && hasCredentials) {
+      // User is logged in + biometric enabled + credentials exist → show biometric screen
+      debugPrint('GOING TO BIOMETRIC LOGIN');
+      context.go('/biometric-login');
     } else {
       debugPrint('GOING TO MAIN');
       context.go('/main');

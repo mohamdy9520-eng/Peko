@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,6 +9,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:local_auth/error_codes.dart' as auth_error;
 
 import '../../../../routes/app_router.dart';
 import '../bloc/auth_bloc.dart';
@@ -26,9 +30,120 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
 
   bool isLoading = false;
-  bool _obscurePassword = true; // ✅ For visibility toggle
+  bool _obscurePassword = true;
 
-  // ✅ Helper to format error messages
+  // Biometric
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  bool _isBiometricAvailable = false;
+  bool _isBiometricEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricState();
+  }
+
+  Future<void> _checkBiometricState() async {
+    final isAvailable = await _localAuth.canCheckBiometrics;
+    final isDeviceSupported = await _localAuth.isDeviceSupported();
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('biometric_enabled') ?? false;
+
+    print('isAvailable: $isAvailable');
+    print('isDeviceSupported: $isDeviceSupported');
+    print('isEnabled: $isEnabled');
+    print('_isBiometricAvailable: ${isAvailable && isDeviceSupported}');
+
+    if (mounted) {
+      setState(() {
+        _isBiometricAvailable = isAvailable && isDeviceSupported;
+        _isBiometricEnabled = isEnabled;
+      });
+    }
+  }
+
+  Future<void> _authenticateWithBiometric() async {
+    try {
+      setState(() => isLoading = true);
+
+      // Check if credentials exist first
+      final savedEmail = await _secureStorage.read(key: 'biometric_email');
+      final savedPassword = await _secureStorage.read(key: 'biometric_password');
+
+      if (savedEmail == null || savedPassword == null) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login with email/password first to enable biometric login'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      final didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Use your fingerprint or face to login',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+
+      if (!didAuthenticate) {
+        setState(() => isLoading = false);
+        return;
+      }
+
+      // Use FirebaseAuth directly for biometric login
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: savedEmail,
+        password: savedPassword,
+      );
+
+      // Re-enable biometric flag so next app open shows biometric screen
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('biometric_enabled', true);
+
+      if (!mounted) return;
+      context.go('/main');
+
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        final msg = _getErrorMessage(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        );
+      }
+    } on PlatformException catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        String message = 'Biometric authentication failed';
+        if (e.code == auth_error.notAvailable) {
+          message = 'Biometric not available';
+        } else if (e.code == auth_error.notEnrolled) {
+          message = 'No biometric enrolled on this device';
+        } else if (e.code == auth_error.passcodeNotSet) {
+          message = 'Device passcode not set';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
   String _getErrorMessage(dynamic error) {
     final errorString = error.toString().toLowerCase();
 
@@ -63,10 +178,27 @@ class _LoginScreenState extends State<LoginScreen> {
         password: passwordController.text.trim(),
       );
 
+      // Save credentials for biometric login using Secure Storage
+      await _secureStorage.write(
+        key: 'biometric_email',
+        value: emailController.text.trim(),
+      );
+      await _secureStorage.write(
+        key: 'biometric_password',
+        value: passwordController.text.trim(),
+      );
+
+      // Check if user previously had biometric enabled (credentials existed before)
+      // If yes, re-enable the flag so next app open shows biometric screen
+      final prefs = await SharedPreferences.getInstance();
+      final hadBiometricBefore = await _secureStorage.read(key: 'biometric_email') != null;
+      if (hadBiometricBefore) {
+        await prefs.setBool('biometric_enabled', true);
+      }
+
       if (!mounted) return;
       context.go('/main');
     } on FirebaseAuthException catch (e) {
-      // ✅ Use helper for formatted message
       final msg = _getErrorMessage(e);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,33 +272,43 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
         if (state is AuthLoading) {
-          showDialog(
-            context: context,
-            builder: (_) => const Center(
-              child: CircularProgressIndicator(),
-            ),
+          // Loading is handled by isLoading state
+        }
+
+        if (state is AuthSuccess) {
+          // Save credentials for biometric login using Secure Storage
+          await _secureStorage.write(
+            key: 'biometric_email',
+            value: emailController.text.trim(),
           );
-        }
+          await _secureStorage.write(
+            key: 'biometric_password',
+            value: passwordController.text.trim(),
+          );
 
-        if (state is AuthSuccess) {
-          context.go('/curre');
-        }
-
-        // في الـ BlocListener أو wherever you handle auth success:
-        if (state is AuthSuccess) {
-          // ⬅️ Check if currency already selected
           final prefs = await SharedPreferences.getInstance();
           final hasSelectedCurrency = prefs.getBool('has_selected_currency') ?? false;
 
           if (!mounted) return;
 
+          setState(() => isLoading = false);
+
           if (hasSelectedCurrency) {
-            // User already selected currency before → go Home
             context.go(AppRoutes.home);
           } else {
-            // First time → go to Currency Selection
             context.go(AppRoutes.currency);
           }
+        }
+
+        if (state is AuthFailure) {
+          if (!mounted) return;
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       },
       child: Scaffold(
@@ -280,12 +422,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            context.read<AuthBloc>().add(
-                              LoginRequested(
-                                email: emailController.text.trim(),
-                                password: passwordController.text.trim(),
-                              ),
-                            );
+                            login();
                           }
                         },
                         child: const Text("Login"),
@@ -314,6 +451,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         label: const Text("Login with Google"),
                       ),
+
+                      if (_isBiometricAvailable)
+                        Column(
+                          children: [
+                            SizedBox(height: 10.h),
+                            ElevatedButton.icon(
+                              onPressed: _authenticateWithBiometric,
+                              icon: const Icon(Icons.fingerprint, color: Colors.white),
+                              label: const Text("Login with Biometric"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2E8B7B),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
 
                       SizedBox(height: 30.h),
 

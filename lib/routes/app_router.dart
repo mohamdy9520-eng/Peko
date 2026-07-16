@@ -22,6 +22,7 @@ import '../income/add_income_screen.dart';
 import '../main_navigation_screen/main_navScreen.dart';
 import '../profile/screens_profile/change_Currency.dart';
 import '../screens/bill_payment_screen.dart';
+import '../screens/biometricLoginScreen.dart';
 import '../screens/currency_screen.dart';
 import '../screens/language_screen.dart';
 import '../screens/transaction_details_screen.dart';
@@ -249,6 +250,13 @@ class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, __) => const AllTransactionsScreen(),
       ),
+
+      GoRoute(
+        path: '/biometric-login',
+        builder: (context, state) => const BiometricLoginScreen(),
+      ),
+
+
       GoRoute(
         path: AppRoutes.aiResult,
         parentNavigatorKey: rootNavigatorKey,

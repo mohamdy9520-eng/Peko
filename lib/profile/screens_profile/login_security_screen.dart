@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../routes/app_router.dart';
 import '../fireBase_service/fireBase_service.dart';
@@ -17,6 +19,7 @@ class LoginSecurityScreen extends StatefulWidget {
 class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final LocalAuthentication _localAuth = LocalAuthentication();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   bool _is2FAEnabled = false;
   bool _isBiometricEnabled = false;
   bool _isLoading = false;
@@ -34,9 +37,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   Future<void> _loadBiometricState() async {
     final isAvailable = await _localAuth.canCheckBiometrics;
     final isDeviceSupported = await _localAuth.isDeviceSupported();
+    final prefs = await SharedPreferences.getInstance();
+    final savedEnabled = prefs.getBool('biometric_enabled') ?? false;
+
     if (mounted) {
       setState(() {
-        _isBiometricEnabled = isAvailable && isDeviceSupported;
+        _isBiometricEnabled = savedEnabled && isAvailable && isDeviceSupported;
       });
     }
   }
@@ -168,9 +174,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // SECURITY SCORE CARD
-  // ═══════════════════════════════════════════════════════════
   Widget _buildSecurityScoreCard(User? user) {
     int score = 0, maxScore = 4;
     if (user?.email != null) score++;
@@ -408,9 +411,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // BIOMETRIC AUTHENTICATION
-  // ═══════════════════════════════════════════════════════════
   Future<void> _handleBiometricToggle(bool value) async {
     HapticFeedback.lightImpact();
     setState(() => _isCheckingBiometric = true);
@@ -427,6 +427,18 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
       }
 
       if (value) {
+        // Check if credentials exist in Secure Storage
+        final savedEmail = await _secureStorage.read(key: 'biometric_email');
+        final savedPassword = await _secureStorage.read(key: 'biometric_password');
+
+        if (savedEmail == null || savedPassword == null) {
+          if (mounted) {
+            _showError('Please login with email/password first to enable biometric login');
+            setState(() => _isCheckingBiometric = false);
+          }
+          return;
+        }
+
         // Authenticate to enable biometric
         final didAuthenticate = await _localAuth.authenticate(
           localizedReason: 'Authenticate to enable biometric login',
@@ -440,6 +452,8 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
         if (mounted) {
           setState(() => _isBiometricEnabled = didAuthenticate);
           if (didAuthenticate) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('biometric_enabled', true);
             _showSuccess('Biometric login enabled');
           } else {
             _showError('Biometric authentication failed');
@@ -447,6 +461,9 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
         }
       } else {
         setState(() => _isBiometricEnabled = false);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('biometric_enabled', false);
+        // Keep credentials in Secure Storage so user can re-enable without re-login
         _showSuccess('Biometric login disabled');
       }
     } catch (e) {
@@ -456,9 +473,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 2FA TOGGLE
-  // ═══════════════════════════════════════════════════════════
   void _handle2FAToggle(bool value) {
     if (value) {
       _show2FASetupDialog();
@@ -468,9 +482,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // CHANGE EMAIL DIALOG
-  // ═══════════════════════════════════════════════════════════
   void _showChangeEmailDialog() {
     final controller = TextEditingController();
     final passwordController = TextEditingController();
@@ -570,9 +581,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     return null;
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // CHANGE PASSWORD DIALOG
-  // ═══════════════════════════════════════════════════════════
   void _showChangePasswordDialog() {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
@@ -739,9 +747,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // 2FA SETUP DIALOG
-  // ═══════════════════════════════════════════════════════════
   void _show2FASetupDialog() {
     showDialog(
       context: context,
@@ -797,9 +802,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // LOGOUT DIALOG
-  // ═══════════════════════════════════════════════════════════
   void _showLogoutDialog() {
     HapticFeedback.mediumImpact();
     showDialog(
@@ -824,6 +826,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               Navigator.pop(dialogContext);
               setState(() => _isLoading = true);
               try {
+                // Only disable the flag, keep credentials for next biometric login
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('biometric_enabled', false);
+                // Do NOT delete credentials from Secure Storage
+                // so BiometricLoginScreen can still use them next time
+
                 await _firebaseService.signOut();
                 if (mounted) {
                   context.go(AppRoutes.login);
@@ -847,9 +855,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // DELETE ACCOUNT DIALOG
-  // ═══════════════════════════════════════════════════════════
   void _showDeleteAccountDialog() {
     HapticFeedback.mediumImpact();
     final passwordController = TextEditingController();
@@ -939,6 +944,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                   : () async {
                 dialogSetState(() => isLoading = true);
                 try {
+                  // Clear everything on account deletion
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('biometric_enabled', false);
+                  await _secureStorage.delete(key: 'biometric_email');
+                  await _secureStorage.delete(key: 'biometric_password');
+
                   await _firebaseService.reauthenticate(passwordController.text.trim());
                   await _firebaseService.deleteAccount();
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
@@ -970,9 +981,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // SNACKBAR HELPERS
-  // ═══════════════════════════════════════════════════════════
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
