@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import 'package:fluttermoji/fluttermojiCircleAvatar.dart';
-
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../fireBase_service/fireBase_service.dart';
 import '../user_model/user_model.dart';
 
@@ -17,12 +19,13 @@ class PersonalProfileScreen extends StatefulWidget {
 
 class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
   final _firebaseService = FirebaseService();
-
   static const Color _primaryColor = Color(0xFF2E8B7B);
 
-  // ═══════════════════════════════════════════════════════════
-  // AVATAR PICKER - Fluttermoji
-  // ═══════════════════════════════════════════════════════════
+  void _syncAvatarToLocalCache(String avatarJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fluttermojiSelectedOptions', avatarJson);
+  }
+
   void _showAvatarPicker() {
     HapticFeedback.lightImpact();
 
@@ -64,12 +67,13 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
               child: ElevatedButton(
                 onPressed: () async {
                   final fluttermojiFunctions = FluttermojiFunctions();
-                  final svgString = await fluttermojiFunctions.encodeMySVGtoString();
+                  String jsonString = await fluttermojiFunctions.encodeMySVGtoString();
 
                   await _firebaseService.updateUserFields({
-                    'avatarBase64': svgString,
-                    'image': '', // Clear real photo when using avatar
+                    'avatarBase64': jsonString,
+                    'image': '',
                   });
+
                   if (mounted) {
                     _showSuccess('Avatar saved!');
                     Navigator.pop(context);
@@ -89,20 +93,21 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // BUILD AVATAR WIDGET
-  // ═══════════════════════════════════════════════════════════
   Widget _buildAvatar(UserModel user) {
-    // 1. Fluttermoji Avatar
-    if (user.hasAvatar) {
-      return FluttermojiCircleAvatar(
-        backgroundColor: Colors.grey.shade200,
+    if (user.avatarBase64 != null && user.avatarBase64!.trim().isNotEmpty && user.avatarBase64!.contains('{')) {
+      return CircleAvatar(
         radius: 60,
+        backgroundColor: Colors.grey.shade100,
+        child: ClipOval(
+          child: FluttermojiCircleAvatar(
+            radius: 55,
+            backgroundColor: Colors.transparent,
+          ),
+        ),
       );
     }
 
-    // 2. Real photo (base64 from camera/gallery)
-    if (user.hasImage) {
+    if (user.hasImage && user.image.isNotEmpty) {
       if (user.image.startsWith('http')) {
         return CircleAvatar(
           radius: 60,
@@ -121,7 +126,6 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
       }
     }
 
-    // 3. Default initials
     return _buildInitials(user);
   }
 
@@ -164,16 +168,16 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-
           final user = snapshot.data!;
+
+          if (user.avatarBase64 != null && user.avatarBase64!.trim().isNotEmpty && user.avatarBase64!.contains('{')) {
+            _syncAvatarToLocalCache(user.avatarBase64!);
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // ═══════════════════════════════════════════════════════
-                // AVATAR (Tap to customize)
-                // ═══════════════════════════════════════════════════════
                 GestureDetector(
                   onTap: _showAvatarPicker,
                   child: Stack(
@@ -189,7 +193,6 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
                           child: _buildAvatar(user),
                         ),
                       ),
-                      // Edit icon
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -216,9 +219,6 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // ═══════════════════════════════════════════════════════
-                // READ-ONLY INFO FIELDS
-                // ═══════════════════════════════════════════════════════
                 _buildInfoField('Full Name', user.name, Icons.person),
                 const SizedBox(height: 16),
                 _buildInfoField('Email', user.email, Icons.email),
@@ -237,9 +237,6 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // READ-ONLY INFO FIELD
-  // ═══════════════════════════════════════════════════════════
   Widget _buildInfoField(String label, String value, IconData icon) {
     return Container(
       width: double.infinity,
@@ -256,7 +253,7 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [

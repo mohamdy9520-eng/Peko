@@ -30,8 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final secureStorage = const FlutterSecureStorage();
 
-    final languageSelected =
-        prefs.getBool('language_selected') ?? false;
+    final languageSelected = prefs.getBool('language_selected') ?? false;
 
     if (!languageSelected) {
       debugPrint('GOING TO LANGUAGE SELECTION');
@@ -39,8 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    final hasSeenOnboarding =
-        prefs.getBool('has_seen_onboarding') ?? false;
+    final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
     final user = FirebaseAuth.instance.currentUser;
     final isBiometricEnabled = prefs.getBool('biometric_enabled') ?? false;
@@ -59,18 +57,23 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('GOING TO ONBOARDING');
       context.go('/onboarding');
     } else if (user == null) {
-      debugPrint('GOING TO LOGIN');
+      // المستخدم غير مسجل → صفحة تسجيل الدخول العادية
+      debugPrint('GOING TO LOGIN (No user found)');
       context.go('/login');
     } else if (!user.emailVerified) {
       debugPrint('GOING TO VERIFY EMAIL');
       context.go('/verify-email');
-    } else if (isBiometricEnabled && hasCredentials) {
-      // User is logged in + biometric enabled + credentials exist → show biometric screen
-      debugPrint('GOING TO BIOMETRIC LOGIN');
-      context.go('/biometric-login');
     } else {
-      debugPrint('GOING TO MAIN');
-      context.go('/main');
+      // المستخدم مسجل مسبقًا
+      if (isBiometricEnabled && hasCredentials) {
+        // مسجل + البصمة شغالة → شاشة البصمة
+        debugPrint('GOING TO BIOMETRIC LOGIN');
+        context.go('/biometric-login');
+      } else {
+        // مسجل بس مفيش بصمة → Main مباشرة
+        debugPrint('GOING TO MAIN');
+        context.go('/main');
+      }
     }
   }
 

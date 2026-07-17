@@ -27,7 +27,11 @@ dependencies:
   local_auth: ^2.1.8
   device_info_plus: ^9.1.2
   flutter_secure_storage: ^9.0.0
-
+  otp: ^3.1.4
+  qr_flutter: ^4.1.0
+  crypto: ^3.0.3
+  encrypt: ^5.0.1
+  
   # UI & Design
   google_fonts: ^8.1.0
   fl_chart: ^0.65.0
@@ -77,6 +81,7 @@ dependencies:
   provider: ^6.1.5+1
   purchases_flutter: ^8.11.0
   purchases_ui_flutter: ^8.11.0
+  firebase_remote_config: ^4.4.7
 
 
 dev_dependencies:

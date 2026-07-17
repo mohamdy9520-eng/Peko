@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/currency_model.dart';
@@ -61,13 +62,12 @@ class _ChangeCurrencyScreenState extends State<ChangeCurrencyScreen> {
     try {
       final provider = Provider.of<CurrencyProvider>(context, listen: false);
 
-      // ✅ نفس الميثود اللي في CurrencySelectionScreen
       await provider.setCurrency(_selectedCurrency!);
 
       if (!mounted) return;
 
       _showSuccess('تم تغيير العملة لـ ${provider.name}');
-      context.pop(); // ارجع للخلف
+      context.pop();
     } catch (e) {
       if (mounted) _showError('فشل الحفظ: $e');
     } finally {
@@ -108,7 +108,6 @@ class _ChangeCurrencyScreenState extends State<ChangeCurrencyScreen> {
             children: [
               const SizedBox(height: 16),
 
-              // العملة الحالية
               Text(
                 'العملة الحالية',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -165,12 +164,11 @@ class _ChangeCurrencyScreenState extends State<ChangeCurrencyScreen> {
               ),
               const SizedBox(height: 12),
 
-              // شبكة العملات
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 1.5,
+                    childAspectRatio: 1.3,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
@@ -199,14 +197,17 @@ class _ChangeCurrencyScreenState extends State<ChangeCurrencyScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(currency.flag, style: const TextStyle(fontSize: 28)),
-                            const SizedBox(height: 6),
-                            Text(
-                              currency.code,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isSelected ? _primaryColor : const Color(0xFF1A1A2E),
+                            Text(currency.flag, style: TextStyle(fontSize: 28.sp)),
+                            SizedBox(height: 6.h),
+                            Flexible(
+                              child: Text(
+                                currency.code,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14.sp,
+                                  color: isSelected ? _primaryColor : const Color(0xFF1A1A2E),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Text(

@@ -5,6 +5,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/di/services/totp_service.dart';
 
 class BiometricLoginScreen extends StatefulWidget {
   const BiometricLoginScreen({super.key});
@@ -16,6 +19,7 @@ class BiometricLoginScreen extends StatefulWidget {
 class _BiometricLoginScreenState extends State<BiometricLoginScreen> {
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
 
   @override
@@ -38,12 +42,10 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen> {
       );
 
       if (!didAuthenticate) {
-        // User cancelled or failed biometric → go to password login
         if (mounted) context.go('/login');
         return;
       }
 
-      // Get saved credentials
       final savedEmail = await _secureStorage.read(key: 'biometric_email');
       final savedPassword = await _secureStorage.read(key: 'biometric_password');
 
@@ -52,11 +54,24 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen> {
         return;
       }
 
-      // Sign in with saved credentials
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: savedEmail,
         password: savedPassword,
       );
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        final isTotpEnabled = doc.data()?['totp_enabled'] ?? false;
+
+        if (isTotpEnabled) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            _showTOTPVerificationDialog(user.uid);
+            return;
+          }
+        }
+      }
 
       if (mounted) context.go('/main');
 
@@ -89,6 +104,106 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showTOTPVerificationDialog(String userId) {
+    final codeController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, dialogSetState) {
+          bool isVerifying = false;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.security, color: Color(0xFF2E8B7B)),
+                SizedBox(width: 12),
+                Text('Two-Factor Authentication'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Enter the 6-digit code from your authenticator app',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: codeController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 8,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Verification Code',
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isVerifying ? null : () {
+                  Navigator.pop(dialogContext);
+                  context.go('/login');
+                },
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              ),
+              ElevatedButton(
+                onPressed: isVerifying
+                    ? null
+                    : () async {
+                  final enteredCode = codeController.text.trim();
+                  if (enteredCode.length != 6) {
+                    _showError('Please enter a 6-digit code');
+                    return;
+                  }
+
+                  dialogSetState(() => isVerifying = true);
+
+                  try {
+                    final isValid = TOTPService.verifyCode(userId, enteredCode);
+
+                    if (await isValid) {
+                      if (dialogContext.mounted) Navigator.pop(dialogContext);
+                      if (mounted) context.go('/main');
+                    } else {
+                      dialogSetState(() => isVerifying = false);
+                      _showError('Invalid code. Please try again.');
+                    }
+                  } catch (e) {
+                    dialogSetState(() => isVerifying = false);
+                    _showError('Verification failed: $e');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E8B7B),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: isVerifying
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+                    : const Text('Verify'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   String _getErrorMessage(dynamic error) {
@@ -153,7 +268,7 @@ class _BiometricLoginScreenState extends State<BiometricLoginScreen> {
               ),
               const SizedBox(height: 32),
               const Text(
-                'Pēco',
+                'Peko',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 32,

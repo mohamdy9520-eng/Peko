@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,9 +15,99 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:otp/otp.dart';
 
 import '../../../../routes/app_router.dart';
 import '../bloc/auth_bloc.dart';
+
+// ===================== TOTP Service (Secure - No Hardcoded Secret) =====================
+
+class TOTPService {
+  static const int _interval = 30;
+  static const int _digits = 6;
+  static const String _algorithm = 'SHA1';
+
+  /// Get the app secret from Firebase Remote Config (secure, server-side controlled)
+  static Future<String> _getAppSecret() async {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    await remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 10),
+      minimumFetchInterval: const Duration(hours: 1),
+    ));
+    await remoteConfig.fetchAndActivate();
+    return remoteConfig.getString('totp_app_secret');
+  }
+
+  /// Fallback secret only if Remote Config fails (should not happen in production)
+  static String _fallbackSecret() {
+    // In production, this should throw an error instead of returning a hardcoded value
+    // For development only - REPLACE with proper error handling before release
+    throw Exception('TOTP app secret not configured in Firebase Remote Config');
+  }
+
+  static Future<String> generateUserSecret(String userId) async {
+    String appSecret;
+    try {
+      appSecret = await _getAppSecret();
+    } catch (e) {
+      appSecret = _fallbackSecret();
+    }
+
+    final data = '$userId:$appSecret';
+    final bytes = utf8.encode(data);
+    final base64Str = base64.encode(bytes);
+    final clean = base64Str.replaceAll(RegExp(r'[^A-Z2-7]'), '');
+    return clean.length >= 32 ? clean.substring(0, 32) : clean.padRight(32, 'A');
+  }
+
+  static Future<String> generateQRCodeUrl({
+    required String userId,
+    required String email,
+    required String appName,
+  }) async {
+    final secret = await generateUserSecret(userId);
+    return 'otpauth://totp/$appName:${Uri.encodeComponent(email)}'
+        '?secret=$secret'
+        '&issuer=$appName'
+        '&algorithm=$_algorithm'
+        '&digits=$_digits'
+        '&period=$_interval';
+  }
+
+  static Future<String> generateCurrentCode(String userId) async {
+    final secret = await generateUserSecret(userId);
+    return OTP.generateTOTPCodeString(
+      secret,
+      DateTime.now().millisecondsSinceEpoch,
+      interval: _interval,
+      length: _digits,
+      algorithm: Algorithm.SHA1,
+      isGoogle: true,
+    );
+  }
+
+  static Future<bool> verifyCode(String userId, String enteredCode) async {
+    final secret = await generateUserSecret(userId);
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final currentCode = OTP.generateTOTPCodeString(
+      secret, now,
+      interval: _interval, length: _digits,
+      algorithm: Algorithm.SHA1, isGoogle: true,
+    );
+    if (enteredCode == currentCode) return true;
+
+    final previousCode = OTP.generateTOTPCodeString(
+      secret, now - (_interval * 1000),
+      interval: _interval, length: _digits,
+      algorithm: Algorithm.SHA1, isGoogle: true,
+    );
+    return enteredCode == previousCode;
+  }
+}
+
+// ===================== Login Screen =====================
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +118,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -35,8 +127,10 @@ class _LoginScreenState extends State<LoginScreen> {
   // Biometric
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isBiometricAvailable = false;
   bool _isBiometricEnabled = false;
+  bool _hasSavedCredentials = false;
 
   @override
   void initState() {
@@ -49,36 +143,318 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDeviceSupported = await _localAuth.isDeviceSupported();
     final prefs = await SharedPreferences.getInstance();
     final isEnabled = prefs.getBool('biometric_enabled') ?? false;
-
-    print('isAvailable: $isAvailable');
-    print('isDeviceSupported: $isDeviceSupported');
-    print('isEnabled: $isEnabled');
-    print('_isBiometricAvailable: ${isAvailable && isDeviceSupported}');
+    final hasCreds = await _secureStorage.read(key: 'biometric_email') != null;
 
     if (mounted) {
       setState(() {
         _isBiometricAvailable = isAvailable && isDeviceSupported;
         _isBiometricEnabled = isEnabled;
+        _hasSavedCredentials = hasCreds;
       });
     }
   }
+
+  Future<void> _saveBiometricCredentials() async {
+    await _secureStorage.write(
+      key: 'biometric_email',
+      value: emailController.text.trim(),
+    );
+    await _secureStorage.write(
+      key: 'biometric_password',
+      value: passwordController.text.trim(),
+    );
+  }
+
+  // ===================== MFA Check from Firestore =====================
+
+  Future<bool> _isMFAEnabled(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      return doc.data()?['totp_enabled'] ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> _isMFASetupComplete(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      return doc.data()?['totp_enabled'] ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// يفتح شاشة إعداد MFA (QR Code) للمرة الأولى
+  Future<void> _showMFASetupDialog(String userId, String email) async {
+    final qrUrl = await TOTPService.generateQRCodeUrl(
+      userId: userId,
+      email: email,
+      appName: 'Peco',
+    );
+    final secret = await TOTPService.generateUserSecret(userId);
+    final codeController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, dialogSetState) {
+          bool isVerifying = false;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                const Icon(Icons.security, color: Color(0xFF2E8B7B)),
+                SizedBox(width: 12.w),
+                Expanded(
+                    child: Text('Enable Two-Factor Authentication',
+                        style: TextStyle(fontSize: 18.sp))
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Scan this QR code with any authenticator app (Google Authenticator, Microsoft Authenticator, etc.)',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: QrImageView(
+                      data: qrUrl,
+                      version: QrVersions.auto,
+                      size: 200,
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Or enter this secret manually:', style: TextStyle(fontSize: 12)),
+                        SelectableText(
+                          secret,
+                          style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: codeController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      labelText: '6-digit Code',
+                      counterText: '',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isVerifying ? null : () => Navigator.pop(dialogContext),
+                child: Text('Skip', style: TextStyle(color: Colors.grey.shade600)),
+              ),
+              ElevatedButton(
+                onPressed: isVerifying
+                    ? null
+                    : () async {
+                  final code = codeController.text.trim();
+                  if (code.length != 6) {
+                    _showSnackBar('Please enter a 6-digit code', Colors.orange);
+                    return;
+                  }
+
+                  dialogSetState(() => isVerifying = true);
+
+                  final isValid = await TOTPService.verifyCode(userId, code);
+                  if (isValid) {
+                    // Save to Firestore
+                    await _firestore.collection('users').doc(userId).update({
+                      'totp_enabled': true,
+                      'totp_secret': secret,
+                    });
+
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    _showSnackBar('2FA enabled successfully!', Colors.green);
+                    _navigateAfterLogin();
+                  } else {
+                    dialogSetState(() => isVerifying = false);
+                    _showSnackBar('Invalid code. Please try again.', Colors.red);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E8B7B),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: isVerifying
+                    ? const SizedBox(
+                  width: 18, height: 18,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+                    : const Text('Verify & Enable'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// يفتح شاشة التحقق من MFA (للمستخدمين اللي فعّلوه قبل كده)
+  Future<void> _showMFAVerifyDialog(String userId) async {
+    final codeController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, dialogSetState) {
+          bool isVerifying = false;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.security, color: Color(0xFF2E8B7B)),
+                SizedBox(width: 12),
+                Text('Two-Factor Authentication'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF2E8B7B)),
+                const SizedBox(height: 12),
+                const Text('Enter the 6-digit code from your authenticator app'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: codeController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    labelText: 'Verification Code',
+                    counterText: '',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Timer showing when code expires
+                StreamBuilder(
+                  stream: Stream.periodic(const Duration(seconds: 1)),
+                  builder: (_, __) {
+                    final seconds = 30 - (DateTime.now().second % 30);
+                    return Text(
+                      'Code expires in $seconds seconds',
+                      style: TextStyle(
+                        color: seconds < 5 ? Colors.red : Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isVerifying ? null : () {
+                  Navigator.pop(dialogContext);
+                  setState(() => isLoading = false);
+                },
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              ),
+              ElevatedButton(
+                onPressed: isVerifying
+                    ? null
+                    : () async {
+                  final code = codeController.text.trim();
+                  if (code.length != 6) {
+                    _showSnackBar('Please enter a 6-digit code', Colors.orange);
+                    return;
+                  }
+
+                  dialogSetState(() => isVerifying = true);
+
+                  final isValid = await TOTPService.verifyCode(userId, code);
+                  if (isValid) {
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    _navigateAfterLogin();
+                  } else {
+                    dialogSetState(() => isVerifying = false);
+                    _showSnackBar('Invalid code. Please try again.', Colors.red);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E8B7B),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: isVerifying
+                    ? const SizedBox(
+                  width: 18, height: 18,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+                    : const Text('Verify'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _navigateAfterLogin() {
+    setState(() => isLoading = false);
+    context.go('/main');
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  // ===================== Biometric Login =====================
 
   Future<void> _authenticateWithBiometric() async {
     try {
       setState(() => isLoading = true);
 
-      // Check if credentials exist first
       final savedEmail = await _secureStorage.read(key: 'biometric_email');
       final savedPassword = await _secureStorage.read(key: 'biometric_password');
 
       if (savedEmail == null || savedPassword == null) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login with email/password first to enable biometric login'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnackBar('Please login with email/password first to enable biometric login', Colors.orange);
         return;
       }
 
@@ -96,53 +472,52 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Use FirebaseAuth directly for biometric login
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      // Sign in silently with saved credentials
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: savedEmail,
         password: savedPassword,
       );
 
-      // Re-enable biometric flag so next app open shows biometric screen
+      final userId = userCredential.user!.uid;
+
+      // Check MFA
+      final mfaEnabled = await _isMFAEnabled(userId);
+      if (mfaEnabled) {
+        setState(() => isLoading = false);
+        await _showMFAVerifyDialog(userId);
+        return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('biometric_enabled', true);
 
       if (!mounted) return;
-      context.go('/main');
+      _navigateAfterLogin();
 
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
         final msg = _getErrorMessage(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
-        );
+        _showSnackBar(msg, Colors.red);
       }
     } on PlatformException catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
         String message = 'Biometric authentication failed';
-        if (e.code == auth_error.notAvailable) {
-          message = 'Biometric not available';
-        } else if (e.code == auth_error.notEnrolled) {
-          message = 'No biometric enrolled on this device';
-        } else if (e.code == auth_error.passcodeNotSet) {
-          message = 'Device passcode not set';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
-        );
+        if (e.code == auth_error.notAvailable) message = 'Biometric not available';
+        else if (e.code == auth_error.notEnrolled) message = 'No biometric enrolled';
+        else if (e.code == auth_error.passcodeNotSet) message = 'Device passcode not set';
+        _showSnackBar(message, Colors.red);
       }
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: $e'), backgroundColor: Colors.red),
-        );
+        _showSnackBar('Login failed: $e', Colors.red);
       }
-    } finally {
-      if (mounted) setState(() => isLoading = false);
     }
   }
+
+  // ===================== Error Handling =====================
 
   String _getErrorMessage(dynamic error) {
     final errorString = error.toString().toLowerCase();
@@ -167,77 +542,83 @@ class _LoginScreenState extends State<LoginScreen> {
     return 'Error: $error';
   }
 
+  // ===================== Login =====================
+
   Future<void> login() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
       setState(() => isLoading = true);
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      // Save credentials for biometric login using Secure Storage
-      await _secureStorage.write(
-        key: 'biometric_email',
-        value: emailController.text.trim(),
-      );
-      await _secureStorage.write(
-        key: 'biometric_password',
-        value: passwordController.text.trim(),
-      );
+      final user = userCredential.user!;
+      final userId = user.uid;
+      final email = user.email ?? emailController.text.trim();
 
-      // Check if user previously had biometric enabled (credentials existed before)
-      // If yes, re-enable the flag so next app open shows biometric screen
-      final prefs = await SharedPreferences.getInstance();
-      final hadBiometricBefore = await _secureStorage.read(key: 'biometric_email') != null;
-      if (hadBiometricBefore) {
-        await prefs.setBool('biometric_enabled', true);
+      // Save credentials for biometric
+      await _saveBiometricCredentials();
+
+      // Check if user has MFA enabled from Firestore
+      final mfaEnabled = await _isMFAEnabled(userId);
+
+      if (!mfaEnabled) {
+        // First time - offer to setup MFA (optional, can skip)
+        setState(() => isLoading = false);
+        await _showMFASetupDialog(userId, email);
+        return;
       }
 
-      if (!mounted) return;
-      context.go('/main');
-    } on FirebaseAuthException catch (e) {
-      final msg = _getErrorMessage(e);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
+      // MFA enabled - verify
       setState(() => isLoading = false);
+      await _showMFAVerifyDialog(userId);
+
+    } on FirebaseAuthException catch (e) {
+      setState(() => isLoading = false);
+      final msg = _getErrorMessage(e);
+      if (mounted) {
+        _showSnackBar(msg, Colors.red);
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        _showSnackBar('Login failed: $e', Colors.red);
+      }
     }
   }
+
+  // ===================== Google Sign In =====================
 
   Future<void> signInWithGoogle() async {
     try {
       setState(() => isLoading = true);
 
       final googleUser = await GoogleSignIn().signIn();
-
-      if (googleUser == null) return;
+      if (googleUser == null) {
+        setState(() => isLoading = false);
+        return;
+      }
 
       final googleAuth = await googleUser.authentication;
-
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final userCredential =
-      await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
-
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       final user = userCredential.user!;
+      final userId = user.uid;
 
-      final userDoc = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
+      // Save email for biometric (Google users can't use biometric login without password)
+      if (user.email != null) {
+        await _secureStorage.write(key: 'biometric_email', value: user.email);
+      }
 
+      // Create user doc if not exists
+      final userDoc = _firestore.collection('users').doc(userId);
       final snapshot = await userDoc.get();
 
       if (!snapshot.exists) {
@@ -250,47 +631,53 @@ class _LoginScreenState extends State<LoginScreen> {
           'totalExpense': 0.0,
           'createdAt': Timestamp.now(),
           'imageUrl': user.photoURL ?? '',
+          'totp_enabled': false,
         });
       }
 
+      // Check MFA for Google users
+      final mfaEnabled = await _isMFAEnabled(userId);
+      if (mfaEnabled) {
+        setState(() => isLoading = false);
+        await _showMFAVerifyDialog(userId);
+        return;
+      }
+
+      // For Google users, offer MFA setup on first login
+      if (!snapshot.exists || !(snapshot.data()?['totp_enabled'] ?? false)) {
+        setState(() => isLoading = false);
+        await _showMFASetupDialog(userId, user.email ?? '');
+        return;
+      }
+
       if (!mounted) return;
-      context.go('/main');
+      _navigateAfterLogin();
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google sign-in failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+        _showSnackBar('Google sign-in failed: $e', Colors.red);
+      }
     }
   }
+
+  // ===================== Build =====================
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
         if (state is AuthLoading) {
-          // Loading is handled by isLoading state
+          setState(() => isLoading = true);
         }
 
         if (state is AuthSuccess) {
-          // Save credentials for biometric login using Secure Storage
-          await _secureStorage.write(
-            key: 'biometric_email',
-            value: emailController.text.trim(),
-          );
-          await _secureStorage.write(
-            key: 'biometric_password',
-            value: passwordController.text.trim(),
-          );
+          await _saveBiometricCredentials();
 
           final prefs = await SharedPreferences.getInstance();
           final hasSelectedCurrency = prefs.getBool('has_selected_currency') ?? false;
 
           if (!mounted) return;
-
           setState(() => isLoading = false);
 
           if (hasSelectedCurrency) {
@@ -303,22 +690,17 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthFailure) {
           if (!mounted) return;
           setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showSnackBar(state.message, Colors.red);
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text("Log In", style: TextStyle(
-            fontWeight: FontWeight.bold, fontSize: 40.sp
-        ),)),
+        appBar: AppBar(
+          title: Text("Log In", style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 40.sp
+          )),
+        ),
         body: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
+          onTap: () => FocusScope.of(context).unfocus(),
           child: isLoading
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
@@ -330,75 +712,47 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-
                       TextFormField(
                         controller: emailController,
                         decoration: InputDecoration(
                           labelText: "Email",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r),
-                            borderSide: BorderSide(
-                              color: Colors.green,
-                              width: 2.w,
-                            ),
+                            borderSide: BorderSide(color: Colors.green, width: 2.w),
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Email is required";
-                          }
-                          if (!value.contains('@')) {
-                            return "Enter valid email";
-                          }
+                          if (value == null || value.isEmpty) return "Email is required";
+                          if (!value.contains('@')) return "Enter valid email";
                           return null;
                         },
                       ),
-
                       SizedBox(height: 10.h),
-
                       TextFormField(
                         controller: passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.r),
-                            borderSide: BorderSide(
-                              color: Colors.green,
-                              width: 2.w,
-                            ),
+                            borderSide: BorderSide(color: Colors.green, width: 2.w),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
                               color: Colors.grey,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Password is required";
-                          }
-                          if (value.length < 6) {
-                            return "Min 6 characters";
-                          }
+                          if (value == null || value.isEmpty) return "Password is required";
+                          if (value.length < 6) return "Min 6 characters";
                           return null;
                         },
                       ),
-
                       Align(
                         alignment: Alignment.centerRight,
                         child: Padding(
@@ -416,9 +770,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
                       SizedBox(height: 20.h),
-
                       ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -427,9 +779,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text("Login"),
                       ),
-
                       SizedBox(height: 10.h),
-
                       Text(
                         "OR",
                         style: TextStyle(
@@ -439,9 +789,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-
                       SizedBox(height: 10.h),
-
                       ElevatedButton.icon(
                         onPressed: signInWithGoogle,
                         icon: SvgPicture.asset(
@@ -451,8 +799,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         label: const Text("Login with Google"),
                       ),
-
-                      if (_isBiometricAvailable)
+                      // Biometric button - only show if user has saved credentials before
+                      if (_isBiometricAvailable && _hasSavedCredentials)
                         Column(
                           children: [
                             SizedBox(height: 10.h),
@@ -470,9 +818,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-
                       SizedBox(height: 30.h),
-
                       Center(
                         child: RichText(
                           text: TextSpan(
@@ -486,9 +832,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    context.go('/signup');
-                                  },
+                                  ..onTap = () => context.go('/signup'),
                               ),
                             ],
                           ),

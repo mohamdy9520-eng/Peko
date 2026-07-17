@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
@@ -7,9 +8,13 @@ import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:otp/otp.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/di/services/totp_service.dart';
 import '../../routes/app_router.dart';
 import '../fireBase_service/fireBase_service.dart';
+
 
 class LoginSecurityScreen extends StatefulWidget {
   const LoginSecurityScreen({super.key});
@@ -20,6 +25,8 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   bool _is2FAEnabled = false;
   bool _isBiometricEnabled = false;
   bool _isLoading = false;
@@ -32,6 +39,21 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     super.initState();
     _loadBiometricState();
     _loadDeviceInfo();
+    _load2FAState();
+  }
+
+  Future<void> _load2FAState() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (mounted && doc.exists) {
+        setState(() => _is2FAEnabled = doc.data()?['totp_enabled'] ?? false);
+      }
+    } catch (e) {
+      debugPrint('Error loading 2FA state: $e');
+    }
   }
 
   Future<void> _loadBiometricState() async {
@@ -121,8 +143,8 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               _buildSecurityCard(
                 icon: Icons.security,
                 iconColor: _primaryColor,
-                title: 'Two-Factor Authentication',
-                subtitle: _is2FAEnabled ? 'Currently enabled' : 'Add an extra layer of security',
+                title: 'Two-Factor Authentication (TOTP)',
+                subtitle: _is2FAEnabled ? 'Currently enabled' : 'Add an extra layer of security with QR Code',
                 trailing: Switch(
                   value: _is2FAEnabled,
                   onChanged: (value) => _handle2FAToggle(value),
@@ -427,7 +449,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
       }
 
       if (value) {
-        // Check if credentials exist in Secure Storage
         final savedEmail = await _secureStorage.read(key: 'biometric_email');
         final savedPassword = await _secureStorage.read(key: 'biometric_password');
 
@@ -439,7 +460,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
           return;
         }
 
-        // Authenticate to enable biometric
         final didAuthenticate = await _localAuth.authenticate(
           localizedReason: 'Authenticate to enable biometric login',
           options: const AuthenticationOptions(
@@ -463,7 +483,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
         setState(() => _isBiometricEnabled = false);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('biometric_enabled', false);
-        // Keep credentials in Secure Storage so user can re-enable without re-login
         _showSuccess('Biometric login disabled');
       }
     } catch (e) {
@@ -473,14 +492,219 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     }
   }
 
-  void _handle2FAToggle(bool value) {
+  void _handle2FAToggle(bool value) async {
     if (value) {
       _show2FASetupDialog();
     } else {
-      setState(() => _is2FAEnabled = false);
-      _showSuccess('Two-Factor Authentication disabled');
+      try {
+        setState(() => _isLoading = true);
+        final user = FirebaseAuth.instance.currentUser!;
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'totp_enabled': false,
+          'totp_secret': null,
+        });
+
+        if (mounted) {
+          setState(() {
+            _is2FAEnabled = false;
+            _isLoading = false;
+          });
+          _showSuccess('Two-Factor Authentication disabled');
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showError('Failed to disable 2FA: $e');
+        }
+      }
     }
   }
+
+  void _show2FASetupDialog() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final secret = await TOTPService.generateUserSecret(user.uid);
+
+      final String qrURL = await TOTPService.generateQRCodeUrl(
+        userId: user.uid,
+        email: user.email ?? '',
+        appName: 'Peko',
+      );
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+
+      final codeController = TextEditingController();
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, dialogSetState) {
+            bool isVerifying = false;
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Row(
+                children: [
+                  Icon(Icons.security, color: _primaryColor),
+                  SizedBox(width: 12),
+                  Text('Enable 2FA'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Scan this QR code with any authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.)',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: QrImageView(
+                        data: qrURL,
+                        version: QrVersions.auto,
+                        size: 200,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              secret,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, size: 18),
+                            onPressed: () async {
+                              await Clipboard.setData(ClipboardData(text: secret));
+                              if (dialogContext.mounted) {
+                                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                  const SnackBar(content: Text('Secret copied!'), duration: Duration(seconds: 2)),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Or enter this secret manually in your authenticator app',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Enter the 6-digit code from your authenticator app to verify:',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: codeController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                      decoration: InputDecoration(
+                        labelText: 'Verification Code',
+                        counterText: '',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isVerifying ? null : () => Navigator.pop(dialogContext),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                ),
+                ElevatedButton(
+                  onPressed: isVerifying
+                      ? null
+                      : () async {
+                    final enteredCode = codeController.text.trim();
+                    if (enteredCode.length != 6) {
+                      _showError('Please enter a 6-digit code');
+                      return;
+                    }
+
+                    dialogSetState(() => isVerifying = true);
+
+                    try {
+                      final isValid = await TOTPService.verifyCode(user.uid, enteredCode);
+
+                      if (isValid) {
+                        await _firestore.collection('users').doc(user.uid).update({
+                          'totp_enabled': true,
+                          'totp_secret': secret,
+                        });
+
+                        if (dialogContext.mounted) Navigator.pop(dialogContext);
+                        if (mounted) {
+                          setState(() => _is2FAEnabled = true);
+                          _showSuccess('Two-Factor Authentication enabled successfully!');
+                        }
+                      } else {
+                        dialogSetState(() => isVerifying = false);
+                        _showError('Invalid code. Please try again.');
+                      }
+                    } catch (e) {
+                      dialogSetState(() => isVerifying = false);
+                      _showError('Verification failed: $e');
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isVerifying
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                      : const Text('Verify & Enable'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('Failed to initialize 2FA: $e');
+    }
+  }
+
 
   void _showChangeEmailDialog() {
     final controller = TextEditingController();
@@ -747,61 +971,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     );
   }
 
-  void _show2FASetupDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.security, color: _primaryColor),
-            SizedBox(width: 12),
-            Text('Two-Factor Authentication'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '2FA setup will be available in the next update. This will require integration with an authenticator app like Google Authenticator.',
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Coming Soon',
-                      style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Got it', style: TextStyle(color: _primaryColor)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showLogoutDialog() {
     HapticFeedback.mediumImpact();
     showDialog(
@@ -826,11 +995,8 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               Navigator.pop(dialogContext);
               setState(() => _isLoading = true);
               try {
-                // Only disable the flag, keep credentials for next biometric login
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('biometric_enabled', false);
-                // Do NOT delete credentials from Secure Storage
-                // so BiometricLoginScreen can still use them next time
 
                 await _firebaseService.signOut();
                 if (mounted) {
@@ -944,7 +1110,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                   : () async {
                 dialogSetState(() => isLoading = true);
                 try {
-                  // Clear everything on account deletion
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('biometric_enabled', false);
                   await _secureStorage.delete(key: 'biometric_email');
