@@ -2,19 +2,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:local_auth/error_codes.dart' as auth_error;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:otp/otp.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/di/services/totp_service.dart';
-import '../../routes/app_router.dart';
 import '../fireBase_service/fireBase_service.dart';
-
 
 class LoginSecurityScreen extends StatefulWidget {
   const LoginSecurityScreen({super.key});
@@ -90,99 +87,104 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Login & Security'),
+        title: Text('Login & Security', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600)),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildSecurityScoreCard(user),
-              const SizedBox(height: 24),
-              _buildSectionHeader('Account Security'),
-              _buildSecurityCard(
-                icon: Icons.email_outlined,
-                iconColor: Colors.blue,
-                title: 'Email Address',
-                subtitle: user?.email ?? 'Not available',
-                trailing: TextButton(
-                  onPressed: () => _showChangeEmailDialog(),
-                  child: const Text('Change', style: TextStyle(color: _primaryColor)),
-                ),
-              ),
-              _buildSecurityCard(
-                icon: Icons.lock_outline,
-                iconColor: Colors.orange,
-                title: 'Password',
-                subtitle: 'Tap to update your password',
-                trailing: TextButton(
-                  onPressed: () => _showChangePasswordDialog(),
-                  child: const Text('Update', style: TextStyle(color: _primaryColor)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildSectionHeader('Authentication Methods'),
-              _buildSecurityCard(
-                icon: Icons.fingerprint,
-                iconColor: Colors.purple,
-                title: 'Biometric Login',
-                subtitle: _isCheckingBiometric
-                    ? 'Checking availability...'
-                    : 'Use fingerprint or face recognition',
-                trailing: _isCheckingBiometric
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Switch(
-                  value: _isBiometricEnabled,
-                  onChanged: (value) => _handleBiometricToggle(value),
-                  activeColor: _primaryColor,
-                ),
-              ),
-              _buildSecurityCard(
-                icon: Icons.security,
-                iconColor: _primaryColor,
-                title: 'Two-Factor Authentication (TOTP)',
-                subtitle: _is2FAEnabled ? 'Currently enabled' : 'Add an extra layer of security with QR Code',
-                trailing: Switch(
-                  value: _is2FAEnabled,
-                  onChanged: (value) => _handle2FAToggle(value),
-                  activeColor: _primaryColor,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildSectionHeader('Active Sessions'),
-              _buildSessionCard(user),
-              const SizedBox(height: 40),
-              _buildSectionHeader('Danger Zone', color: Colors.red),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Column(
-                  children: [
-                    _buildDangerTile(
-                      icon: Icons.logout,
-                      title: 'Logout',
-                      subtitle: 'Sign out from this device',
-                      onTap: () => _showLogoutDialog(),
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 600.w),
+              child: ListView(
+                padding: EdgeInsets.all(16.r),
+                children: [
+                  _buildSecurityScoreCard(user),
+                  SizedBox(height: 24.h),
+                  _buildSectionHeader('Account Security'),
+                  _buildSecurityCard(
+                    icon: Icons.email_outlined,
+                    iconColor: Colors.blue,
+                    title: 'Email Address',
+                    subtitle: user?.email ?? 'Not available',
+                    trailing: TextButton(
+                      onPressed: () => _showChangeEmailDialog(),
+                      child: Text('Change', style: TextStyle(color: _primaryColor, fontSize: 14.sp)),
                     ),
-                    Divider(height: 1, color: Colors.red.shade200, indent: 56),
-                    _buildDangerTile(
-                      icon: Icons.delete_forever,
-                      title: 'Delete Account',
-                      subtitle: 'Permanently delete your account and data',
-                      onTap: () => _showDeleteAccountDialog(),
-                      isDestructive: true,
+                  ),
+                  _buildSecurityCard(
+                    icon: Icons.lock_outline,
+                    iconColor: Colors.orange,
+                    title: 'Password',
+                    subtitle: 'Tap to update your password',
+                    trailing: TextButton(
+                      onPressed: () => _showChangePasswordDialog(),
+                      child: Text('Update', style: TextStyle(color: _primaryColor, fontSize: 14.sp)),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 24.h),
+                  _buildSectionHeader('Authentication Methods'),
+                  _buildSecurityCard(
+                    icon: Icons.fingerprint,
+                    iconColor: Colors.purple,
+                    title: 'Biometric Login',
+                    subtitle: _isCheckingBiometric
+                        ? 'Checking availability...'
+                        : 'Use fingerprint or face recognition',
+                    trailing: _isCheckingBiometric
+                        ? SizedBox(width: 20.r, height: 20.r, child: CircularProgressIndicator(strokeWidth: 2.w))
+                        : Switch(
+                      value: _isBiometricEnabled,
+                      onChanged: (value) => _handleBiometricToggle(value),
+                      activeColor: _primaryColor,
+                    ),
+                  ),
+                  _buildSecurityCard(
+                    icon: Icons.security,
+                    iconColor: _primaryColor,
+                    title: 'Two-Factor Authentication (TOTP)',
+                    subtitle: _is2FAEnabled ? 'Currently enabled' : 'Add an extra layer of security with QR Code',
+                    trailing: Switch(
+                      value: _is2FAEnabled,
+                      onChanged: (value) => _handle2FAToggle(value),
+                      activeColor: _primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  _buildSectionHeader('Active Sessions'),
+                  _buildSessionCard(user),
+                  SizedBox(height: 40.h),
+                  _buildSectionHeader('Danger Zone', color: Colors.red),
+                  SizedBox(height: 12.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDangerTile(
+                          icon: Icons.logout,
+                          title: 'Logout',
+                          subtitle: 'Sign out from this device',
+                          onTap: () => _showLogoutDialog(),
+                        ),
+                        Divider(height: 1.h, color: Colors.red.shade200, indent: 56.w),
+                        _buildDangerTile(
+                          icon: Icons.delete_forever,
+                          title: 'Delete Account',
+                          subtitle: 'Permanently delete your account and data',
+                          onTap: () => _showDeleteAccountDialog(),
+                          isDestructive: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           if (_isLoading)
             Container(
@@ -207,15 +209,15 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     final scoreText = percentage >= 75 ? 'Strong' : percentage >= 50 ? 'Fair' : 'Weak';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 10.r,
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
@@ -225,36 +227,36 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 64,
-                height: 64,
+                width: 64.r,
+                height: 64.r,
                 child: CircularProgressIndicator(
                   value: score / maxScore,
-                  strokeWidth: 6,
+                  strokeWidth: 6.w,
                   backgroundColor: Colors.grey.shade200,
                   valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
                 ),
               ),
               Text(
                 '$percentage%',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: scoreColor),
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: scoreColor),
               ),
             ],
           ),
-          const SizedBox(width: 20),
+          SizedBox(width: 20.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Security Score: $scoreText',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A2E)),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   percentage >= 75
                       ? 'Your account is well protected!'
                       : 'Complete the steps below to improve security.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -266,12 +268,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
 
   Widget _buildSectionHeader(String title, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: EdgeInsets.only(left: 4.w, bottom: 12.h),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
           color: color ?? Colors.grey.shade500,
-          fontSize: 12,
+          fontSize: 12.sp,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
         ),
@@ -287,34 +289,34 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     required Widget trailing,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 22.r),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E)),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
                   ),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                  SizedBox(height: 2.h),
+                  Text(subtitle, style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade500)),
                 ],
               ),
             ),
@@ -331,49 +333,49 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
         ? '${lastSignIn.day}/${lastSignIn.month}/${lastSignIn.year} at ${lastSignIn.hour}:${lastSignIn.minute.toString().padLeft(2, '0')}'
         : 'Unknown';
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Icon(Icons.phone_android, color: Colors.green.shade600, size: 22),
+              child: Icon(Icons.phone_android, color: Colors.green.shade600, size: 22.r),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     _deviceName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E)),
+                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2.h),
                   Text(
                     'Active now • Last sign-in: $formattedDate',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade500),
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: const Color(0xFF2E8B7B).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
               ),
-              child: const Text(
+              child: Text(
                 'This Device',
-                style: TextStyle(color: _primaryColor, fontSize: 12, fontWeight: FontWeight.w600),
+                style: TextStyle(color: _primaryColor, fontSize: 12.sp, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -391,24 +393,24 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: isDestructive ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: Icon(
                 icon,
                 color: isDestructive ? Colors.red.shade400 : Colors.orange.shade400,
-                size: 22,
+                size: 22.r,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,17 +418,17 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
                       color: isDestructive ? Colors.red.shade700 : Colors.orange.shade700,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                  SizedBox(height: 2.h),
+                  Text(subtitle, style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade500)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 24.r),
           ],
         ),
       ),
@@ -549,64 +551,64 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
           builder: (dialogContext, dialogSetState) {
             bool isVerifying = false;
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Row(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+              title: Row(
                 children: [
-                  Icon(Icons.security, color: _primaryColor),
-                  SizedBox(width: 12),
-                  Text('Enable 2FA'),
+                  Icon(Icons.security, color: _primaryColor, size: 24.r),
+                  SizedBox(width: 12.w),
+                  Text('Enable 2FA', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Scan this QR code with any authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.)',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14.sp),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12.r),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: QrImageView(
                         data: qrURL,
                         version: QrVersions.auto,
-                        size: 200,
+                        size: 200.r,
                         backgroundColor: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12.r),
                       decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
                               secret,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'monospace',
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.copy, size: 18),
+                            icon: Icon(Icons.copy, size: 18.r),
                             onPressed: () async {
                               await Clipboard.setData(ClipboardData(text: secret));
                               if (dialogContext.mounted) {
                                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                  const SnackBar(content: Text('Secret copied!'), duration: Duration(seconds: 2)),
+                                  SnackBar(content: Text('Secret copied!', style: TextStyle(fontSize: 14.sp)), duration: const Duration(seconds: 2)),
                                 );
                               }
                             },
@@ -614,28 +616,29 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       'Or enter this secret manually in your authenticator app',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
+                    SizedBox(height: 20.h),
+                    Text(
                       'Enter the 6-digit code from your authenticator app to verify:',
                       textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14.sp),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     TextField(
                       controller: codeController,
                       keyboardType: TextInputType.number,
                       maxLength: 6,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                      style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, letterSpacing: 8.w),
                       decoration: InputDecoration(
                         labelText: 'Verification Code',
                         counterText: '',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                        contentPadding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                     ),
                   ],
@@ -644,7 +647,7 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               actions: [
                 TextButton(
                   onPressed: isVerifying ? null : () => Navigator.pop(dialogContext),
-                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
                 ),
                 ElevatedButton(
                   onPressed: isVerifying
@@ -684,15 +687,15 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                   child: isVerifying
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      ? SizedBox(
+                    width: 20.r,
+                    height: 20.r,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.w),
                   )
-                      : const Text('Verify & Enable'),
+                      : Text('Verify & Enable', style: TextStyle(fontSize: 14.sp)),
                 ),
               ],
             );
@@ -705,7 +708,6 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
     }
   }
 
-
   void _showChangeEmailDialog() {
     final controller = TextEditingController();
     final passwordController = TextEditingController();
@@ -717,12 +719,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, dialogSetState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+          title: Row(
             children: [
-              Icon(Icons.email, color: _primaryColor),
-              SizedBox(width: 12),
-              Text('Change Email'),
+              Icon(Icons.email, color: _primaryColor, size: 24.r),
+              SizedBox(width: 12.w),
+              Text('Change Email', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Column(
@@ -730,27 +732,29 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
             children: [
               TextField(
                 controller: controller,
+                style: TextStyle(fontSize: 14.sp),
                 decoration: InputDecoration(
                   labelText: 'New Email',
-                  prefixIcon: const Icon(Icons.email, color: _primaryColor),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: Icon(Icons.email, color: _primaryColor, size: 20.r),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   errorText: _validateEmail(controller.text),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) => dialogSetState(() {}),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               TextField(
                 controller: passwordController,
                 obscureText: isObscured,
+                style: TextStyle(fontSize: 14.sp),
                 decoration: InputDecoration(
                   labelText: 'Current Password (for verification)',
-                  prefixIcon: const Icon(Icons.lock, color: _primaryColor),
+                  prefixIcon: Icon(Icons.lock, color: _primaryColor, size: 20.r),
                   suffixIcon: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility),
+                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, size: 20.r),
                     onPressed: () => dialogSetState(() => isObscured = !isObscured),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                 ),
               ),
             ],
@@ -758,7 +762,7 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
           actions: [
             TextButton(
               onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
             ),
             ElevatedButton(
               onPressed: isLoading || _validateEmail(controller.text) != null
@@ -782,15 +786,15 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                width: 20.r,
+                height: 20.r,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.w),
               )
-                  : const Text('Update'),
+                  : Text('Update', style: TextStyle(fontSize: 14.sp)),
             ),
           ],
         ),
@@ -819,12 +823,12 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, dialogSetState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+          title: Row(
             children: [
-              Icon(Icons.lock, color: _primaryColor),
-              SizedBox(width: 12),
-              Text('Change Password'),
+              Icon(Icons.lock, color: _primaryColor, size: 24.r),
+              SizedBox(width: 12.w),
+              Text('Change Password', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
           content: SingleChildScrollView(
@@ -834,71 +838,79 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
                 TextField(
                   controller: currentPasswordController,
                   obscureText: isCurrentObscured,
+                  style: TextStyle(fontSize: 14.sp),
                   decoration: InputDecoration(
                     labelText: 'Current Password',
-                    prefixIcon: const Icon(Icons.lock, color: _primaryColor),
+                    prefixIcon: Icon(Icons.lock, color: _primaryColor, size: 20.r),
                     suffixIcon: IconButton(
-                      icon: Icon(isCurrentObscured ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(isCurrentObscured ? Icons.visibility_off : Icons.visibility, size: 20.r),
                       onPressed: () => dialogSetState(() => isCurrentObscured = !isCurrentObscured),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: newPasswordController,
                   obscureText: isNewObscured,
+                  style: TextStyle(fontSize: 14.sp),
                   onChanged: (_) => dialogSetState(() {}),
                   decoration: InputDecoration(
                     labelText: 'New Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: _primaryColor),
+                    prefixIcon: Icon(Icons.lock_outline, color: _primaryColor, size: 20.r),
                     suffixIcon: IconButton(
-                      icon: Icon(isNewObscured ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(isNewObscured ? Icons.visibility_off : Icons.visibility, size: 20.r),
                       onPressed: () => dialogSetState(() => isNewObscured = !isNewObscured),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: isConfirmObscured,
+                  style: TextStyle(fontSize: 14.sp),
+                  onChanged: (_) => dialogSetState(() {}),
                   decoration: InputDecoration(
                     labelText: 'Confirm New Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: _primaryColor),
+                    prefixIcon: Icon(Icons.lock_outline, color: _primaryColor, size: 20.r),
                     suffixIcon: IconButton(
-                      icon: Icon(isConfirmObscured ? Icons.visibility_off : Icons.visibility),
+                      icon: Icon(isConfirmObscured ? Icons.visibility_off : Icons.visibility, size: 20.r),
                       onPressed: () => dialogSetState(() => isConfirmObscured = !isConfirmObscured),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                 ),
-                const SizedBox(height: 16),
-                _buildPasswordRequirements(newPasswordController.text),
               ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
             ),
             ElevatedButton(
-              onPressed: isLoading || !_isPasswordValid(newPasswordController.text)
+              onPressed: isLoading
                   ? null
                   : () async {
-                if (currentPasswordController.text.trim().isEmpty) {
-                  _showError('Please enter your current password');
+                if (currentPasswordController.text.trim().isEmpty ||
+                    newPasswordController.text.trim().isEmpty ||
+                    confirmPasswordController.text.trim().isEmpty) {
+                  _showError('All fields are required');
                   return;
                 }
-                if (newPasswordController.text != confirmPasswordController.text) {
-                  _showError('Passwords do not match');
+                if (newPasswordController.text.trim() != confirmPasswordController.text.trim()) {
+                  _showError('New passwords do not match');
+                  return;
+                }
+                if (newPasswordController.text.trim().length < 6) {
+                  _showError('Password must be at least 6 characters');
                   return;
                 }
                 dialogSetState(() => isLoading = true);
                 try {
                   await _firebaseService.reauthenticate(currentPasswordController.text.trim());
-                  await _firebaseService.changePassword(newPasswordController.text);
+                  await _firebaseService.changePassword(newPasswordController.text.trim());
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
                   _showSuccess('Password updated successfully!');
                 } catch (e) {
@@ -909,112 +921,50 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                width: 20.r,
+                height: 20.r,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.w),
               )
-                  : const Text('Update'),
+                  : Text('Update Password', style: TextStyle(fontSize: 14.sp)),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  bool _isPasswordValid(String password) {
-    return password.length >= 8 &&
-        password.contains(RegExp(r'[A-Z]')) &&
-        password.contains(RegExp(r'[a-z]')) &&
-        password.contains(RegExp(r'[0-9]')) &&
-        password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-  }
-
-  Widget _buildPasswordRequirements(String password) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Password Requirements:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 8),
-          _buildRequirement('At least 8 characters', password.length >= 8),
-          _buildRequirement('Contains uppercase letter', password.contains(RegExp(r'[A-Z]'))),
-          _buildRequirement('Contains lowercase letter', password.contains(RegExp(r'[a-z]'))),
-          _buildRequirement('Contains number', password.contains(RegExp(r'[0-9]'))),
-          _buildRequirement('Contains special character', password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRequirement(String text, bool met) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(met ? Icons.check_circle : Icons.circle_outlined, size: 14, color: met ? Colors.green : Colors.grey.shade400),
-          const SizedBox(width: 8),
-          Text(text, style: TextStyle(fontSize: 12, color: met ? Colors.green.shade700 : Colors.grey.shade500)),
-        ],
       ),
     );
   }
 
   void _showLogoutDialog() {
-    HapticFeedback.mediumImpact();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 12),
-            Text('Logout'),
-          ],
-        ),
-        content: const Text('Are you sure you want to sign out from this device?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text('Logout', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to sign out from this device?', style: TextStyle(fontSize: 14.sp)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              setState(() => _isLoading = true);
               try {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('biometric_enabled', false);
-
                 await _firebaseService.signOut();
-                if (mounted) {
-                  context.go(AppRoutes.login);
-                }
+                if (mounted) context.go('/login');
               } catch (e) {
-                if (mounted) {
-                  setState(() => _isLoading = false);
-                  _showError('Failed to sign out: $e');
-                }
+                _showError('Failed to logout: $e');
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
+              backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
-            child: const Text('Logout'),
+            child: Text('Logout', style: TextStyle(fontSize: 14.sp)),
           ),
         ],
       ),
@@ -1022,123 +972,83 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   }
 
   void _showDeleteAccountDialog() {
-    HapticFeedback.mediumImpact();
     final passwordController = TextEditingController();
     bool isObscured = true;
     bool isLoading = false;
-    bool isConfirmed = false;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, dialogSetState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+          title: Row(
             children: [
-              Icon(Icons.delete_forever, color: Colors.red),
-              SizedBox(width: 12),
-              Text('Delete Account'),
+              Icon(Icons.warning, color: Colors.red, size: 24.r),
+              SizedBox(width: 12.w),
+              Text('Delete Account', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'This action cannot be undone. All your data will be permanently deleted.',
+                style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w500, fontSize: 14.sp),
+              ),
+              SizedBox(height: 16.h),
+              TextField(
+                controller: passwordController,
+                obscureText: isObscured,
+                style: TextStyle(fontSize: 14.sp),
+                decoration: InputDecoration(
+                  labelText: 'Enter Password to Confirm',
+                  prefixIcon: Icon(Icons.lock, color: Colors.red, size: 20.r),
+                  suffixIcon: IconButton(
+                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, size: 20.r),
+                    onPressed: () => dialogSetState(() => isObscured = !isObscured),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'This action is permanent and cannot be undone.',
-                          style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                 ),
-                const SizedBox(height: 16),
-                const Text('All your data including:', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                const Text('• Profile information'),
-                const Text('• Transaction history'),
-                const Text('• Friends and messages'),
-                const SizedBox(height: 12),
-                const Text('will be permanently deleted.'),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  value: isConfirmed,
-                  onChanged: (value) => dialogSetState(() => isConfirmed = value ?? false),
-                  title: const Text('I understand and want to delete my account'),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  activeColor: Colors.red,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordController,
-                  obscureText: isObscured,
-                  decoration: InputDecoration(
-                    labelText: 'Current Password (required)',
-                    prefixIcon: const Icon(Icons.lock, color: Colors.red),
-                    suffixIcon: IconButton(
-                      icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => dialogSetState(() => isObscured = !isObscured),
-                    ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
               onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
             ),
             ElevatedButton(
-              onPressed: isLoading || !isConfirmed || passwordController.text.trim().isEmpty
+              onPressed: isLoading
                   ? null
                   : () async {
+                if (passwordController.text.trim().isEmpty) {
+                  _showError('Please enter your password');
+                  return;
+                }
                 dialogSetState(() => isLoading = true);
                 try {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('biometric_enabled', false);
-                  await _secureStorage.delete(key: 'biometric_email');
-                  await _secureStorage.delete(key: 'biometric_password');
-
                   await _firebaseService.reauthenticate(passwordController.text.trim());
                   await _firebaseService.deleteAccount();
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
-                  if (mounted) {
-                    _showSuccess('Account deleted successfully');
-                    context.go(AppRoutes.login);
-                  }
+                  if (mounted) context.go('/login');
                 } catch (e) {
                   dialogSetState(() => isLoading = false);
-                  _showError('Failed to delete account: $e');
+                  _showError(e.toString());
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
+                backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                width: 20.r,
+                height: 20.r,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.w),
               )
-                  : const Text('Delete Account'),
+                  : Text('Delete Permanently', style: TextStyle(fontSize: 14.sp)),
             ),
           ],
         ),
@@ -1149,17 +1059,11 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
+        content: Text(message, style: TextStyle(fontSize: 14.sp)),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }
@@ -1167,17 +1071,11 @@ class _LoginSecurityScreenState extends State<LoginSecurityScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
+        content: Text(message, style: TextStyle(fontSize: 14.sp)),
         backgroundColor: Colors.red.shade400,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }

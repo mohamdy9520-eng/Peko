@@ -2,9 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:ai_expense_tracker/core/di/services/ai_access_service.dart';
 
 import '../fireBase_service/fireBase_service.dart';
 
@@ -34,112 +34,116 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Invite Friends'),
+        title: Text('Invite Friends', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600)),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
-              decoration: InputDecoration(
-                hintText: 'Search friends...',
-                prefixIcon: const Icon(Icons.search, color: _primaryColor),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-                    : null,
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 600.w),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: TextField(
+                  controller: _searchController,
+                  style: TextStyle(fontSize: 14.sp),
+                  onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                  decoration: InputDecoration(
+                    hintText: 'Search friends...',
+                    prefixIcon: Icon(Icons.search, color: _primaryColor, size: 22.r),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                      icon: Icon(Icons.clear, color: Colors.grey, size: 20.r),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ElevatedButton.icon(
-              onPressed: () => _showInviteFriendDialog(),
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Invite a Friend'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: ElevatedButton.icon(
+                  onPressed: () => _showInviteFriendDialog(),
+                  icon: Icon(Icons.person_add_alt_1, size: 22.r),
+                  label: Text('Invite a Friend', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 50.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                    elevation: 0,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firebaseService.getFriends(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                  return _buildLoadingState();
-                }
-                if (snapshot.hasError) {
-                  return _buildErrorState(snapshot.error.toString());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return _buildEmptyState();
-                }
-                final friends = snapshot.data!.docs.where((doc) {
-                  if (_searchQuery.isEmpty) return true;
-                  final data = doc.data() as Map<String, dynamic>;
-                  final name = (data['name'] ?? '').toString().toLowerCase();
-                  final email = (data['email'] ?? '').toString().toLowerCase();
-                  final phone = (data['phone'] ?? '').toString().toLowerCase();
-                  return name.contains(_searchQuery) ||
-                      email.contains(_searchQuery) ||
-                      phone.contains(_searchQuery);
-                }).toList();
-                if (friends.isEmpty) {
-                  return _buildNoSearchResults();
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: friends.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final friend = friends[index];
-                    final data = friend.data() as Map<String, dynamic>;
-                    return _FriendCard(
-                      name: data['name'] ?? 'Unknown',
-                      email: data['email'] ?? '',
-                      phone: data['phone'] ?? '',
-                      image: data['image'],
-                      addedAt: data['addedAt'] != null
-                          ? (data['addedAt'] as Timestamp).toDate()
-                          : null,
-                      onDelete: () => _confirmDeleteFriend(friend.id, data['name'] ?? 'this friend'),
+              SizedBox(height: 16.h),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _firebaseService.getFriends(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                      return _buildLoadingState();
+                    }
+                    if (snapshot.hasError) {
+                      return _buildErrorState(snapshot.error.toString());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return _buildEmptyState();
+                    }
+                    final friends = snapshot.data!.docs.where((doc) {
+                      if (_searchQuery.isEmpty) return true;
+                      final data = doc.data() as Map<String, dynamic>;
+                      final name = (data['name'] ?? '').toString().toLowerCase();
+                      final email = (data['email'] ?? '').toString().toLowerCase();
+                      final phone = (data['phone'] ?? '').toString().toLowerCase();
+                      return name.contains(_searchQuery) ||
+                          email.contains(_searchQuery) ||
+                          phone.contains(_searchQuery);
+                    }).toList();
+                    if (friends.isEmpty) {
+                      return _buildNoSearchResults();
+                    }
+                    return ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      itemCount: friends.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                      itemBuilder: (context, index) {
+                        final friend = friends[index];
+                        final data = friend.data() as Map<String, dynamic>;
+                        return _FriendCard(
+                          name: data['name'] ?? 'Unknown',
+                          email: data['email'] ?? '',
+                          phone: data['phone'] ?? '',
+                          image: data['image'],
+                          addedAt: data['addedAt'] != null
+                              ? (data['addedAt'] as Timestamp).toDate()
+                              : null,
+                          onDelete: () => _confirmDeleteFriend(friend.id, data['name'] ?? 'this friend'),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // ─────────────────────────────────────────────
-  // INVITE DIALOG
-  // ─────────────────────────────────────────────
+
   void _showInviteFriendDialog() {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
@@ -150,12 +154,12 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+          title: Row(
             children: [
-              Icon(Icons.person_add_alt_1, color: _primaryColor),
-              SizedBox(width: 12),
-              Text('Invite a Friend'),
+              Icon(Icons.person_add_alt_1, color: _primaryColor, size: 24.r),
+              SizedBox(width: 12.w),
+              Text('Invite a Friend', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
             ],
           ),
           content: SingleChildScrollView(
@@ -165,55 +169,57 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
               children: [
                 TextField(
                   controller: nameController,
+                  style: TextStyle(fontSize: 14.sp),
                   decoration: InputDecoration(
                     labelText: "Friend's Name *",
-                    prefixIcon: const Icon(Icons.person, color: _primaryColor),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.person, color: _primaryColor, size: 20.r),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: emailController,
+                  style: TextStyle(fontSize: 14.sp),
                   decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email, color: _primaryColor),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.email, color: _primaryColor, size: 20.r),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 TextField(
                   controller: phoneController,
+                  style: TextStyle(fontSize: 14.sp),
                   decoration: InputDecoration(
                     labelText: 'WhatsApp Number',
                     hintText: '+20xxxxxxxxxx',
-                    prefixIcon: const Icon(Icons.chat, color: _primaryColor),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.chat, color: _primaryColor, size: 20.r),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6.h),
                 Text(
                   'Enter at least an email or a WhatsApp number.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade500),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(10.r),
                   decoration: BoxDecoration(
                     color: _primaryColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.card_giftcard, color: _primaryColor, size: 20),
-                      SizedBox(width: 8),
+                      Icon(Icons.card_giftcard, color: _primaryColor, size: 20.r),
+                      SizedBox(width: 8.w),
                       Expanded(
                         child: Text(
-                          'Get +1 free AI Plan trial for every friend you invite '
-                              '(up to $_maxBonusInvites)!',
+                          'Get +1 free AI Plan trial for every friend you invite (up to $_maxBonusInvites)!',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.sp,
                             color: _primaryColor,
                             fontWeight: FontWeight.w600,
                           ),
@@ -228,7 +234,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
             ),
             ElevatedButton(
               onPressed: isLoading
@@ -259,15 +265,15 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               ),
               child: isLoading
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ? SizedBox(
+                width: 20.r,
+                height: 20.r,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.w),
               )
-                  : const Text('Send Invite'),
+                  : Text('Send Invite', style: TextStyle(fontSize: 14.sp)),
             ),
           ],
         ),
@@ -275,22 +281,15 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // GENERATE INVITE CODE
-  // ─────────────────────────────────────────────
+
   String _generateInviteCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();
     return List.generate(8, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
-  // ─────────────────────────────────────────────
-  // BUILD INVITE MESSAGE (with invite code)
-  // ─────────────────────────────────────────────
+
   String _buildInviteMessage(String friendName, String inviteCode) {
-    // TODO: استبدل الرابط ده لما تنشر التطبيق على Store
-    // Android: https://play.google.com/store/apps/details?id=com.peko.app
-    // iOS: https://apps.apple.com/app/idYOUR_APP_ID
     const appLink = '';
 
     return "Hi $friendName! \u{1F44B}\n\n"
@@ -308,9 +307,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
         .join('&');
   }
 
-  // ─────────────────────────────────────────────
-  // SEND INVITE (EMAIL + WHATSAPP) - NO REWARD HERE
-  // ─────────────────────────────────────────────
+
   Future<void> _inviteFriend({
     required String name,
     required String email,
@@ -365,7 +362,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       await Clipboard.setData(ClipboardData(text: message));
       if (mounted) {
         _showSuccess(
-          'Message copied to clipboard! 📋\n'
+          'Message copied to clipboard! \n'
               'Please open WhatsApp or Email and paste it manually.',
         );
       }
@@ -375,9 +372,7 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       }
     }
 
-    // ─────────────────────────────────────────────
-    // ADD FRIEND TO FIRESTORE (contacts collection)
-    // ─────────────────────────────────────────────
+
     final currentUserId = _firebaseService.uid;
     await _firebaseService.addFriend({
       'name': name,
@@ -397,19 +392,19 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
           children: [
-            Icon(Icons.delete_outline, color: Colors.red),
-            SizedBox(width: 12),
-            Text('Remove Friend'),
+            Icon(Icons.delete_outline, color: Colors.red, size: 24.r),
+            SizedBox(width: 12.w),
+            Text('Remove Friend', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text('Are you sure you want to remove $friendName from your friends list?'),
+        content: Text('Are you sure you want to remove $friendName from your friends list?', style: TextStyle(fontSize: 14.sp)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -424,9 +419,9 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
-            child: const Text('Remove'),
+            child: Text('Remove', style: TextStyle(fontSize: 14.sp)),
           ),
         ],
       ),
@@ -438,14 +433,14 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
         itemCount: 5,
         itemBuilder: (_, __) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          height: 80,
+          margin: EdgeInsets.only(bottom: 8.h),
+          height: 80.h,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
           ),
         ),
       ),
@@ -455,15 +450,15 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
   Widget _buildErrorState(String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-            const SizedBox(height: 16),
-            Text('Failed to load friends', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
-            const SizedBox(height: 8),
-            Text(error, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+            Icon(Icons.error_outline, size: 64.r, color: Colors.red.shade300),
+            SizedBox(height: 16.h),
+            Text('Failed to load friends', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+            SizedBox(height: 8.h),
+            Text(error, textAlign: TextAlign.center, style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600)),
           ],
         ),
       ),
@@ -473,21 +468,21 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 24),
+            Icon(Icons.people_outline, size: 80.r, color: Colors.grey.shade300),
+            SizedBox(height: 24.h),
             Text(
               'No Friends Yet',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Invite friends via email or WhatsApp and earn free AI Plan trials.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -500,11 +495,11 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
+          Icon(Icons.search_off, size: 64.r, color: Colors.grey.shade300),
+          SizedBox(height: 16.h),
           Text(
             'No results found',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 16.sp, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -514,11 +509,11 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: TextStyle(fontSize: 14.sp)),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }
@@ -526,11 +521,11 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: TextStyle(fontSize: 14.sp)),
         backgroundColor: Colors.red.shade400,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }
@@ -565,16 +560,16 @@ class _FriendCard extends StatelessWidget {
       background: Container(
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Row(
+        padding: EdgeInsets.only(right: 24.w),
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Icon(Icons.delete_outline, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            Icon(Icons.delete_outline, color: Colors.white, size: 24.r),
+            SizedBox(width: 8.w),
+            Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14.sp)),
           ],
         ),
       ),
@@ -582,44 +577,44 @@ class _FriendCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           leading: CircleAvatar(
-            radius: 28,
+            radius: 28.r,
             backgroundColor: const Color(0xFF2E8B7B).withOpacity(0.1),
             backgroundImage: image != null ? NetworkImage(image!) : null,
             child: image == null
                 ? Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                color: Color(0xFF2E8B7B),
+              style: TextStyle(
+                color: const Color(0xFF2E8B7B),
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 18.sp,
               ),
             )
                 : null,
           ),
           title: Text(
             name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16.sp),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 2),
+              SizedBox(height: 2.h),
               if (subtitleText.isNotEmpty)
-                Text(subtitleText, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                Text(subtitleText, style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade500)),
               if (addedAt != null)
                 Text(
                   'Added ${_formatDate(addedAt!)}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                  style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade400),
                 ),
             ],
           ),
           trailing: IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+            icon: Icon(Icons.more_vert, color: Colors.grey.shade400, size: 22.r),
             onPressed: onDelete,
           ),
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shimmer/shimmer.dart';
 import '../fireBase_service/fireBase_service.dart';
 import '../user_model/user_model.dart';
 
@@ -19,7 +21,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Account Info'),
+        title: Text('Account Info', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600)),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -28,33 +30,37 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
         stream: _firebaseService.getUser(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildLoadingState();
           }
 
           final user = snapshot.data!;
-          // ✅ جيب isEmailVerified مباشرة من Firebase Auth
           final authUser = FirebaseAuth.instance.currentUser;
           final isEmailVerified = authUser?.emailVerified ?? false;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildInfoCard(
-                  'Account Status',
-                  isEmailVerified ? 'Verified ✓' : 'Not Verified',
-                  isEmailVerified ? Icons.verified : Icons.warning,
-                  isEmailVerified ? Colors.green : Colors.orange,
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 600.w),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(20.r),
+                child: Column(
+                  children: [
+                    _buildInfoCard(
+                      'Account Status',
+                      isEmailVerified ? 'Verified ✓' : 'Not Verified',
+                      isEmailVerified ? Icons.verified : Icons.warning,
+                      isEmailVerified ? Colors.green : Colors.orange,
+                    ),
+                    SizedBox(height: 12.h),
+                    _buildInfoCard('Email', user.email, Icons.email, _primaryColor),
+                    SizedBox(height: 12.h),
+                    _buildInfoCard('User ID', user.uid, Icons.fingerprint, _primaryColor),
+                    SizedBox(height: 12.h),
+                    _buildInfoCard('Member Since', _formatDate(user.createdAt), Icons.calendar_today, _primaryColor),
+                    SizedBox(height: 12.h),
+                    _buildInfoCard('Last Updated', _formatDate(user.updatedAt), Icons.update, _primaryColor),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _buildInfoCard('Email', user.email, Icons.email, _primaryColor),
-                const SizedBox(height: 12),
-                _buildInfoCard('User ID', user.uid, Icons.fingerprint, _primaryColor),
-                const SizedBox(height: 12),
-                _buildInfoCard('Member Since', _formatDate(user.createdAt), Icons.calendar_today, _primaryColor),
-                const SizedBox(height: 12),
-                _buildInfoCard('Last Updated', _formatDate(user.updatedAt), Icons.update, _primaryColor),
-              ],
+              ),
             ),
           );
         },
@@ -65,39 +71,71 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
   Widget _buildInfoCard(String label, String value, IconData icon, Color iconColor) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10.r,
+            offset: Offset(0, 4.h),
+          ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10.r),
             decoration: BoxDecoration(
               color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Icon(icon, color: iconColor, size: 22),
+            child: Icon(icon, color: iconColor, size: 22.r),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade500),
+                ),
+                SizedBox(height: 4.h),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600.w),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: ListView.separated(
+            padding: EdgeInsets.all(20.r),
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 5,
+            separatorBuilder: (_, __) => SizedBox(height: 12.h),
+            itemBuilder: (_, __) => Container(
+              height: 72.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

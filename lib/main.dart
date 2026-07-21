@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,16 +21,13 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Env & Localization FIRST
   await Env.load();
   debugPrint('Environment loaded successfully');
 
   await EasyLocalization.ensureInitialized();
 
-  // ✅ Initialize RevenueCat AFTER Env (لو الـ API Key في .env)
   await initializeRevenueCat();
 
-  // ✅ Firebase BEFORE notifications
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -41,10 +40,8 @@ void main() async {
     debugPrint('Firebase already initialized: $e');
   }
 
-  // ✅ Initialize Notifications ONCE
   await NotificationService.initialize();
 
-  // ✅ Request permission for Android 12+ exact alarms
   if (Platform.isAndroid) {
     final status = await Permission.scheduleExactAlarm.request();
     if (status.isGranted) {
@@ -68,11 +65,18 @@ void main() async {
       supportedLocales: const [Locale('en'), Locale('ar')],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
-      child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => CurrencyProvider()),
-        ],
-        child: const MyApp(),
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+            ],
+            child: const MyApp(),
+          );
+        },
       ),
     ),
   );

@@ -1,12 +1,11 @@
-// data_privacy_screen.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../fireBase_service/fireBase_service.dart';
-import '../user_model/user_model.dart';
 
 class DataPrivacyScreen extends StatefulWidget {
   const DataPrivacyScreen({super.key});
@@ -25,54 +24,59 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Data & Privacy'),
+        title: Text('Data & Privacy', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600)),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildPrivacyCard(
-                icon: Icons.download_outlined,
-                title: 'Export Your Data',
-                subtitle: 'Download a copy of all your data',
-                onTap: _exportData,
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 600.w),
+              child: ListView(
+                padding: EdgeInsets.all(16.r),
+                children: [
+                  _buildPrivacyCard(
+                    icon: Icons.download_outlined,
+                    title: 'Export Your Data',
+                    subtitle: 'Download a copy of all your data',
+                    onTap: _exportData,
+                  ),
+                  SizedBox(height: 12.h),
+                  _buildPrivacyCard(
+                    icon: Icons.delete_outline,
+                    title: 'Clear App Data',
+                    subtitle: 'Remove cached data from this device',
+                    onTap: _clearCache,
+                  ),
+                  SizedBox(height: 12.h),
+                  _buildPrivacyCard(
+                    icon: Icons.policy_outlined,
+                    title: 'Privacy Policy',
+                    subtitle: 'Read how we handle your data',
+                    onTap: _showPrivacyPolicy,
+                  ),
+                  SizedBox(height: 32.h),
+                  _buildSectionHeader('Danger Zone', color: Colors.red),
+                  SizedBox(height: 12.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: _buildPrivacyCard(
+                      icon: Icons.delete_forever,
+                      title: 'Delete All Data',
+                      subtitle: 'Permanently delete all your app data',
+                      iconColor: Colors.red,
+                      onTap: _showDeleteDataDialog,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              _buildPrivacyCard(
-                icon: Icons.delete_outline,
-                title: 'Clear App Data',
-                subtitle: 'Remove cached data from this device',
-                onTap: _clearCache,
-              ),
-              const SizedBox(height: 12),
-              _buildPrivacyCard(
-                icon: Icons.policy_outlined,
-                title: 'Privacy Policy',
-                subtitle: 'Read how we handle your data',
-                onTap: _showPrivacyPolicy,
-              ),
-              const SizedBox(height: 32),
-              _buildSectionHeader('Danger Zone', color: Colors.red),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: _buildPrivacyCard(
-                  icon: Icons.delete_forever,
-                  title: 'Delete All Data',
-                  subtitle: 'Permanently delete all your app data',
-                  iconColor: Colors.red,
-                  onTap: _showDeleteDataDialog,
-                ),
-              ),
-            ],
+            ),
           ),
           if (_isLoading)
             Container(
@@ -88,12 +92,12 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
 
   Widget _buildSectionHeader(String title, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      padding: EdgeInsets.only(left: 4.w, bottom: 12.h),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
           color: color ?? Colors.grey.shade500,
-          fontSize: 12,
+          fontSize: 12.sp,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
         ),
@@ -110,44 +114,44 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.r),
                 decoration: BoxDecoration(
                   color: (iconColor ?? _primaryColor).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: iconColor ?? _primaryColor, size: 22),
+                child: Icon(icon, color: iconColor ?? _primaryColor, size: 22.r),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A2E),
+                        color: const Color(0xFF1A1A2E),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2.h),
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade500),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20.r),
             ],
           ),
         ),
@@ -155,19 +159,15 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // EXPORT DATA - يصدر بيانات المستخدم كملف JSON ويشاركه
-  // ═══════════════════════════════════════════════════════════
+
   Future<void> _exportData() async {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
     try {
-      // جلب بيانات المستخدم من Firebase
       final userStream = _firebaseService.getUser();
       final user = await userStream.first;
 
-      // تجميع البيانات
       final exportData = {
         'exportDate': DateTime.now().toIso8601String(),
         'user': {
@@ -182,13 +182,11 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
         },
       };
 
-      // إنشاء ملف JSON مؤقت
       final directory = await getTemporaryDirectory();
       final filePath = '${directory.path}/user_data_export.json';
       final file = File(filePath);
       await file.writeAsString(const JsonEncoder.withIndent('  ').convert(exportData));
 
-      // مشاركة الملف
       await Share.shareXFiles(
         [XFile(filePath)],
         text: 'Your data export from Expense Tracker',
@@ -203,15 +201,12 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // CLEAR CACHE - يمسح الكاش المحلي
-  // ═══════════════════════════════════════════════════════════
+
   Future<void> _clearCache() async {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
     try {
-      // مسح الكاش من التطبيق
       final cacheDir = await getTemporaryDirectory();
       if (cacheDir.existsSync()) {
         await for (final entity in cacheDir.list()) {
@@ -223,7 +218,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
         }
       }
 
-      // مسح الكاش من الصور
       final imageCacheDir = Directory('${cacheDir.path}/image_cache');
       if (imageCacheDir.existsSync()) {
         await imageCacheDir.delete(recursive: true);
@@ -237,65 +231,63 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // PRIVACY POLICY - يعرض سياسة الخصوصية
-  // ═══════════════════════════════════════════════════════════
+
   void _showPrivacyPolicy() {
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
           children: [
-            Icon(Icons.policy, color: _primaryColor),
-            SizedBox(width: 12),
-            Text('Privacy Policy'),
+            Icon(Icons.policy, color: _primaryColor, size: 24.r),
+            SizedBox(width: 12.w),
+            Text('Privacy Policy', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '1. Data Collection',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 'We collect your name, email, phone number, and financial data (transactions, budgets, goals) to provide the expense tracking service.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13.sp, color: Colors.grey),
               ),
-              SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 '2. Data Usage',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 'Your data is used solely for the app functionality. We do not sell or share your data with third parties.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13.sp, color: Colors.grey),
               ),
-              SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 '3. Data Security',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 'All data is encrypted and stored securely using Firebase. We use industry-standard security practices.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13.sp, color: Colors.grey),
               ),
-              SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 '4. Your Rights',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 'You have the right to export, modify, or delete your data at any time through this screen.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13.sp, color: Colors.grey),
               ),
             ],
           ),
@@ -303,16 +295,14 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: _primaryColor)),
+            child: Text('Close', style: TextStyle(color: _primaryColor, fontSize: 14.sp)),
           ),
         ],
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // DELETE ALL DATA - يحذف كل البيانات نهائياً
-  // ═══════════════════════════════════════════════════════════
+
   void _showDeleteDataDialog() {
     HapticFeedback.mediumImpact();
     final passwordController = TextEditingController();
@@ -320,37 +310,39 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.red),
-            SizedBox(width: 12),
-            Text('Delete All Data'),
+            Icon(Icons.warning, color: Colors.red, size: 24.r),
+            SizedBox(width: 12.w),
+            Text('Delete All Data', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'This will permanently delete ALL your data including:\n'
                   '• Your profile and account\n'
                   '• All transactions and budgets\n'
                   '• All savings goals\n'
                   '• All contacts and messages\n\n'
                   'This action CANNOT be undone.',
-              style: TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14.sp),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             TextField(
               controller: passwordController,
               obscureText: true,
+              style: TextStyle(fontSize: 14.sp),
               decoration: InputDecoration(
                 labelText: 'Enter your password to confirm',
+                labelStyle: TextStyle(fontSize: 14.sp),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                prefixIcon: const Icon(Icons.lock),
+                prefixIcon: Icon(Icons.lock, size: 20.r),
               ),
             ),
           ],
@@ -358,7 +350,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -373,9 +365,9 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
             ),
-            child: const Text('Delete Forever'),
+            child: Text('Delete Forever', style: TextStyle(fontSize: 14.sp)),
           ),
         ],
       ),
@@ -386,17 +378,12 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. إعادة المصادقة أولاً
       await _firebaseService.reauthenticate(password);
 
-      // 2. حذف الحساب والبيانات
       await _firebaseService.deleteAccount();
 
-      // 3. التوجيه لشاشة تسجيل الدخول
       if (mounted) {
         _showSuccess('Account deleted successfully');
-        // هنا تقدر تستخدم Navigator.pushReplacementNamed(context, '/login')
-        // أو أي طريقة تنقل عندك في التطبيق
       }
     } on AuthException catch (e) {
       _showError(e.message);
@@ -414,15 +401,15 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Icon(Icons.check_circle, color: Colors.white, size: 20.r),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(message, style: TextStyle(fontSize: 14.sp))),
           ],
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }
@@ -432,15 +419,15 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
+            Icon(Icons.error_outline, color: Colors.white, size: 20.r),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(message, style: TextStyle(fontSize: 14.sp))),
           ],
         ),
         backgroundColor: Colors.red.shade400,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        margin: EdgeInsets.all(16.r),
       ),
     );
   }

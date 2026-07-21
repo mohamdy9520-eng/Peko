@@ -171,14 +171,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.check_circle, color: Colors.white),
-        const SizedBox(width: 12),
-        Expanded(child: Text(message)),
+        Icon(Icons.check_circle, color: Colors.white, size: 20.r),
+        SizedBox(width: 12.w),
+        Expanded(child: Text(message, style: TextStyle(fontSize: 14.sp))),
       ]),
       backgroundColor: _primaryColor,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      margin: EdgeInsets.all(16.r),
       duration: const Duration(seconds: 2),
     ));
   }
@@ -186,16 +186,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.error_outline, color: Colors.white),
-        const SizedBox(width: 12),
-        Expanded(child: Text(message)),
+        Icon(Icons.error_outline, color: Colors.white, size: 20.r),
+        SizedBox(width: 12.w),
+        Expanded(child: Text(message, style: TextStyle(fontSize: 14.sp))),
       ]),
       backgroundColor: Colors.red.shade400,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      margin: EdgeInsets.all(16.r),
       duration: const Duration(seconds: 4),
-      action: SnackBarAction(label: 'DISMISS', textColor: Colors.white, onPressed: () {}),
+      action: SnackBarAction(
+        label: 'DISMISS',
+        textColor: Colors.white,
+        onPressed: () {},
+      ),
     ));
   }
 
@@ -231,89 +235,94 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               }
               final user = snapshot.data ?? UserModel.empty;
 
-              return RefreshIndicator(
-                onRefresh: () async =>
-                await Future.delayed(const Duration(milliseconds: 500)),
-                color: _primaryColor,
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader(user)),
-                    SliverToBoxAdapter(child: _buildUserInfo(user)),
-                    SliverToBoxAdapter(child: _buildStatsRow()),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          _buildMenuSection('General', [
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.diamond,
-                              iconColor: _primaryColor,
-                              title: 'Invite Friends',
-                              subtitle: 'Earn rewards by inviting',
-                              onTap: () => _navigateTo(const InviteFriendsScreen()),
-                            )),
-                            StreamBuilder<int>(
-                              stream: _firebaseService.getUnreadMessagesCount(),
-                              builder: (context, snapshot) {
-                                final unreadCount = snapshot.data ?? 0;
-                                return _buildMenuTile(_MenuItem(
-                                  icon: Icons.mail_outline,
-                                  iconColor: Colors.orange,
-                                  title: 'Message Center',
-                                  subtitle: unreadCount > 0
-                                      ? '$unreadCount unread messages'
-                                      : 'View your notifications',
-                                  onTap: () => _navigateTo(const MessageCenterScreen()),
-                                  badge: unreadCount > 0,
-                                ));
-                              },
-                            ),
-                          ]),
-                          const SizedBox(height: 16),
-                          _buildMenuSection('Account', [
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.person_outline,
-                              iconColor: Colors.blue,
-                              title: 'Account Info',
-                              subtitle: 'View your account details',
-                              onTap: () => _navigateTo(const AccountInfoScreen()),
-                            )),
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.edit_note,
-                              iconColor: _accentColor,
-                              title: 'Personal Profile',
-                              subtitle: 'Edit your profile information',
-                              onTap: () => _navigateTo(const PersonalProfileScreen()),
-                            )),
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.currency_exchange,
-                              iconColor: Colors.teal,
-                              title: 'Change Currency',
-                              subtitle: '${currencyProvider.flag} ${currencyProvider.name} (${currencyProvider.code})',
-                              onTap: () => _navigateTo(const ChangeCurrencyScreen()),
-                            )),
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.shield_outlined,
-                              iconColor: Colors.purple,
-                              title: 'Login & Security',
-                              subtitle: 'Password, 2FA, and sessions',
-                              onTap: () => _navigateTo(const LoginSecurityScreen()),
-                            )),
-                            _buildMenuTile(_MenuItem(
-                              icon: Icons.lock_outline,
-                              iconColor: Colors.red.shade400,
-                              title: 'Data & Privacy',
-                              subtitle: 'Manage your data',
-                              onTap: () => _navigateTo(const DataPrivacyScreen()),
-                            )),
-                          ]),
-                          const SizedBox(height: 32),
-                        ]),
-                      ),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 600.w),
+                  child: RefreshIndicator(
+                    onRefresh: () async =>
+                    await Future.delayed(const Duration(milliseconds: 500)),
+                    color: _primaryColor,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(child: _buildHeader(user)),
+                        SliverToBoxAdapter(child: _buildUserInfo(user)),
+                        SliverToBoxAdapter(child: _buildStatsRow()),
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16.w, vertical: 8.h),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              _buildMenuSection('General', [
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.diamond,
+                                  iconColor: _primaryColor,
+                                  title: 'Invite Friends',
+                                  subtitle: 'Earn rewards by inviting',
+                                  onTap: () => _navigateTo(const InviteFriendsScreen()),
+                                )),
+                                StreamBuilder<int>(
+                                  stream: _firebaseService.getUnreadMessagesCount(),
+                                  builder: (context, snapshot) {
+                                    final unreadCount = snapshot.data ?? 0;
+                                    return _buildMenuTile(_MenuItem(
+                                      icon: Icons.mail_outline,
+                                      iconColor: Colors.orange,
+                                      title: 'Message Center',
+                                      subtitle: unreadCount > 0
+                                          ? '$unreadCount unread messages'
+                                          : 'View your notifications',
+                                      onTap: () => _navigateTo(const MessageCenterScreen()),
+                                      badge: unreadCount > 0,
+                                    ));
+                                  },
+                                ),
+                              ]),
+                              SizedBox(height: 16.h),
+                              _buildMenuSection('Account', [
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.person_outline,
+                                  iconColor: Colors.blue,
+                                  title: 'Account Info',
+                                  subtitle: 'View your account details',
+                                  onTap: () => _navigateTo(const AccountInfoScreen()),
+                                )),
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.edit_note,
+                                  iconColor: _accentColor,
+                                  title: 'Personal Profile',
+                                  subtitle: 'Edit your profile information',
+                                  onTap: () => _navigateTo(const PersonalProfileScreen()),
+                                )),
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.currency_exchange,
+                                  iconColor: Colors.teal,
+                                  title: 'Change Currency',
+                                  subtitle: '${currencyProvider.flag} ${currencyProvider.name} (${currencyProvider.code})',
+                                  onTap: () => _navigateTo(const ChangeCurrencyScreen()),
+                                )),
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.shield_outlined,
+                                  iconColor: Colors.purple,
+                                  title: 'Login & Security',
+                                  subtitle: 'Password, 2FA, and sessions',
+                                  onTap: () => _navigateTo(const LoginSecurityScreen()),
+                                )),
+                                _buildMenuTile(_MenuItem(
+                                  icon: Icons.lock_outline,
+                                  iconColor: Colors.red.shade400,
+                                  title: 'Data & Privacy',
+                                  subtitle: 'Manage your data',
+                                  onTap: () => _navigateTo(const DataPrivacyScreen()),
+                                )),
+                              ]),
+                              SizedBox(height: 32.h),
+                            ]),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -324,54 +333,88 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildLoadingState() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade300, highlightColor: Colors.grey.shade100,
-      child: Column(children: [
-        Container(height: 220, width: double.infinity,
-            decoration: const BoxDecoration(color: Colors.white,
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)))),
-        const SizedBox(height: 60),
-        Container(width: 150, height: 24, color: Colors.white),
-        const SizedBox(height: 8),
-        Container(width: 100, height: 16, color: Colors.white),
-        const SizedBox(height: 30),
-        Expanded(child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          itemCount: 6,
-          itemBuilder: (_, __) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(children: [
-              Container(width: 40, height: 40, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
-              const SizedBox(width: 16),
-              Expanded(child: Container(height: 20, color: Colors.white)),
-            ]),
-          ),
-        )),
-      ]),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600.w),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Column(children: [
+            Container(
+              height: 220.h,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40.r),
+                  bottomRight: Radius.circular(40.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 60.h),
+            Container(width: 150.w, height: 24.h, color: Colors.white),
+            SizedBox(height: 8.h),
+            Container(width: 100.w, height: 16.h, color: Colors.white),
+            SizedBox(height: 30.h),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                itemCount: 6,
+                itemBuilder: (_, __) => Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  child: Row(children: [
+                    Container(
+                      width: 40.r,
+                      height: 40.r,
+                      decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(child: Container(height: 20.h, color: Colors.white)),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-        const SizedBox(height: 16),
-        Text('Something went wrong', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
-        const SizedBox(height: 8),
-        Text(error, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
-        const SizedBox(height: 24),
-        ElevatedButton.icon(
-          onPressed: () => setState(() {}),
-          icon: const Icon(Icons.refresh),
-          label: const Text('Retry'),
-          style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor, foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600.w),
+        child: Padding(
+          padding: EdgeInsets.all(32.r),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.error_outline, size: 64.r, color: Colors.red.shade300),
+            SizedBox(height: 16.h),
+            Text(
+              'Something went wrong',
+              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+            ),
+            SizedBox(height: 24.h),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {}),
+              icon: Icon(Icons.refresh, size: 20.r),
+              label: Text('Retry', style: TextStyle(fontSize: 14.sp)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              ),
+            ),
+          ]),
         ),
-      ]),
-    ));
+      ),
+    );
   }
 
   Widget _buildHeader(UserModel user) {
@@ -380,32 +423,32 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       alignment: Alignment.bottomCenter,
       children: [
         Container(
-          height: 220,
+          height: 220.h,
           width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(40.r),
+              bottomRight: Radius.circular(40.r),
+            ),
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFF2E8B7B), Color(0xFF4A9B8E)],
             ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
-            ),
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Spacer(),
-                   Center(
+                  Center(
                     child: Text(
                       "Profile",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 40.sp,
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -413,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   const Spacer(),
                   IconButton(
                     onPressed: () => _navigateTo(const MessageCenterScreen()),
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    icon: Icon(Icons.notifications_outlined, color: Colors.white, size: 24.r),
                     tooltip: 'Notifications',
                   ),
                 ],
@@ -422,23 +465,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
         Positioned(
-          bottom: -50,
+          bottom: -50.h,
           left: 0,
           right: 0,
           child: Center(
             child: Hero(
               tag: 'profile-avatar',
               child: Container(
-                width: 110,
-                height: 110,
+                width: 110.r,
+                height: 110.r,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
+                  border: Border.all(color: Colors.white, width: 4.w),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+                      blurRadius: 20.r,
+                      offset: Offset(0, 8.h),
                     ),
                   ],
                 ),
@@ -446,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   clipBehavior: Clip.none,
                   children: [
                     CircleAvatar(
-                      radius: 52,
+                      radius: 52.r,
                       backgroundColor: Colors.grey.shade200,
                       child: _buildAvatarContent(user),
                     ),
@@ -459,12 +502,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                           child: Center(
                             child: SizedBox(
-                              width: 40,
-                              height: 40,
+                              width: 40.r,
+                              height: 40.r,
                               child: CircularProgressIndicator(
                                 value: _uploadProgress > 0 ? _uploadProgress : null,
                                 color: Colors.white,
-                                strokeWidth: 3,
+                                strokeWidth: 3.w,
                               ),
                             ),
                           ),
@@ -477,25 +520,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         onTap: _showImagePicker,
                         behavior: HitTestBehavior.translucent,
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 40.r,
+                          height: 40.r,
                           decoration: BoxDecoration(
                             color: _primaryColor,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(color: Colors.white, width: 2.w),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                blurRadius: 4.r,
+                                offset: Offset(0, 2.h),
                               ),
                             ],
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.camera_alt,
                               color: Colors.white,
-                              size: 18,
+                              size: 18.r,
                             ),
                           ),
                         ),
@@ -512,39 +555,35 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildAvatarContent(UserModel user) {
-    // 1. Fluttermoji Avatar (SVG string - مش bytes!)
     if (user.hasAvatar) {
       return FluttermojiCircleAvatar(
         backgroundColor: Colors.grey.shade200,
-        radius: 52,
+        radius: 52.r,
       );
     }
 
-    // 2. Real photo (base64 from camera/gallery)
     if (user.hasImage) {
-      // Check if it's a URL or base64
       if (user.image.startsWith('http')) {
         return ClipOval(
           child: Image.network(
             user.image,
             fit: BoxFit.cover,
-            width: 104,
-            height: 104,
+            width: 104.r,
+            height: 104.r,
             errorBuilder: (context, error, stackTrace) {
               return _buildInitials(user);
             },
           ),
         );
       } else {
-        // Base64 image
         try {
           final bytes = base64Decode(user.image);
           return ClipOval(
             child: Image.memory(
               Uint8List.fromList(bytes),
               fit: BoxFit.cover,
-              width: 104,
-              height: 104,
+              width: 104.r,
+              height: 104.r,
               errorBuilder: (context, error, stackTrace) {
                 return _buildInitials(user);
               },
@@ -556,34 +595,42 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       }
     }
 
-    // 3. Default initials
     return _buildInitials(user);
   }
 
   Widget _buildInitials(UserModel user) {
     return Text(
       user.initials,
-      style: const TextStyle(
-        fontSize: 32,
+      style: TextStyle(
+        fontSize: 32.sp,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF2E8B7B),
+        color: const Color(0xFF2E8B7B),
       ),
     );
   }
 
   Widget _buildUserInfo(UserModel user) {
     return Padding(
-      padding: const EdgeInsets.only(top: 60),
+      padding: EdgeInsets.only(top: 60.h),
       child: Column(children: [
-        Text(user.displayName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
-        const SizedBox(height: 4),
-        Text("@${user.username}", style: const TextStyle(color: Color(0xFF2E8B7B), fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          user.displayName,
+          style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A2E)),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          "@${user.username}",
+          style: TextStyle(color: const Color(0xFF2E8B7B), fontSize: 14.sp, fontWeight: FontWeight.w500),
+        ),
         if (user.bio != null && user.bio!.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(user.bio!, textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Text(
+              user.bio!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+            ),
           ),
         ],
       ]),
@@ -592,7 +639,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildStatsRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -616,7 +663,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             stream: _firebaseService.getRewardsCount(),
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
-              print('Rewards count: $count');
               return _buildStatItem(count.toString(), 'Rewards');
             },
           ),
@@ -627,25 +673,45 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildStatItem(String value, String label) {
     return Column(children: [
-      Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E))),
-      const SizedBox(height: 4),
-      Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+      Text(
+        value,
+        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A2E)),
+      ),
+      SizedBox(height: 4.h),
+      Text(
+        label,
+        style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600),
+      ),
     ]);
   }
 
-  Widget _buildDivider() => Container(height: 30, width: 1, color: Colors.grey.shade300);
+  Widget _buildDivider() => Container(height: 30.h, width: 1.w, color: Colors.grey.shade300);
 
   Widget _buildMenuSection(String title, List<Widget> items) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
-        padding: const EdgeInsets.only(left: 8, bottom: 8),
-        child: Text(title.toUpperCase(),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade500, letterSpacing: 0.5)),
+        padding: EdgeInsets.only(left: 8.w, bottom: 8.h),
+        child: Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
       Container(
         decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10.r,
+              offset: Offset(0, 4.h),
+            ),
+          ],
         ),
         child: Column(
           children: items.asMap().entries.map((entry) {
@@ -653,7 +719,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             final widget = entry.value;
             return Column(children: [
               widget,
-              if (index < items.length - 1) Divider(height: 1, indent: 56, color: Colors.grey.shade100),
+              if (index < items.length - 1) Divider(height: 1.h, indent: 56.w, color: Colors.grey.shade100),
             ]);
           }).toList(),
         ),
@@ -663,27 +729,44 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   Widget _buildMenuTile(_MenuItem item) {
     return Material(
-      color: Colors.transparent, borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16.r),
       child: InkWell(
-        onTap: item.onTap, borderRadius: BorderRadius.circular(16),
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(16.r),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           child: Row(children: [
             Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: item.iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-              child: Icon(item.icon, color: item.iconColor, size: 22),
+              padding: EdgeInsets.all(10.r),
+              decoration: BoxDecoration(
+                color: item.iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Icon(item.icon, color: item.iconColor, size: 22.r),
             ),
-            const SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(item.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E))),
-              if (item.subtitle != null)
-                Text(item.subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-            ])),
-            if (item.badge) Container(width: 8, height: 8,
-                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  item.title,
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: const Color(0xFF1A1A2E)),
+                ),
+                if (item.subtitle != null)
+                  Text(
+                    item.subtitle!,
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade500),
+                  ),
+              ]),
+            ),
+            if (item.badge)
+              Container(
+                width: 8.r,
+                height: 8.r,
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+              ),
+            SizedBox(width: 8.w),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20.r),
           ]),
         ),
       ),
@@ -692,14 +775,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   void _showComingSoon() {
     HapticFeedback.lightImpact();
-    showDialog(context: context, builder: (_) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(children: [Icon(Icons.construction, color: _primaryColor), SizedBox(width: 12), Text('Coming Soon')]),
-      content: const Text('This feature is under development and will be available in the next update.'),
-      actions: [TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('OK', style: TextStyle(color: _primaryColor)))],
-    ));
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(children: [
+          Icon(Icons.construction, color: _primaryColor, size: 24.r),
+          SizedBox(width: 12.w),
+          Text('Coming Soon', style: TextStyle(fontSize: 18.sp)),
+        ]),
+        content: Text(
+          'This feature is under development and will be available in the next update.',
+          style: TextStyle(fontSize: 14.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK', style: TextStyle(color: _primaryColor, fontSize: 14.sp)),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -710,8 +806,14 @@ class _MenuItem {
   final String? subtitle;
   final VoidCallback onTap;
   final bool badge;
-  const _MenuItem({required this.icon, required this.iconColor, required this.title,
-    this.subtitle, required this.onTap, this.badge = false});
+  const _MenuItem({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+    this.badge = false,
+  });
 }
 
 class _ImagePickerBottomSheet extends StatelessWidget {
@@ -727,50 +829,56 @@ class _ImagePickerBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600.w),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+          ),
+          padding: EdgeInsets.all(24.r),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+                SizedBox(height: 24.h),
+                Text(
+                  'Change Profile Photo',
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 24.h),
+                _buildOption(
+                  icon: Icons.camera_alt,
+                  label: 'Take Photo',
+                  onTap: onCameraTap,
+                ),
+                SizedBox(height: 12.h),
+                _buildOption(
+                  icon: Icons.photo_library,
+                  label: 'Choose from Gallery',
+                  onTap: onGalleryTap,
+                ),
+                if (onRemoveTap != null) ...[
+                  SizedBox(height: 12.h),
+                  _buildOption(
+                    icon: Icons.delete_outline,
+                    label: 'Remove Photo',
+                    color: Colors.red,
+                    onTap: onRemoveTap!,
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Change Profile Photo',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            _buildOption(
-              icon: Icons.camera_alt,
-              label: 'Take Photo',
-              onTap: onCameraTap,
-            ),
-            const SizedBox(height: 12),
-            _buildOption(
-              icon: Icons.photo_library,
-              label: 'Choose from Gallery',
-              onTap: onGalleryTap,
-            ),
-            const SizedBox(height: 12),
-            if (onRemoveTap != null)
-              _buildOption(
-                icon: Icons.delete_outline,
-                label: 'Remove Photo',
-                color: Colors.red,
-                onTap: onRemoveTap!,
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -784,24 +892,24 @@ class _ImagePickerBottomSheet extends StatelessWidget {
   }) {
     return Material(
       color: Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(16.r),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
           child: Row(
             children: [
               Icon(
                 icon,
                 color: color ?? const Color(0xFF2E8B7B),
-                size: 24,
+                size: 24.r,
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.w500,
                   color: color ?? Colors.black87,
                 ),
