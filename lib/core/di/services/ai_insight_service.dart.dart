@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io'; // مهم لـ SocketException
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -8,7 +10,6 @@ import '../../../providers/currency_provider.dart';
 
 class AIInsightService {
   final String apiKey;
-
   AIInsightService({required this.apiKey});
 
   Future<String> getExpenseInsight(
@@ -102,7 +103,7 @@ Requirements:
 
     try {
       final response = await http.post(
-          Uri.parse("https://openrouter.ai/api/v1/chat/completions"),
+        Uri.parse("https://openrouter.ai/api/v1/chat/completions"),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $apiKey",
@@ -112,35 +113,32 @@ Requirements:
         body: jsonEncode({
           "model": "google/gemini-2.5-flash",
           "messages": [
-            {
-              "role": "system",
-              "content": systemPrompt,
-            },
-            {
-              "role": "user",
-              "content": userPrompt,
-            }
+            {"role": "system", "content": systemPrompt},
+            {"role": "user", "content": userPrompt},
           ],
           "temperature": 0.7,
           "max_tokens": 150,
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final text = data["choices"]?[0]?["message"]?["content"];
-        return text?.toString().trim() ?? (isArabic ? "لم يتم الحصول على نصيحة." : "No advice received.");
+        return text?.toString().trim() ??
+            (isArabic ? "لم يتم الحصول على نصيحة." : "No advice received.");
       } else {
-        print("Status Code: ${response.statusCode}");
-        print("Response Body: ${response.body}");
-        return isArabic
-            ? "خطأ ${response.statusCode}"
-            : "Error ${response.statusCode}";
+        throw Exception("Error ${response.statusCode}");
       }
+    } on SocketException catch (e) {
+      throw Exception(isArabic
+          ? "لا يوجد اتصال بالإنترنت. سيتم المحاولة تلقائياً عند عودة الاتصال."
+          : "No internet connection. Will retry automatically when connection is restored.");
+    } on TimeoutException catch (e) {
+      throw Exception(isArabic
+          ? "انتهت مهلة الاتصال. تحقق من شبكتك."
+          : "Connection timed out. Please check your network.");
     } catch (e) {
-      return isArabic
-          ? "حدث خطأ: ${e.toString()}"
-          : "An error occurred: ${e.toString()}";
+      rethrow;
     }
   }
 
@@ -154,29 +152,11 @@ Requirements:
 
   String _convertToEnglishCode(String symbol) {
     final map = {
-      '﷼': 'SAR',
-      'د.إ': 'AED',
-      'د.ك': 'KWD',
-      'د.ا': 'JOD',
-      'د.ب': 'BHD',
-      'ر.ع': 'OMR',
-      'ر.ق': 'QAR',
-      'ل.ل': 'LBP',
-      'ج.م': 'EGP',
-      'د.ج': 'DZD',
-      'د.ت': 'TND',
-      'م.د': 'MAD',
-      'ج.س': 'SDG',
-      'ل.س': 'SYP',
-      'د.ع': 'IQD',
-      'ر.ي': 'YER',
-      'د.ل': 'LYD',
-      '₪': 'ILS',
-      '₺': 'TRY',
-      '₽': 'RUB',
-      '¥': 'JPY',
-      '₩': 'KRW',
-      '₹': 'INR',
+      '﷼': 'SAR', 'د.إ': 'AED', 'د.ك': 'KWD', 'د.ا': 'JOD', 'د.ب': 'BHD',
+      'ر.ع': 'OMR', 'ر.ق': 'QAR', 'ل.ل': 'LBP', 'ج.م': 'EGP', 'د.ج': 'DZD',
+      'د.ت': 'TND', 'م.د': 'MAD', 'ج.س': 'SDG', 'ل.س': 'SYP', 'د.ع': 'IQD',
+      'ر.ي': 'YER', 'د.ل': 'LYD', '₪': 'ILS', '₺': 'TRY', '₽': 'RUB',
+      '¥': 'JPY', '₩': 'KRW', '₹': 'INR',
     };
     return map[symbol] ?? symbol;
   }

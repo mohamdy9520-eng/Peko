@@ -125,6 +125,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isBiometricEnabled = false;
   bool _hasSavedCredentials = false;
 
+  // 🟢 دالة تحويل الأرقام العربية إلى إنجليزية وتنظيف النص
+  String _sanitizeCode(String input) {
+    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+    for (int i = 0; i < arabic.length; i++) {
+      input = input.replaceAll(arabic[i], english[i]);
+    }
+    return input.trim();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -157,7 +168,6 @@ class _LoginScreenState extends State<LoginScreen> {
       value: passwordController.text.trim(),
     );
   }
-
 
   Future<bool> _isMFAEnabled(String userId) async {
     try {
@@ -253,6 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: codeController,
                       keyboardType: TextInputType.number,
+                      textDirection: TextDirection.ltr, // 👈 يضمن عرض الأرقام LTR
                       maxLength: 6,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
@@ -275,7 +286,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: isVerifying
                     ? null
                     : () async {
-                  final code = codeController.text.trim();
+                  // 🟢 تنظيف الأرقام قبل التحقق
+                  final code = _sanitizeCode(codeController.text);
                   if (code.length != 6) {
                     _showSnackBar('Please enter a 6-digit code', Colors.orange);
                     return;
@@ -346,6 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: codeController,
                     keyboardType: TextInputType.number,
+                    textDirection: TextDirection.ltr, // 👈 يضمن عرض الأرقام LTR
                     maxLength: 6,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
@@ -384,7 +397,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: isVerifying
                     ? null
                     : () async {
-                  final code = codeController.text.trim();
+                  // 🟢 تنظيف الأرقام قبل التحقق
+                  final code = _sanitizeCode(codeController.text);
                   if (code.length != 6) {
                     _showSnackBar('Please enter a 6-digit code', Colors.orange);
                     return;
@@ -438,7 +452,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
-
 
   Future<void> _authenticateWithBiometric() async {
     try {
@@ -510,8 +523,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
-
   String _getErrorMessage(dynamic error) {
     final errorString = error.toString().toLowerCase();
 
@@ -534,7 +545,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return 'Error: $error';
   }
-
 
   Future<void> login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -577,7 +587,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
 
   Future<void> signInWithGoogle() async {
     try {
@@ -643,7 +652,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

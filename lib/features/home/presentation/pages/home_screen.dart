@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart';
 import '../../../../generated/locale_keys.g.dart';
 import '../../../../providers/currency_provider.dart';
 import '../../../../theme/app_colors.dart';
@@ -13,7 +12,7 @@ import '../../../../widgets/transaction_item.dart';
 import '../../../../widgets/notification_icon.dart';
 
 class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   Stream<DocumentSnapshot> getUserData() {
     final user = FirebaseAuth.instance.currentUser;
@@ -65,7 +64,7 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 24.h),
 
                     _buildSectionHeader(
-                      LocaleKeys.Transactions_History.tr(),
+                      LocaleKeys.transaction_history.tr(),
                       onSeeAll: () => context.push('/transactions'),
                     ),
                     SizedBox(height: 16.h),
@@ -73,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                     SizedBox(height: 24.h),
 
                     _buildSectionHeader(
-                      LocaleKeys.Contacts.tr(),
+                      LocaleKeys.Home_categories_contacts_title.tr(),
                       onSeeAll: () => context.push('/contacts'),
                     ),
                     SizedBox(height: 16.h),
@@ -89,9 +88,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // HEADER — Balance + Notification Icon
-  // ═══════════════════════════════════════════
+
   Widget _buildHeader(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
     final language = context.locale.languageCode;
@@ -195,7 +192,6 @@ class HomeScreen extends StatelessWidget {
 
               SizedBox(height: 20.h),
 
-              // Income / Expense Cards
               Row(
                 children: [
                   Expanded(
@@ -211,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(width: 12.w),
                   Expanded(
                     child: _buildIncomeExpenseCard(
-                      title: LocaleKeys.Home_categories_expense_title.tr(),
+                      title:LocaleKeys.Home_expense.tr(),
                       amount: totalExpense,
                       icon: Icons.arrow_upward,
                       color: AppColors.expense,
@@ -282,9 +278,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // QUICK ACTIONS
-  // ═══════════════════════════════════════════
+
 
   Widget _buildActionButton({
     required IconData icon,
@@ -320,9 +314,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // SECTION HEADER
-  // ═══════════════════════════════════════════
   Widget _buildSectionHeader(String title, {required VoidCallback onSeeAll}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -342,9 +333,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // ADD BOTTOM SHEET
-  // ═══════════════════════════════════════════
   void _showAddOptionsBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -385,7 +373,6 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 24.h),
 
-              // Expense
               _buildAddOption(
                 context: context,
                 icon: Icons.arrow_upward,
@@ -399,7 +386,6 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 12.h),
 
-              // Income
               _buildAddOption(
                 context: context,
                 icon: Icons.arrow_downward,
@@ -413,7 +399,6 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 12.h),
 
-              // Transfer
               _buildAddOption(
                 context: context,
                 icon: Icons.swap_horiz,
@@ -427,7 +412,6 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 12.h),
 
-              // Add Contact
               _buildAddOption(
                 context: context,
                 icon: Icons.person_add,
@@ -488,9 +472,7 @@ class HomeScreen extends StatelessWidget {
   }
 
 
-  // ═══════════════════════════════════════════
-  // TRANSACTIONS LIST
-  // ═══════════════════════════════════════════
+
   Widget _buildTransactionList(BuildContext context) {
     final currency = context.watch<CurrencyProvider>();
     final language = context.locale.languageCode;
@@ -544,12 +526,10 @@ class HomeScreen extends StatelessWidget {
               final doc = snapshot.data!.docs[index];
               final data = doc.data() as Map<String, dynamic>;
 
-              // ✅ تأمين الـ category extraction
               final raw = data['category'];
               List<String> categories = [];
 
               if (raw is List) {
-                // تأكد إن كل item String
                 categories = raw
                     .whereType<String>()
                     .where((s) => s.isNotEmpty)
@@ -561,7 +541,7 @@ class HomeScreen extends StatelessWidget {
               final displayCategory = categories.isEmpty ? 'other' : categories.first;
 
               final String subtitleText = categories.isEmpty
-                  ? LocaleKeys.Home_categories_other.tr()
+                  ? LocaleKeys.Home_categories_budget_transactions_Home_categories_other.tr()
                   : categories.join(', ');
 
               return InkWell(
@@ -578,11 +558,9 @@ class HomeScreen extends StatelessWidget {
                     icon: _getIconForCategory(displayCategory),
                     iconBackgroundColor: _getColorForCategory(displayCategory),
                     title: data['title'] ?? LocaleKeys.Home_unknown.tr(),
-                    subtitle: subtitleText, // ✅ String آمن
+                    subtitle: subtitleText,
                     amount: (data['amount'] ?? 0).toDouble(),
                     isIncome: data['type'] == 'income',
-                    // ✅ تصحيح: كان currency.symbol (ثابت مش متأثر باللغة)
-                    // دلوقتي بيستخدم الرمز الـ localized حسب اللغة الحالية
                     currencySymbol: currency.getSymbol(language),
                   ),
                 ),
@@ -594,9 +572,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // TRANSACTION DETAILS
-  // ═══════════════════════════════════════════
+
   void _showTransactionDetails(BuildContext context, String docId, Map<String, dynamic> data) {
     final currency = context.read<CurrencyProvider>();
     final language = context.locale.languageCode;
@@ -783,9 +759,7 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
-  // ═══════════════════════════════════════════
-  // CONTACTS
-  // ═══════════════════════════════════════════
+
   Widget _buildContactsList(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox();
@@ -902,9 +876,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // TRANSFER
-  // ═══════════════════════════════════════════
+
   void _showTransferBottomSheet(BuildContext context) {
     final amountController = TextEditingController();
     String? selectedContactId;
@@ -959,7 +931,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 16.h),
 
-                    // Contacts Dropdown
                     StreamBuilder<QuerySnapshot>(
                       stream: user != null
                           ? FirebaseFirestore.instance
@@ -1356,9 +1327,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════
+
   IconData _getIconForCategory(String category) {
     switch (category) {
       case 'work': return Icons.work_outline;

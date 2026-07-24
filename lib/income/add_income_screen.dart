@@ -1,10 +1,11 @@
+import 'package:ai_expense_tracker/generated/locale_keys.g.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 import '../../../../theme/app_colors.dart';
 import '../providers/currency_provider.dart';
 
@@ -29,7 +30,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   void _addNewItem() {
     setState(() {
       titleControllers.add(TextEditingController());
-      amountControllers.add(TextEditingController());
+
+      final amountController = TextEditingController();
+      amountController.addListener(() {
+        setState(() {});
+      });
+      amountControllers.add(amountController);
+
       categoryControllers.add(TextEditingController());
     });
   }
@@ -64,14 +71,14 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       if (amount <= 0) return false;
       if (categoryControllers[i].text.trim().isEmpty) return false;
     }
-    return true;
+    return titleControllers.isNotEmpty;
   }
 
   Future<void> _submitAll() async {
     if (!_isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields correctly'),
+        SnackBar(
+          content: Text(LocaleKeys.income_Please_fill_all_fields_correctly.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,8 +88,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User not logged in'),
+        SnackBar(
+          content: Text(LocaleKeys.income_User_not_logged_in.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -90,6 +97,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     }
 
     final total = _totalAmount;
+    final navigator = GoRouter.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
       final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
@@ -103,6 +112,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         currentBalance = (data['totalBalance'] as num?)?.toDouble() ?? 0;
         currentIncome = (data['totalIncome'] as num?)?.toDouble() ?? 0;
       }
+
+      // إغلاق الصفحة فوراً بسلاسة
+      navigator.pop();
 
       final batch = FirebaseFirestore.instance.batch();
       final transactionsRef = userRef.collection('transactions');
@@ -141,34 +153,16 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       );
 
       await batch.commit();
-
-      if (mounted) {
-        // ✅ استخدمنا formatAmount من الـ Provider
-        final currencyProvider = context.read<CurrencyProvider>();
-        final formattedTotal = currencyProvider.formatAmount(total);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Added ${titleControllers.length} incomes ($formattedTotal)',
-            ),
-          ),
-        );
-
-        context.pop();
-      }
     } catch (e, s) {
       debugPrint('ERROR: ' + e.toString());
       debugPrintStack(stackTrace: s);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ' + e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: ' + e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -182,52 +176,87 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ جلب الـ CurrencyProvider مرة واحدة في الـ build
-    final currencyProvider = context.watch<CurrencyProvider>();
+    final currency = context.watch<CurrencyProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        title: const Text('Add Income'),
+        elevation: 0,
+        title: Text(
+          LocaleKeys.Home_categories_add_income.tr(),
+          style: const TextStyle(color: Colors.white),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
       body: Column(
         children: [
+          // رأس الصفحة المماثل لشاشة المصروفات مع تدرج اللون ولون مميز للإجمالي
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(20),
+            color: AppColors.primary.withOpacity(0.1),
             child: Column(
               children: [
-                const Text('Total'),
-                // ✅ استخدمنا formatAmount مباشرة من الـ Provider
                 Text(
-                  currencyProvider.formatAmount(_totalAmount),
+                  LocaleKeys.income_Total.tr(),
+                  style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  currency.formatAmount(_totalAmount),
                   style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: 32.sp,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
                   ),
+                ),
+                Text(
+                  '${titleControllers.length} ${titleControllers.length == 1 ? LocaleKeys.Home_categories_expense_item.tr() : LocaleKeys.Home_categories_expense_items.tr()}',
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
           ),
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.all(16),
               itemCount: titleControllers.length,
-              itemBuilder: (_, i) => _buildItem(i),
+              itemBuilder: (_, i) => _buildItemCard(i),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: _submitAll,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                minimumSize: Size(double.infinity, 50.h),
-              ),
-              child: const Text('Submit'),
+            child: Column(
+              children: [
+                // زر إضافة دخل جديد مطابق لتصميم المصروفات
+                OutlinedButton.icon(
+                  onPressed: _addNewItem,
+                  icon: const Icon(Icons.add),
+                  label: Text(LocaleKeys.Home_categories_add_income.tr()),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50.h),
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                // زر إرسال الكل السفلي
+                ElevatedButton.icon(
+                  onPressed: _submitAll,
+                  icon: const Icon(Icons.check),
+                  label: Text(
+                    LocaleKeys.Home_categories_expense_submit_all.tr(),
+                    style: TextStyle(fontSize: 16.sp),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: Size(double.infinity, 50.h),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -235,45 +264,61 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     );
   }
 
-  Widget _buildItem(int i) {
-    // ✅ جلب الـ CurrencyProvider هنا كمان
-    final currencyProvider = context.watch<CurrencyProvider>();
+  Widget _buildItemCard(int index) {
+    final currency = context.read<CurrencyProvider>();
 
     return Card(
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      margin: EdgeInsets.only(bottom: 12.h),
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            TextField(
-              controller: titleControllers[i],
-              decoration: const InputDecoration(labelText: 'Title'),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: titleControllers[index],
+                    decoration: InputDecoration(
+                      labelText: LocaleKeys.income_Title.tr(),
+                      prefixIcon: const Icon(Icons.label_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                IconButton(
+                  onPressed: () => _removeItem(index),
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                ),
+              ],
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 12.h),
             TextField(
-              controller: amountControllers[i],
+              controller: amountControllers[index],
               keyboardType: TextInputType.number,
-              // ✅ استخدمنا prefixText مع symbol من الـ Provider
               decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixText: '${currencyProvider.symbol} ',
+                labelText: LocaleKeys.Home_amount.tr(),
+                prefixText: '${currency.symbol} ',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 12.h),
             TextField(
-              controller: categoryControllers[i],
-              decoration: const InputDecoration(
-                labelText: 'Categories (comma separated)',
-                hintText: 'work, freelance, gift',
+              controller: categoryControllers[index],
+              decoration: InputDecoration(
+                labelText: LocaleKeys.income_categories_comma_separated.tr(),
+                hintText: '${LocaleKeys.work.tr()}, ${LocaleKeys.freelance.tr()}, ${LocaleKeys.gift.tr()}',
+                prefixIcon: const Icon(Icons.category_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                onPressed: () => _removeItem(i),
-                icon: const Icon(Icons.delete, color: Colors.red),
-              ),
-            )
           ],
         ),
       ),

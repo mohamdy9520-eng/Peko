@@ -45,6 +45,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
   int? _lastFilterIndex;
   int? _lastTransactionCount;
 
+  // ⬅️ Key جديد للـ FutureBuilder عشان يعيد البناء لما نعمل refresh
+  Key _adviceKey = UniqueKey();
+
   final GlobalKey _lineChartKeyExpense = GlobalKey();
   final GlobalKey _pieChartKeyExpense = GlobalKey();
   final GlobalKey _barChartKeyExpense = GlobalKey();
@@ -94,6 +97,34 @@ class _StatisticScreenState extends State<StatisticScreen> {
   Future<void> _saveCachedAdvice(String advice) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('last_ai_advice', advice);
+  }
+
+  // ⬅️ Method جديد للـ Pull-to-Refresh
+  Future<void> _refreshData() async {
+    // 1. نلغي الـ cached advice عشان يجيب نصيحة جديدة
+    setState(() {
+      _cachedAdvice = null;
+      _adviceFuture = null;
+      _lastFilterIndex = null;
+      _lastTransactionCount = null;
+      _adviceKey = UniqueKey(); // عشان FutureBuilder يعيد البناء
+    });
+
+    // 2. نمسح الـ SharedPreferences cache
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_ai_advice');
+
+    // 3. نستنى شوية عشان الـ indicator يبين
+    await Future.delayed(const Duration(seconds: 1));
+
+    // 4. نلغي captured charts عشان يتعمل capture من جديد
+    setState(() {
+      _capturedFilterIndex = null;
+      _capturedTransactionCount = null;
+      _lineChartImages.clear();
+      _pieChartImages.clear();
+      _barChartImages.clear();
+    });
   }
 
   Future<Uint8List?> _captureWidget(GlobalKey key) async {
@@ -283,29 +314,38 @@ class _StatisticScreenState extends State<StatisticScreen> {
               }
             });
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPeriodFilters(),
-                  SizedBox(height: 24.h),
-                  _buildStatisticsCards(transactions, currency),
-                  SizedBox(height: 24.h),
-                  _buildTypeToggle(),
-                  SizedBox(height: 24.h),
+            // ⬅️ غلّفنا الـ SingleChildScrollView بـ RefreshIndicator
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              color: AppColors.primary,
+              backgroundColor: Colors.white,
+              displacement: 40,
+              strokeWidth: 3,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(), // ⬅️ مهم عشان يشتغل حتى لو المحتوى قصير
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPeriodFilters(),
+                    SizedBox(height: 24.h),
+                    _buildStatisticsCards(transactions, currency),
+                    SizedBox(height: 24.h),
+                    _buildTypeToggle(),
+                    SizedBox(height: 24.h),
 
-                  _buildChartsSection(
-                    expenseTransactions,
-                    incomeTransactions,
-                    filteredTransactions,
-                  ),
+                    _buildChartsSection(
+                      expenseTransactions,
+                      incomeTransactions,
+                      filteredTransactions,
+                    ),
 
-                  SizedBox(height: 32.h),
-                  _buildTopTransactions(filteredTransactions),
-                  SizedBox(height: 32.h),
-                  _buildAIInsights(transactions),
-                ],
+                    SizedBox(height: 32.h),
+                    _buildTopTransactions(filteredTransactions),
+                    SizedBox(height: 32.h),
+                    _buildAIInsights(transactions),
+                  ],
+                ),
               ),
             );
           },
@@ -960,7 +1000,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
     _lastTransactionCount = currentCount;
 
     _adviceFuture = AIInsightService(
-        apiKey: Env.openRouterApiKey,
+      apiKey: Env.openRouterApiKey,
     )
         .getExpenseInsight(
       transactions,
@@ -972,6 +1012,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
   Widget _buildAIInsights(List<Map<String, dynamic>> transactions) {
     return FutureBuilder<String>(
+      // ⬅️ استخدمنا الـ key هنا عشان يعيد البناء لما نعمل refresh
+      key: _adviceKey,
       future: _getAIAdvice(transactions),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && _cachedAdvice != null) {
@@ -986,27 +1028,24 @@ class _StatisticScreenState extends State<StatisticScreen> {
         }
 
         if (snapshot.hasError) {
-          final error = snapshot.error;
-          String errorMessage;
-          bool showCached = false;
+          final errorString = snapshot.error.toString();
 
-          if (error is SocketException || error.toString().contains('SocketException')) {
-            errorMessage = LocaleKeys.Home_categories_errors_no_internet.tr();
-            showCached = true;
-          } else if (error is HttpException) {
-            errorMessage = LocaleKeys.Home_categories_errors_server_error.tr();
-          } else {
-            errorMessage = LocaleKeys.Home_categories_errors_unexpected_error.tr();
+          if (errorString.contains('SocketException') ||
+              errorString.contains('ClientException') ||
+              errorString.contains('Failed host lookup') ||
+              snapshot.error is SocketException) {
+
+            if (_cachedAdvice != null) {
+              return _buildInsightCard(
+                _cachedAdvice!,
+                isCached: true,
+              );
+            }
+
+            return _buildErrorInsightCard("No Internet Connection");
           }
 
-          if (showCached && _cachedAdvice != null) {
-            return _buildInsightCard(
-              _cachedAdvice!,
-              isCached: true,
-            );
-          }
-
-          return _buildErrorInsightCard(errorMessage);
+          return _buildErrorInsightCard(LocaleKeys.Home_categories_errors_unexpected_error.tr());
         }
 
         final advice = snapshot.data ?? LocaleKeys.Home_categories_errors_no_internet.tr();

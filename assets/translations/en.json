@@ -184,7 +184,8 @@
         "sync_contacts": "Sync Contacts",
         "add_contact": "Add Contact",
         "invite_friend": "Invite a friend to Pēco",
-        "share_invite": "Share invite link"
+        "share_invite": "Share invite link",
+        "contacts": "contacts"
       },
       "settings": {
         "title": "Settings",
@@ -316,7 +317,7 @@
         "statistics": "Statistics",
         "insight": "Insight",
         "no_data_for": "No data for",
-        "you_spent_most_on": "You spent most on {category} with USD{amount}",
+        "you_spent_most_on": "You spent most on {category} with {amount}",
         "trend": "Trend"
       },
       "expense_actions": {
@@ -351,7 +352,7 @@
         "unexpected_error": "An unexpected error occurred. Please try again"
       },
       "expense": {
-        "title": "Expenses",
+        "expenses": "expenses",
         "income": "Income",
         "statistics": "Statistics",
         "summary": "Summary",
@@ -362,7 +363,25 @@
         "count": "Count",
         "distribution": "Distribution",
         "by_category": "By Category",
-        "alert": "alert"
+        "alert": "alert",
+        "No_text_detected": "No text detected",
+        "Receipt_scanned_successfully": "Receipt scanned successfully",
+        "Please_fill_all_fields_correctly": "Please fill all fields correctly",
+        "total_Balance": "total Balance",
+        "total_Expense": "total Expense",
+        "Insufficient_balance!": "Insufficient balance! You have only",
+        "total_amount": "Total Amount",
+        "item": "item",
+        "items": "items",
+        "ai_receipt_scanner": "AI Receipt Scanner",
+        "scanning_receipt": "Scanning Receipt...",
+        "submit_all": "Submit All",
+        "work": "work",
+        "freelance": "freelance",
+        "gift": "gift",
+        "title": "العنوان",
+        "submit": "submit"
+
       },
       "date": {
         "day": "Day",
@@ -483,5 +502,65 @@
       "add_first": "Add a contact first to make transfers",
       "no_contacts_found": "No contacts found"
     }
+  },
+  "profile": {
+    "profile_title": "Profile",
+    "notifications_tooltip": "Notifications",
+    "profile_photo_updated": "Profile photo updated successfully! ({0} KB)",
+    "upload_image_failed": "Failed to upload image: {0}",
+    "photo_removed": "Profile photo removed",
+    "remove_photo_failed": "Failed to remove photo: {0}",
+    "invite_friends": "Invite Friends",
+    "invite_friends_subtitle": "Earn rewards by inviting",
+    "message_center": "Message Center",
+    "message_center_subtitle": "View your notifications",
+    "unread_messages": "{0} unread messages",
+    "account_info": "Account Info",
+    "account_info_subtitle": "View your account details",
+    "personal_profile": "Personal Profile",
+    "personal_profile_subtitle": "Edit your profile information",
+    "change_currency": "Change Currency",
+    "login_security": "Login & Security",
+    "login_security_subtitle": "Password, 2FA, and sessions",
+    "data_privacy": "Data & Privacy",
+    "data_privacy_subtitle": "Manage your data",
+    "general_section": "General",
+    "account_section": "Account",
+    "friends_stat": "Friends",
+    "messages_stat": "Messages",
+    "rewards_stat": "Rewards",
+    "change_photo_title": "Change Profile Photo",
+    "take_photo": "Take Photo",
+    "choose_from_gallery": "Choose from Gallery",
+    "remove_photo": "Remove Photo",
+    "coming_soon_title": "Coming Soon",
+    "coming_soon_message": "This feature is under development and will be available in the next update.",
+    "ok_button": "OK",
+    "dismiss_button": "DISMISS",
+    "retry_button": "Retry",
+    "error_title": "Something went wrong",
+    "image_too_large": "Image too large ({0} KB). Max allowed: {1} KB",
+    "user_not_logged_in": "User not logged in",
+    "failed_decode_image": "Failed to decode image",
+    "contacts": "contacts",
+    "Home_categories_other": "Other Home Categories",
+    "expenses_added": "{0} expenses added for {1}",
+    "ai_receipt_scanner": "AI Receipt Scanner",
+    "scanning_receipt": "Scanning Receipt...",
+    "submit_all": "Submit All",
+    "other": "other"
+  },
+  "transaction_history": "Transaction History",
+  "items": "items",
+
+  "income": {
+    "Please_fill_all_fields_correctly": "Please fill all fields correctly",
+    "Total": "total",
+    "Title": "title",
+    "Amount": "amount",
+    "categories_comma_separated": "Categories (comma separated)",
+    "Submit": "submit",
+    "User_not_logged_in": "User not logged in"
   }
+
 }

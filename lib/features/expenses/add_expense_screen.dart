@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:ai_expense_tracker/generated/locale_keys.g.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,25 +28,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final List<String> selectedCategories = [];
 
   final ImagePicker _picker = ImagePicker();
-
   bool isScanning = false;
-
-  final geminiApiKey = dotenv.env['GEMINI_API_KEY']!;
-
+  final geminiApiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
   final List<Map<String, dynamic>> categories = [
-    {"name": "food", "icon": Icons.restaurant},
-    {"name": "shopping", "icon": Icons.shopping_bag},
-    {"name": "transport", "icon": Icons.directions_bus},
-    {"name": "bills", "icon": Icons.receipt},
-    {"name": "entertainment", "icon": Icons.movie},
-    {"name": "health", "icon": Icons.favorite},
-    {"name": "education", "icon": Icons.school},
-    {"name": "travel", "icon": Icons.flight},
-    {"name": "work", "icon": Icons.work},
-    {"name": "gift", "icon": Icons.card_giftcard},
-    {"name": "subscriptions", "icon": Icons.subscriptions},
-    {"name": "other", "icon": Icons.more_horiz},
+    {"name": "food", "key": LocaleKeys.Home_categories_budget_food, "icon": Icons.restaurant},
+    {"name": "shopping", "key": LocaleKeys.Home_categories_budget_shopping, "icon": Icons.shopping_bag},
+    {"name": "transport", "key": LocaleKeys.Home_categories_budget_transport, "icon": Icons.directions_bus},
+    {"name": "bills", "key": LocaleKeys.Home_categories_budget_bills, "icon": Icons.receipt},
+    {"name": "entertainment", "key": LocaleKeys.Home_categories_budget_entertainment, "icon": Icons.movie},
+    {"name": "health", "key": LocaleKeys.Home_categories_budget_health, "icon": Icons.favorite},
+    {"name": "education", "key": LocaleKeys.Home_categories_budget_education, "icon": Icons.school},
+    {"name": "gift", "key": LocaleKeys.Home_categories_budget_gift, "icon": Icons.card_giftcard},
+    {"name": "other", "key": LocaleKeys.Home_categories_other, "icon": Icons.more_horiz},
   ];
 
   @override
@@ -56,7 +52,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   void _addNewItem() {
     setState(() {
       titleControllers.add(TextEditingController());
-      amountControllers.add(TextEditingController());
+      // إضافة مستمع لتحديث واجهة المستخدم وإجمالي المبلغ فور كتابة أي رقم
+      final amountController = TextEditingController();
+      amountController.addListener(() {
+        setState(() {});
+      });
+      amountControllers.add(amountController);
       selectedCategories.add(categories[0]["name"]);
     });
   }
@@ -76,30 +77,25 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   double get _totalAmount {
     double total = 0;
-
     for (var c in amountControllers) {
       total += double.tryParse(c.text) ?? 0;
     }
-
     return total;
   }
 
   bool get _isValid {
     for (int i = 0; i < titleControllers.length; i++) {
       if (titleControllers[i].text.trim().isEmpty) return false;
-
       if ((double.tryParse(amountControllers[i].text) ?? 0) <= 0) {
         return false;
       }
     }
-
     return titleControllers.isNotEmpty;
   }
 
   Future<void> _scanReceipt() async {
     try {
       setState(() => isScanning = true);
-
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 85,
@@ -111,91 +107,62 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
 
       final inputImage = InputImage.fromFile(File(image.path));
-
       final textRecognizer = TextRecognizer();
-
-      final RecognizedText recognizedText =
-      await textRecognizer.processImage(inputImage);
-
+      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
       final extractedText = recognizedText.text;
-
       await textRecognizer.close();
 
       if (extractedText.trim().isEmpty) {
         setState(() => isScanning = false);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No text detected'),
-          ),
-        );
-
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(LocaleKeys.Home_categories_expense_No_text_detected.tr())),
+          );
+        }
         return;
       }
 
       await _analyzeReceiptWithAI(extractedText);
-
       setState(() => isScanning = false);
     } catch (e) {
       setState(() => isScanning = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Scan Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
   Future<void> _analyzeReceiptWithAI(String receiptText) async {
     try {
-      final url =
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey";
-
+      final url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey";
       final prompt = """
 You are an AI receipt parser.
-
 Extract:
 - title
 - total amount
 - best category
-
-Supported categories:
-food, shopping, transport, bills, entertainment, health, education, travel, work, gift, subscriptions, other
-
+Supported categories: food, shopping, transport, bills, entertainment, health, education, travel, work, gift, subscriptions, other
 Return ONLY valid JSON.
-
 Receipt:
 $receiptText
 """;
 
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "contents": [
-            {
-              "parts": [
-                {"text": prompt}
-              ]
-            }
-          ]
+          "contents": [{
+            "parts": [{"text": prompt}]
+          }]
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         final text = data['candidates'][0]['content']['parts'][0]['text'];
-
-        final cleanText = text
-            .replaceAll('```json', '')
-            .replaceAll('```', '')
-            .trim();
-
+        final cleanText = text.replaceAll('```json', '').replaceAll('```', '').trim();
         final result = jsonDecode(cleanText);
 
         final title = result['title'] ?? 'Receipt';
@@ -203,52 +170,53 @@ $receiptText
         final category = result['category'] ?? 'other';
 
         setState(() {
-          titleControllers.add(
-            TextEditingController(text: title),
-          );
+          final amountController = TextEditingController(text: amount);
+          amountController.addListener(() {
+            setState(() {});
+          });
 
-          amountControllers.add(
-            TextEditingController(text: amount),
-          );
-
+          titleControllers.add(TextEditingController(text: title));
+          amountControllers.add(amountController);
           selectedCategories.add(category);
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Receipt scanned successfully'),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(LocaleKeys.Home_categories_expense_Receipt_scanned_successfully.tr())),
+          );
+        }
       } else {
         throw Exception(response.body);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('AI Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
   Future<void> _submitAll() async {
     if (!_isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields correctly'),
+        SnackBar(
+          content: Text(LocaleKeys.Home_categories_expense_Please_fill_all_fields_correctly.tr()),
           backgroundColor: Colors.red,
         ),
       );
-
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
 
     final total = _totalAmount;
+
+    final navigator = GoRouter.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final currency = context.read<CurrencyProvider>();
+    final itemCount = titleControllers.length;
 
     try {
       final userDoc = await FirebaseFirestore.instance
@@ -259,26 +227,23 @@ $receiptText
       final data = userDoc.data() ?? {};
 
       double currentBalance = (data['totalBalance'] ?? 0).toDouble();
-
       double currentExpense = (data['totalExpense'] ?? 0).toDouble();
 
       if (total > currentBalance) {
-        final currency = context.read<CurrencyProvider>();
-
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
-              'Insufficient balance! You have only ${currency.formatAmount(currentBalance)}',
+              '${LocaleKeys.Home_insufficient_balance.tr()} ${currency.formatAmount(currentBalance)}',
             ),
             backgroundColor: Colors.red,
           ),
         );
-
         return;
       }
 
-      final batch = FirebaseFirestore.instance.batch();
+      navigator.pop();
 
+      final batch = FirebaseFirestore.instance.batch();
       final transactionsRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -286,11 +251,8 @@ $receiptText
 
       for (int i = 0; i < titleControllers.length; i++) {
         final title = titleControllers[i].text.trim();
-
         final amount = double.parse(amountControllers[i].text);
-
         final category = selectedCategories[i];
-
         final docRef = transactionsRef.doc();
 
         batch.set(docRef, {
@@ -307,44 +269,23 @@ $receiptText
         {
           'totalBalance': currentBalance - total,
           'totalExpense': currentExpense + total,
+          'updatedAt': FieldValue.serverTimestamp(),
         },
       );
 
       await batch.commit();
 
-      if (mounted) {
-        final currency = context.read<CurrencyProvider>();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Added ${titleControllers.length} expenses (${currency.formatAmount(total)})',
-            ),
-          ),
-        );
-
-        context.pop();
-      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
   @override
   void dispose() {
-    for (var c in titleControllers) {
-      c.dispose();
-    }
-
-    for (var c in amountControllers) {
-      c.dispose();
-    }
-
+    for (var c in titleControllers) c.dispose();
+    for (var c in amountControllers) c.dispose();
     super.dispose();
   }
 
@@ -357,15 +298,12 @@ $receiptText
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         elevation: 0,
-        title: const Text(
-          'Add Expenses',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          LocaleKeys.Home_add_expenses.tr(),
+          style: const TextStyle(color: Colors.white),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -378,11 +316,8 @@ $receiptText
             child: Column(
               children: [
                 Text(
-                  'Total Amount',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14.sp,
-                  ),
+                  LocaleKeys.Home_categories_expense_total_amount.tr(),
+                  style: TextStyle(color: Colors.grey, fontSize: 14.sp),
                 ),
                 SizedBox(height: 4.h),
                 Text(
@@ -394,13 +329,12 @@ $receiptText
                   ),
                 ),
                 Text(
-                  '${titleControllers.length} item(s)',
+                  '${titleControllers.length} ${titleControllers.length == 1 ? LocaleKeys.Home_categories_expense_item.tr() : LocaleKeys.Home_categories_expense_items.tr()}',
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
           ),
-
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -408,7 +342,6 @@ $receiptText
               itemBuilder: (context, index) => _buildItemCard(index),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -419,45 +352,35 @@ $receiptText
                       ? SizedBox(
                     width: 18.w,
                     height: 18.h,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.w,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2.w),
                   )
                       : const Icon(Icons.document_scanner),
                   label: Text(
                     isScanning
-                        ? 'Scanning Receipt...'
-                        : 'AI Receipt Scanner',
+                        ? LocaleKeys.Home_categories_expense_scanning_receipt.tr()
+                        : LocaleKeys.Home_categories_expense_ai_receipt_scanner.tr(),
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size(double.infinity, 50.h),
-                    side: const BorderSide(
-                      color: AppColors.primary,
-                    ),
+                    side: const BorderSide(color: AppColors.primary),
                   ),
                 ),
-
                 SizedBox(height: 12.h),
-
                 OutlinedButton.icon(
                   onPressed: _addNewItem,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Another Expense'),
+                  label: Text(LocaleKeys.Home_add_expenses.tr()),
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size(double.infinity, 50.h),
-                    side: const BorderSide(
-                      color: AppColors.primary,
-                    ),
+                    side: const BorderSide(color: AppColors.primary),
                   ),
                 ),
-
                 SizedBox(height: 12.h),
-
                 ElevatedButton.icon(
                   onPressed: _submitAll,
                   icon: const Icon(Icons.check),
                   label: Text(
-                    'Submit All',
+                    LocaleKeys.Home_categories_expense_submit_all.tr(),
                     style: TextStyle(fontSize: 16.sp),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -489,7 +412,7 @@ $receiptText
                   child: TextField(
                     controller: titleControllers[index],
                     decoration: InputDecoration(
-                      labelText: 'Item ${index + 1} Name',
+                      labelText: '${LocaleKeys.Home_categories_expense_item.tr()} ${index + 1}',
                       prefixIcon: const Icon(Icons.label_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
@@ -500,16 +423,11 @@ $receiptText
                 SizedBox(width: 8.w),
                 IconButton(
                   onPressed: () => _removeItem(index),
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.red,
-                  ),
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
                 ),
               ],
             ),
-
             SizedBox(height: 12.h),
-
             Row(
               children: [
                 Expanded(
@@ -518,7 +436,7 @@ $receiptText
                     controller: amountControllers[index],
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Amount',
+                      labelText: LocaleKeys.Home_amount.tr(),
                       prefixText: '${currency.symbol} ',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
@@ -526,9 +444,7 @@ $receiptText
                     ),
                   ),
                 ),
-
                 SizedBox(width: 12.w),
-
                 Expanded(
                   flex: 3,
                   child: DropdownButtonFormField<String>(
@@ -538,24 +454,18 @@ $receiptText
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w),
                     ),
                     items: categories.map((cat) {
                       return DropdownMenuItem<String>(
                         value: cat["name"],
                         child: Row(
                           children: [
-                            Icon(
-                              cat["icon"],
-                              size: 18.sp,
-                              color: AppColors.primary,
-                            ),
+                            Icon(cat["icon"], size: 18.sp, color: AppColors.primary),
                             SizedBox(width: 8.w),
                             Expanded(
                               child: Text(
-                                cat["name"].toUpperCase(),
+                                (cat["key"] as String).tr(),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

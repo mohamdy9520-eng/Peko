@@ -1,39 +1,32 @@
-// lib/widgets/notification_icon.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../profile/fireBase_service/fireBase_service.dart';
 import '../theme/app_colors.dart';
 
 class NotificationIcon extends StatelessWidget {
   const NotificationIcon({super.key});
 
-  Stream<int> getUnreadCount() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.value(0);
-
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('notifications')
-        .where('read', isEqualTo: false)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: getUnreadCount(),
+    final FirebaseService firebaseService = FirebaseService();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: firebaseService.getMessages(),
       builder: (context, snapshot) {
-        final unreadCount = snapshot.data ?? 0;
+        int unreadCount = 0;
+
+        if (snapshot.hasData) {
+          unreadCount = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return (data['isRead'] ?? false) == false;
+          }).length;
+        }
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // الـ Icon Button
             Container(
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.15),
@@ -48,7 +41,6 @@ class NotificationIcon extends StatelessWidget {
               ),
             ),
 
-            // Badge — لو فيه unread
             if (unreadCount > 0)
               Positioned(
                 top: -4.h,

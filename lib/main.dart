@@ -16,6 +16,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'config/env.dart';
 import 'core/di/injection.dart';
 import 'core/di/notifications/notification_service.dart';
+import 'core/di/services/NetworkProvider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -73,6 +74,7 @@ void main() async {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+              ChangeNotifierProvider(create: (_) => NetworkProvider())
             ],
             child: const MyApp(),
           );
@@ -95,3 +97,6 @@ Future<void> initializeRevenueCat() async {
 
   await Purchases.configure(PurchasesConfiguration(apiKey));
 }
+
+//dart run easy_localization:generate -f keys -o locale_keys.g.dart -S assets/translations -O lib/generated ==> LocaleKeys
+//dart run easy_localization:generate -f json -o codegen_loader.g.dart -S assets/translations -O lib/generated ==> Codegen_loader.g.dart
